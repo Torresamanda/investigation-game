@@ -1,0 +1,73 @@
+.investigation-controls {
+  border-left: 1px solid var(--line);
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+.investigation-controls h3 {
+  font-size: 21px;
+  margin-bottom: 16px;
+}
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.action-grid button {
+  text-align: left;
+  padding: 12px;
+  font-size: 13px;
+}
+.action-grid small {
+  display: block;
+  font-size: 10px;
+  color: #aec4d0;
+  margin-top: 4px;
+}
+.investigation-controls .help-text {
+  font-size: 11px;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+.feedback {
+  color: #d6bc91;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 8px 0 12px;
+}
+.accusation-control {
+  margin-top: auto;
+  padding-top: 8px;
+}
+.accusation-control button {
+  width: 100%;
+  font-size: 12px;
+  padding: 10px;
+}
+@media (max-width: 1400px) {
+  .journal-is-open .investigation-controls {
+    padding-left: 12px;
+  }
+}
+@media (min-width: 1101px) and (max-height: 780px) {
+  .investigation-controls h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  .action-grid button {
+    padding: 8px;
+  }
+}
+@media (max-width: 1100px) {
+  .investigation-controls {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 16px 0 0;
+    overflow: visible;
+  }
+  .journal-is-open .investigation-controls {
+    padding-left: 0;
+  }
+}

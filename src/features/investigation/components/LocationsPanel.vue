@@ -1,0 +1,45 @@
+<script setup lang="ts">
+import { locations, type LocationId } from '../../../content/case01'
+import type { Investigator } from '../../../content/investigators'
+import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
+import { getPortrait } from '../../../content/portraits'
+const emit = defineEmits<{ select: [] }>()
+defineProps<{ investigator?: Investigator; support?: Investigator }>()
+const locationId = defineModel<LocationId>({ required: true })
+function selectLocation(id: LocationId) {
+  locationId.value = id
+  emit('select')
+}
+</script>
+
+<template>
+  <aside class="panel locations-panel">
+    <div class="investigator-overview">
+      <p class="eyebrow">Seu turno · Solo</p>
+      <CharacterPortrait
+        v-if="investigator"
+        class="investigator-portrait"
+        :name="investigator.name"
+        :initials="investigator.initials"
+        :image="getPortrait('investigators', investigator.portrait)"
+      />
+      <h2>{{ investigator?.name }}</h2>
+      <p class="point-label">{{ investigator?.points }}</p>
+      <p class="help-text">Apoio: {{ support?.name }}</p>
+    </div>
+    <div class="museum-navigation">
+      <h3>Locais do museu</h3>
+      <nav class="location-list" aria-label="Locais">
+        <button
+          v-for="item in locations"
+          :key="item.id"
+          :aria-pressed="locationId === item.id"
+          @click="selectLocation(item.id)"
+        >
+          {{ item.name }}</button
+        ><button disabled>Área não descoberta</button>
+      </nav>
+    </div>
+    <p class="rail-note">Observe. Relacione.<br />Sustente sua hipótese.</p>
+  </aside>
+</template>

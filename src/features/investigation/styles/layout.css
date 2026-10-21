@@ -1,0 +1,95 @@
+.investigation-shell {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr);
+}
+.investigation-shell .app-header {
+  min-height: 0;
+  padding: 8px 24px;
+}
+.investigation-shell .brand-mark {
+  font-size: 32px;
+}
+.investigation-shell .brand strong {
+  font-size: 21px;
+}
+.investigation-page {
+  min-height: 0;
+  width: 100%;
+  padding: 12px 20px 16px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+}
+.investigation-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) clamp(176px, 25dvh, 236px);
+  gap: 12px;
+  min-height: 0;
+  --hand-height: clamp(176px, 25dvh, 236px);
+}
+.journal-is-open .investigation-layout {
+  grid-template-columns: 190px minmax(0, 1fr) 300px;
+}
+.panel {
+  padding: 16px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+@media (min-width: 1101px) and (max-height: 780px) {
+  .investigation-page {
+    padding-top: 8px;
+    padding-bottom: 10px;
+    gap: 6px;
+  }
+  .investigation-layout {
+    grid-template-rows: minmax(0, 1fr) 170px;
+    gap: 10px;
+    --hand-height: 170px;
+  }
+  .panel {
+    padding: 12px;
+  }
+}
+@media (max-width: 1100px) {
+  .investigation-shell {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-rows: 64px auto;
+  }
+  .investigation-layout {
+    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-rows: auto 200px;
+    --hand-height: 200px;
+  }
+  .journal-is-open .investigation-layout {
+    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-rows: auto auto 200px;
+  }
+}
+@media (max-width: 650px) {
+  .investigation-shell {
+    grid-template-rows: auto auto;
+  }
+  .investigation-shell .app-header {
+    padding: 12px 16px;
+  }
+  .investigation-shell .agency-badge {
+    display: none;
+  }
+  .investigation-page {
+    padding: 12px;
+  }
+  .investigation-layout,
+  .journal-is-open .investigation-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .panel {
+    width: 100%;
+  }
+}
