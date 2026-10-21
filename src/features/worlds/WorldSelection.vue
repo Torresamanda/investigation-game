@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import ArtPlaceholder from '../../components/ui/ArtPlaceholder.vue'
 import type { InvestigatorId } from '../../content/investigators'
+import cityArtwork from '../../../assets/world/cidade-das-blumas.png'
 import WorldMap from './components/WorldMap.vue'
 import InvestigatorSelection from './components/InvestigatorSelection.vue'
 import { useInvestigationStore } from '../../stores/investigation'
@@ -23,7 +23,7 @@ function start() {
     <WorldMap />
     <aside class="mission-panel">
       <div class="world-introduction">
-        <ArtPlaceholder label="Arte da Cidade das Brumas" symbol="⌂" />
+        <img class="world-art" :src="cityArtwork" alt="Cidade das Brumas à noite" />
         <div class="world-description">
           <p class="eyebrow">Mundo 01 · Crime e intriga</p>
           <h2>Cidade das Brumas</h2>

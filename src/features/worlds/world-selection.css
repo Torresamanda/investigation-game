@@ -39,8 +39,8 @@
   font-size: 14px;
 }
 .selection-shell .map-art {
-  top: 20%;
-  height: 77%;
+  top: 0;
+  height: 100%;
 }
 .selection-shell .map-coordinate {
   left: 32px;
@@ -60,17 +60,16 @@
 .world-introduction {
   min-width: 0;
 }
-.world-introduction .art-placeholder {
+.world-introduction .world-art {
+  display: block;
+  width: 100%;
   min-height: 0;
   height: clamp(64px, 11dvh, 120px);
+  object-fit: cover;
+  object-position: 75% center;
+  border: 1px solid #c79a5355;
+  border-radius: 8px;
   margin-bottom: 12px;
-}
-.world-introduction .placeholder-symbol {
-  font-size: 40px;
-}
-.world-introduction .art-caption {
-  font-size: 9px;
-  bottom: 8px;
 }
 .world-description .eyebrow {
   font-size: 9px;
@@ -97,25 +96,63 @@
   font-size: 11px;
 }
 .team-selection .investigator-option {
+  position: relative;
   min-width: 0;
-  gap: 6px;
-  padding: 10px 8px;
+  display: block;
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+.team-selection .investigator-option::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  content: '';
+  background: #163d58;
+  mix-blend-mode: color;
+  opacity: 0.42;
 }
 .team-selection .investigator-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-.team-selection .investigator-option > span {
+.team-selection .investigator-choice-name,
+.team-selection .investigator-choice-specialty {
+  position: absolute;
+  z-index: 1;
+  right: 6px;
+  left: 6px;
+  text-align: center;
+  text-shadow: 0 1px 5px #06121dcc;
+}
+.team-selection .investigator-choice-name {
+  top: 7%;
   font-size: 12px;
   line-height: 1.3;
+  font-weight: 700;
 }
 .team-selection .investigator-choice-portrait {
-  height: 128px;
-  width: min(96px, 100%);
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   border-radius: 8px;
-  font-size: 12px;
+  filter: saturate(0.82) contrast(0.98);
 }
-.team-selection .investigator-option small {
+.team-selection .investigator-choice-specialty {
+  bottom: 7%;
   font-size: 9px;
+  color: #c7d8df;
+}
+.team-selection .investigator-option[aria-pressed='true'] .investigator-choice-name,
+.team-selection .investigator-option[aria-pressed='true'] .investigator-choice-specialty {
+  color: var(--gold);
 }
 .support-selection {
   display: grid;
@@ -171,7 +208,7 @@
     padding: 16px;
     gap: 10px;
   }
-  .world-introduction .art-placeholder {
+  .world-introduction .world-art {
     height: 48px;
     margin-bottom: 10px;
   }
@@ -217,10 +254,6 @@
     left: 20px;
     font-size: 8px;
   }
-  .team-selection .investigator-choice-portrait {
-    width: min(76px, 100%);
-    height: 108px;
-  }
 }
 /* Small screens and enlarged text retain natural scrolling instead of hiding controls. */
 @media (max-width: 760px), (max-height: 650px) {
@@ -241,12 +274,8 @@
   }
 }
 @media (max-width: 760px) {
-  .team-selection .investigator-choice-portrait {
-    width: min(72px, 100%);
-    height: 104px;
-  }
   .team-selection .investigator-option {
-    padding: 8px 4px;
+    min-width: 0;
   }
   .selection-shell .selection-layout {
     display: flex;
@@ -263,8 +292,8 @@
     font-size: 30px;
   }
   .selection-shell .map-art {
-    top: 16%;
-    height: 83%;
+    top: 0;
+    height: 100%;
   }
   .selection-shell .map-pin {
     top: 59%;
@@ -286,7 +315,7 @@
     left: 24px;
     font-size: 8px;
   }
-  .world-introduction .art-placeholder {
+  .world-introduction .world-art {
     height: 96px;
   }
 }

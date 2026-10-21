@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { investigators, type InvestigatorId } from '../../../content/investigators'
-import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 import { getPortrait } from '../../../content/portraits'
 const active = defineModel<InvestigatorId>('active', { required: true })
 const support = defineModel<InvestigatorId>('support', { required: true })
@@ -24,14 +23,13 @@ watch(active, (value) => {
         :aria-pressed="active === item.id"
         @click="active = item.id"
       >
-        <CharacterPortrait
+        <img
           class="investigator-choice-portrait"
-          :name="item.name"
-          :initials="item.initials"
-          :image="getPortrait('investigators', item.portrait)"
+          :src="getPortrait('investigators', item.portrait)"
+          alt=""
         />
-        <span>{{ item.name }}</span
-        ><small>{{ item.specialty }}</small>
+        <span class="investigator-choice-name">{{ item.name }}</span>
+        <small class="investigator-choice-specialty">{{ item.specialty }}</small>
       </button>
     </div>
   </section>
