@@ -175,7 +175,15 @@ export function getInvestigatorCards(investigator: InvestigatorId): readonly Car
 export const COPIES_PER_CARD = 2
 export const INITIAL_HAND_SIZE = 4
 
-export function createInvestigatorDeck(investigator: InvestigatorId) {
+export interface InvestigatorDeckCard {
+  readonly instanceId: string
+  readonly ownerId: InvestigatorId
+  readonly definition: CardDefinition
+}
+
+export function createInvestigatorDeck(
+  investigator: InvestigatorId,
+): readonly InvestigatorDeckCard[] {
   return getInvestigatorCards(investigator).flatMap((card) =>
     Array.from({ length: COPIES_PER_CARD }, (_, copy) => ({
       instanceId: `${investigator}:${card.id}:${copy + 1}`,
