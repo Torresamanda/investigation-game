@@ -61,29 +61,31 @@
 .suspect-profile {
   flex: 1 1 0;
   min-height: 70px;
-  overflow: auto;
+  display: grid;
+  grid-template-columns: clamp(150px, 18vw, 240px) minmax(0, 1fr) 32px;
+  align-items: stretch;
+  column-gap: 18px;
+  overflow: hidden;
   border: 1px solid #c79a5366;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   background: radial-gradient(ellipse at 90% 20%, #2e67723a, transparent 70%), #132b3d;
 }
 .suspect-profile-heading {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.suspect-profile-heading > div {
-  min-width: 0;
+  margin-bottom: 16px;
 }
 .suspect-profile h3 {
   font-size: 25px;
   margin: 0 0 4px;
 }
 .suspect-portrait {
-  flex-shrink: 0;
-  width: 56px;
-  height: 64px;
+  width: 100%;
+  height: 100%;
+  min-height: 136px;
+}
+.suspect-profile-content {
+  min-width: 0;
+  align-self: center;
 }
 .suspect-role {
   font-size: 12px;
@@ -91,15 +93,20 @@
   margin: 0;
 }
 .profile-close {
-  margin: 0 0 auto auto;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
+  align-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
   padding: 0;
-  line-height: 1;
+  line-height: 0;
+}
+.profile-close > span {
+  display: block;
+  transform: translateY(-1px);
   font-size: 20px;
+  line-height: 1;
 }
 .personality-label {
   color: #a9bfcd;
@@ -116,7 +123,7 @@
   line-height: 1.5;
   margin: 0 0 8px;
 }
-.suspect-profile > small {
+.suspect-profile-content > small {
   color: #a9bfcd;
   font-size: 10px;
 }
@@ -157,9 +164,7 @@
   }
   .suspect-profile {
     padding: 10px;
-  }
-  .suspect-profile-heading {
-    margin-bottom: 8px;
+    column-gap: 12px;
   }
   .suspect-profile h3 {
     font-size: 22px;
@@ -169,6 +174,7 @@
   .suspect-profile {
     flex: 0 0 auto;
     min-height: 200px;
+    grid-template-columns: minmax(120px, 28vw) minmax(0, 1fr) 32px;
   }
 }
 @media (max-width: 650px) {
@@ -181,6 +187,13 @@
   }
   .suspect-roster {
     grid-template-columns: 1fr 1fr;
+  }
+  .suspect-profile {
+    grid-template-columns: 92px minmax(0, 1fr) 32px;
+    column-gap: 10px;
+  }
+  .suspect-profile h3 {
+    font-size: 20px;
   }
   .journal-is-open .suspect-tile {
     grid-template-columns: 28px minmax(0, 1fr);
