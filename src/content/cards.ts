@@ -1,4 +1,5 @@
 import type { InvestigatorId } from './investigators'
+import type { InvestigationAction } from '../domain/game/action-points'
 import flashlight from '../../assets/cards/lanterna-ultravioleta.png'
 import marker from '../../assets/cards/marcador-evidencia.png'
 import map from '../../assets/cards/mapa-museu.png'
@@ -23,6 +24,7 @@ export interface CardDefinition {
   readonly effect: string
   readonly context: string
   readonly image: string
+  readonly compatibleActions: readonly InvestigationAction[]
 }
 
 // The explicit mapping keeps the existing artwork filenames independent from game terminology.
@@ -35,6 +37,7 @@ const investigatorCards = {
       image: flashlight,
       effect: 'Ao examinar um local, revela um detalhe físico oculto, se houver.',
       context: 'Durante Examinar um local.',
+      compatibleActions: ['examine'],
     },
     {
       id: 'trace-marker',
@@ -43,6 +46,7 @@ const investigatorCards = {
       image: marker,
       effect: 'Marca uma pista física; a próxima análise dessa pista custa 1 PA a menos.',
       context: 'Exige uma pista física.',
+      compatibleActions: ['analyse'],
     },
     {
       id: 'route-map',
@@ -51,6 +55,7 @@ const investigatorCards = {
       image: map,
       effect: 'Revela uma conexão útil entre o local atual e outro local investigável.',
       context: 'Exige um local atual e outro local investigável.',
+      compatibleActions: ['research'],
     },
     {
       id: 'access-credential',
@@ -59,6 +64,7 @@ const investigatorCards = {
       image: credential,
       effect: 'Abre uma área ou arquivo restrito sem exigir uma ação adicional de acesso.',
       context: 'Exige uma área ou arquivo restrito.',
+      compatibleActions: ['research'],
     },
   ],
   rafael: [
@@ -69,6 +75,7 @@ const investigatorCards = {
       image: magnifier,
       effect: 'Compara duas pistas físicas e revela uma característica em comum, se existir.',
       context: 'Exige duas pistas físicas.',
+      compatibleActions: ['analyse'],
     },
     {
       id: 'forensic-camera',
@@ -78,6 +85,7 @@ const investigatorCards = {
       effect:
         'Registra uma evidência; ela não pode ser alterada por um evento do caso até a próxima rodada.',
       context: 'Exige uma evidência.',
+      compatibleActions: ['examine'],
     },
     {
       id: 'custody-envelope',
@@ -86,6 +94,7 @@ const investigatorCards = {
       image: envelope,
       effect: 'Protege uma evidência confirmada contra uma penalidade ou descarte.',
       context: 'Exige uma evidência confirmada.',
+      compatibleActions: ['analyse'],
     },
     {
       id: 'trace-reagent',
@@ -94,6 +103,7 @@ const investigatorCards = {
       image: reagent,
       effect: 'Valida ou invalida uma pista física não verificada.',
       context: 'Exige uma pista física não verificada.',
+      compatibleActions: ['analyse'],
     },
   ],
   isadora: [
@@ -104,6 +114,7 @@ const investigatorCards = {
       image: recorder,
       effect: 'Registra um depoimento; ele poderá ser confrontado com outra declaração depois.',
       context: 'Exige um depoimento.',
+      compatibleActions: ['converse'],
     },
     {
       id: 'calculated-pause',
@@ -112,6 +123,7 @@ const investigatorCards = {
       image: pause,
       effect: 'Após uma conversa, realiza uma pergunta adicional sem custo de PA.',
       context: 'Após uma conversa, no próprio turno.',
+      compatibleActions: ['converse'],
     },
     {
       id: 'marked-transcript',
@@ -120,6 +132,7 @@ const investigatorCards = {
       image: transcript,
       effect: 'Reabre uma declaração registrada e procura uma contradição com outra pista.',
       context: 'Exige uma declaração registrada e outra pista.',
+      compatibleActions: ['analyse'],
     },
     {
       id: 'contact-card',
@@ -129,6 +142,7 @@ const investigatorCards = {
       effect:
         'Obtém uma informação confiável de uma fonte externa, ligada ao tema da investigação.',
       context: 'Exige um tema de investigação.',
+      compatibleActions: ['research'],
     },
   ],
   otavio: [
@@ -139,6 +153,7 @@ const investigatorCards = {
       image: archive,
       effect: 'Pesquisa um registro e revela um documento ou dado contextual ligado ao caso.',
       context: 'Exige um registro pesquisável.',
+      compatibleActions: ['research'],
     },
     {
       id: 'chronological-thread',
@@ -147,6 +162,7 @@ const investigatorCards = {
       image: chronology,
       effect: 'Organiza até três pistas e revela uma lacuna temporal relevante, se existir.',
       context: 'Exige pistas para organizar na cronologia.',
+      compatibleActions: ['research'],
     },
     {
       id: 'cross-reference',
@@ -156,6 +172,7 @@ const investigatorCards = {
       effect:
         'Conecta uma pista confirmada a uma não verificada e revela um local ou pergunta relevante.',
       context: 'Exige uma pista confirmada e uma não verificada.',
+      compatibleActions: ['analyse'],
     },
     {
       id: 'institutional-seal',
@@ -164,6 +181,7 @@ const investigatorCards = {
       image: seal,
       effect: 'Solicita acesso formal a um arquivo oficial ou área documental restrita.',
       context: 'Exige um arquivo oficial ou área documental restrita.',
+      compatibleActions: ['research'],
     },
   ],
 } as const satisfies Record<InvestigatorId, readonly CardDefinition[]>

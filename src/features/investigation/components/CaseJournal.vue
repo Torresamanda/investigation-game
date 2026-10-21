@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { suspectProfiles } from '../../../content/case01'
+import type { MatchJournalEntry } from '../../../services/game-api'
 const notes = defineModel<string>('notes', { required: true })
-defineProps<{ hypotheses: readonly { id: number; text: string }[] }>()
+defineProps<{
+  hypotheses: readonly { id: number; text: string }[]
+  journalEntries: readonly MatchJournalEntry[]
+}>()
 const tab = defineModel<'timeline' | 'clues' | 'suspects' | 'notes'>('tab', { required: true })
 const emit = defineEmits<{ enter: []; leave: []; pin: []; close: []; save: [] }>()
 function save() {
@@ -56,8 +60,14 @@ const tabs = [
         </div></template
       ><template v-else-if="tab === 'clues'"
         ><h3>O começo de um dossiê</h3>
-        <p class="muted">
-          Nenhuma pista foi descoberta. Evidências confirmadas aparecerão aqui.
+        <ol v-if="journalEntries.length" class="hypothesis-list">
+          <li v-for="entry in journalEntries" :key="entry.id">
+            <strong>{{ entry.title }}</strong>
+            <span>{{ entry.content }}</span>
+          </li>
+        </ol>
+        <p v-else class="muted">
+          Nenhuma pista foi descoberta. Evidências aparecerão aqui.
         </p></template
       ><template v-else-if="tab === 'suspects'"
         ><h3>Pessoas de interesse</h3>

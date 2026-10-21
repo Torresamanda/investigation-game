@@ -4,7 +4,7 @@ import type { Investigator } from '../../../content/investigators'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 import { getPortrait } from '../../../content/portraits'
 const emit = defineEmits<{ select: [] }>()
-defineProps<{ investigator?: Investigator; support?: Investigator }>()
+defineProps<{ investigator?: Investigator; support?: Investigator; pointsLabel: string }>()
 const locationId = defineModel<LocationId>({ required: true })
 function selectLocation(id: LocationId) {
   locationId.value = id
@@ -24,7 +24,7 @@ function selectLocation(id: LocationId) {
         :image="getPortrait('investigators', investigator.portrait)"
       />
       <h2>{{ investigator?.name }}</h2>
-      <p class="point-label">{{ investigator?.points }}</p>
+      <p class="point-label">{{ pointsLabel }}</p>
       <p class="help-text">Apoio: {{ support?.name }}</p>
     </div>
     <div class="museum-navigation">

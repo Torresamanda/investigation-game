@@ -1,10 +1,23 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { CardDefinition } from '../../../content/cards'
+import type { HandCard } from '../../../stores/investigation'
 import InvestigationCard from './InvestigationCard.vue'
 import CardDetails from './CardDetails.vue'
-defineProps<{ cards: readonly CardDefinition[]; ownerLabel: string }>()
-const inspectedCard = ref<CardDefinition | null>(null)
+const props = defineProps<{
+  cards: readonly HandCard[]
+  ownerLabel: string
+  pointsLabel: string
+  preparedCardId: string | null
+}>()
+const emit = defineEmits<{ prepare: [instanceId: string]; clearPrepared: [] }>()
+const inspectedCard = ref<HandCard | null>(null)
+function toggleCard(instanceId: string) {
+  if (props.preparedCardId === instanceId) {
+    emit('clearPrepared')
+    return
+  }
+  emit('prepare', instanceId)
+}
 </script>
 
 <template>
@@ -14,17 +27,32 @@ const inspectedCard = ref<CardDefinition | null>(null)
         <p class="eyebrow">Recursos do investigador</p>
         <h2 id="hand-title">Sua mão</h2>
       </div>
-      <span class="muted">{{ cards.length }} tipos<br />2 cópias de cada</span>
+      <div class="hand-points">
+        <small>PA disponíveis</small>
+        <strong>{{ pointsLabel }}</strong>
+      </div>
     </div>
     <div class="card-hand">
       <InvestigationCard
         v-for="card in cards"
-        :key="card.id"
+        :key="card.instanceId"
         :card="card"
+        :prepared="preparedCardId === card.instanceId"
+        @toggle="toggleCard"
         @inspect="inspectedCard = $event"
       />
     </div>
-    <p class="hand-hint">{{ ownerLabel }}<br />Selecione uma carta para ler seu efeito.</p>
+    <div class="hand-hint">
+      <template v-if="preparedCardId">
+        <strong>Carta preparada</strong>
+        <span>Escolha uma ação compatível para aplicá-la.</span>
+        <button class="clear-prepared" @click="emit('clearPrepared')">Cancelar</button>
+      </template>
+      <template v-else>
+        <strong>{{ ownerLabel }}</strong>
+        <span>Clique em uma carta para prepará-la; use + para ler os detalhes.</span>
+      </template>
+    </div>
     <CardDetails
       v-if="inspectedCard"
       :card="inspectedCard"

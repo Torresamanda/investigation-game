@@ -1,6 +1,6 @@
 # Cidade das Brumas
 
-Primeira etapa do MVP: frontend Vue 3 + TypeScript com seleção de missão e prévia da investigação. As 16 artes das cartas estão vinculadas aos quatro investigadores; cenários e retratos continuam como espaços reservados.
+MVP do jogo investigativo com frontend Vue 3 + TypeScript e backend Node/Fastify no mesmo repositório.
 
 ## Desenvolvimento
 
@@ -17,15 +17,23 @@ Abra o endereço exibido pelo servidor. Para verificar:
 npm run check
 ```
 
+Em outro terminal, inicie a API local:
+
+```sh
+npm run server:dev
+```
+
+A API fica em `http://127.0.0.1:3333`. `GET /health` confirma que ela está ativa. A primeira rota de jogo, `POST /api/matches`, cria uma partida solo com investigador ativo e apoio distintos; `GET /api/matches/:id` recupera a sessão enquanto o servidor estiver ligado.
+
 ## Escopo atual
 
 - Mapa de mundo, missão, seleção de investigador e apoio distintos.
 - Museu com locais, diário, hipóteses salvas em memória e os quatro tipos de carta do investigador escolhido, com arte, moldura, custo e detalhes ao clicar.
 - O catálogo cria oito instâncias por investigador (duas de cada tipo). A exibição dos quatro tipos é uma prévia das artes, não uma mão sorteada; compra, uso e descarte ainda não são executados.
 - Interface responsiva e navegação por teclado.
-- Ações não gastam PA nem revelam evidências. Não há partida, persistência, login ou multiplayer implementados.
-- Recarregar a página perde a sessão; acesso direto à investigação retorna à seleção.
-- Iniciar investigação abre o briefing de Sofia. Retornar ao mundo abandona a sessão, incluindo rascunhos, hipóteses e introdução; um novo início recomeça do zero. As anotações são salvas somente durante a sessão atual, sem armazenamento persistente ou servidor.
+- Ações básicas gastam PA no servidor e atualizam a tela e o diário em tempo real. A Galeria Principal já resolve as descobertas iniciais e registra abordagens sem resultado para orientar o próximo turno.
+- A partida permanece em memória enquanto a API está ligada; recarregar a página perde a sessão. Persistência, login e multiplayer ainda não foram implementados.
+- Iniciar investigação abre o briefing de Sofia. Retornar ao mundo abandona a sessão, incluindo rascunhos, hipóteses e introdução; um novo início recomeça do zero. As anotações livres ainda são locais durante a sessão.
 
 ## Retratos
 
@@ -41,7 +49,7 @@ O componente `CharacterPortrait` oferece o espaço reservado. `CardArtwork` apli
 
 ## Organização
 
-`src/app`: inicialização e rotas; `src/content`: catálogos públicos de investigadores, locais e suspeitos; `src/stores`: estado de apresentação; `src/styles`: identidade visual global.
+`src/app`: inicialização e rotas; `src/content`: catálogos públicos de investigadores, locais e suspeitos; `src/stores`: estado de apresentação; `src/styles`: identidade visual global. `server/src/domain` contém as regras de negócio do servidor, `server/src/application` coordena casos de uso e acesso ao estado, e `server/src/http` expõe a API.
 
 Cada funcionalidade fica em `src/features/`. Na investigação, a página coordena os componentes de barra superior, locais, cenário, ações, suspeitos, cartas e diário. Os componentes recebem dados e emitem intenções; o estado de abertura do diário fica em `composables/useJournalDisclosure.ts`. Os estilos de cada área e suas variantes responsivas ficam em `styles/`; `investigation.css` apenas os reúne. Na home, mapa e seleção de equipe são componentes separados.
 

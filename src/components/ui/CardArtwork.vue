@@ -70,7 +70,7 @@ defineProps<{ image: string; name: string; cost: number }>()
   position: absolute;
   z-index: 2;
   top: 5%;
-  right: 14%;
+  left: 14%;
   display: flex;
   align-items: baseline;
   gap: 3px;

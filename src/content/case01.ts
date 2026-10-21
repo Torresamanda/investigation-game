@@ -82,3 +82,37 @@ export type LocationId = (typeof locations)[number]['id']
 export type CaseLocation = (typeof locations)[number]
 export type Suspect = (typeof suspectProfiles)[number]
 export type SuspectId = Suspect['id']
+
+export const roundOpenings = [
+  {
+    speaker: 'Sofia Moura · Abertura da Rodada 1',
+    message:
+      '“Sete minutos sem imagem. A vitrine está intacta por fora, e isso elimina qualquer explicação simples.”',
+    event: 'Perímetro preservado: o primeiro Examinar na Galeria revela um detalhe adicional.',
+  },
+  {
+    speaker: 'Sofia Moura · Abertura da Rodada 2',
+    message: '“Alguém dentro do museu está controlando a narrativa — ou tentando fazê-lo.”',
+    event: 'Vazamento para a imprensa: conversas exigem atenção redobrada.',
+  },
+  {
+    speaker: 'Sofia Moura · Abertura da Rodada 3',
+    message: '“A rede externa não caiu. O apagão começou dentro do prédio.”',
+    event: 'Comando manual: a porta de serviço da Galeria pode ser investigada.',
+  },
+  {
+    speaker: 'Sofia Moura · Abertura da Rodada 4',
+    message: '“Ainda podemos reter Raul para esclarecimentos, mas não por muito tempo.”',
+    event: 'Janela de acusação: ela será desbloqueada após o encerramento desta rodada.',
+  },
+  {
+    speaker: 'Sofia Moura · Abertura da Rodada 5',
+    message: '“O que parecia uma falha isolada agora parece uma sequência.”',
+    event: 'Linha do tempo consolidada: uma conexão entre pistas pode ser registrada sem custo.',
+  },
+  {
+    speaker: 'Sofia Moura · Abertura da Rodada 6',
+    message: '“Esta é a última janela para entregar um dossiê que se sustente.”',
+    event: 'Prazo final: não surgem novas pistas nesta rodada.',
+  },
+] as const

@@ -6,12 +6,19 @@ import {
 import type { InvestigatorId } from '../../content/investigators'
 import {
   createDeck,
+  discardFromHand,
   drawToHand,
   shuffle,
   type DeckState,
   type RandomSource,
 } from '../../domain/game/deck'
-import type { ActionPointPool, SpecialtyPoint } from '../../domain/game/action-points'
+import {
+  canPayAction,
+  spendActionPoints,
+  type ActionPointPool,
+  type InvestigationAction,
+  type SpecialtyPoint,
+} from '../../domain/game/action-points'
 
 export const TOTAL_ROUNDS = 6
 
@@ -60,6 +67,59 @@ export function prepareNextRound(
     round: mission.round + 1,
     actionPoints: actionPointsFor(mission.activeInvestigatorId),
     decks: mapDecks(mission.decks, (deck) => drawToHand(deck, INITIAL_HAND_SIZE, random)),
+  }
+}
+
+export function canPerformBasicAction(mission: SoloMission, action: InvestigationAction): boolean {
+  return canPayAction(mission.actionPoints, { action, amount: 2 })
+}
+
+export function performBasicAction(mission: SoloMission, action: InvestigationAction): SoloMission {
+  if (!canPerformBasicAction(mission, action)) {
+    throw new Error('Pontos de ação insuficientes para esta ação.')
+  }
+
+  return {
+    ...mission,
+    actionPoints: spendActionPoints(mission.actionPoints, { action, amount: 2 }),
+  }
+}
+
+export function canPerformActionWithCard(
+  mission: SoloMission,
+  action: InvestigationAction,
+  cardInstanceId: string,
+): boolean {
+  const card = mission.decks[mission.activeInvestigatorId]?.hand.find(
+    (item) => item.instanceId === cardInstanceId,
+  )
+  if (!card || !card.definition.compatibleActions.includes(action)) return false
+
+  return canPayAction(mission.actionPoints, { action, amount: 2 + card.definition.cost })
+}
+
+export function performActionWithCard(
+  mission: SoloMission,
+  action: InvestigationAction,
+  cardInstanceId: string,
+): SoloMission {
+  if (!canPerformActionWithCard(mission, action, cardInstanceId)) {
+    throw new Error('A carta não pode ser usada com esta ação ou não há PA suficientes.')
+  }
+
+  const deck = mission.decks[mission.activeInvestigatorId]!
+  const card = deck.hand.find((item) => item.instanceId === cardInstanceId)!
+
+  return {
+    ...mission,
+    actionPoints: spendActionPoints(mission.actionPoints, {
+      action,
+      amount: 2 + card.definition.cost,
+    }),
+    decks: {
+      ...mission.decks,
+      [mission.activeInvestigatorId]: discardFromHand(deck, cardInstanceId),
+    },
   }
 }
 

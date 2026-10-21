@@ -6,8 +6,18 @@ import CardHand from './CardHand.vue'
 
 describe('artes por investigador', () => {
   it.each(investigators)('mostra somente as cartas e imagens de $name', (investigator) => {
-    const cards = getInvestigatorCards(investigator.id)
-    const view = mount(CardHand, { props: { cards, ownerLabel: investigator.name } })
+    const cards = getInvestigatorCards(investigator.id).map((card, index) => ({
+      ...card,
+      instanceId: `${investigator.id}:${card.id}:${index}`,
+    }))
+    const view = mount(CardHand, {
+      props: {
+        cards,
+        ownerLabel: investigator.name,
+        pointsLabel: '5 PA gerais',
+        preparedCardId: null,
+      },
+    })
     expect(view.findAll('.investigation-card')).toHaveLength(4)
     expect(view.findAll('.card-name').map((card) => card.text())).toEqual(
       cards.map((card) => card.name),
@@ -18,7 +28,7 @@ describe('artes por investigador', () => {
     view.unmount()
   })
 
-  it('abre o efeito e o contexto da carta sem permitir seu uso na prévia', async () => {
+  it('prepara a carta pelo clique e abre informações somente pelo botão +', async () => {
     // jsdom does not provide the browser's native modal API.
     const showModal = vi.fn()
     Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
@@ -26,9 +36,21 @@ describe('artes por investigador', () => {
       value: showModal,
     })
     const view = mount(CardHand, {
-      props: { cards: getInvestigatorCards('livia'), ownerLabel: 'Lívia Serrano' },
+      props: {
+        cards: getInvestigatorCards('livia').map((card, index) => ({
+          ...card,
+          instanceId: `livia:${card.id}:${index}`,
+        })),
+        ownerLabel: 'Lívia Serrano',
+        pointsLabel: '5 PA gerais',
+        preparedCardId: null,
+      },
     })
     await view.findAll('.investigation-card')[0]!.trigger('click')
+    expect(view.emitted('prepare')).toEqual([['livia:ultraviolet-flashlight:0']])
+    expect(showModal).not.toHaveBeenCalled()
+
+    await view.findAll('.card-information')[0]!.trigger('click')
     expect(showModal).toHaveBeenCalledOnce()
     expect(view.get('.card-details').text()).toContain('Durante Examinar um local.')
     expect(view.get('.card-details').text()).toContain('Somente no turno do dono.')
@@ -36,5 +58,23 @@ describe('artes por investigador', () => {
     expect(view.find('.card-details').exists()).toBe(false)
     view.unmount()
     Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal')
+  })
+
+  it('remove a preparação ao clicar novamente na mesma carta', async () => {
+    const card = {
+      ...getInvestigatorCards('livia')[0]!,
+      instanceId: 'livia:ultraviolet-flashlight:0',
+    }
+    const view = mount(CardHand, {
+      props: {
+        cards: [card],
+        ownerLabel: 'Lívia Serrano',
+        pointsLabel: '5 PA gerais',
+        preparedCardId: card.instanceId,
+      },
+    })
+
+    await view.get('.investigation-card').trigger('click')
+    expect(view.emitted('clearPrepared')).toEqual([[]])
   })
 })

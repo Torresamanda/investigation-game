@@ -12,9 +12,14 @@ const active = ref<InvestigatorId>('livia')
 const support = ref<InvestigatorId>('rafael')
 const router = useRouter()
 const session = useInvestigationStore()
-function start() {
+async function start() {
   session.startInvestigation(active.value, support.value)
-  void router.push({ name: 'investigation' })
+  try {
+    await session.createRemoteMatch(active.value, support.value)
+  } catch {
+    // The local mission remains available while the development API is offline.
+  }
+  await router.push({ name: 'investigation' })
 }
 </script>
 

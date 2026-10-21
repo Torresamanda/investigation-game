@@ -37,6 +37,12 @@
   line-height: 1.5;
   margin: 8px 0 12px;
 }
+.end-turn {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px;
+  font-size: 12px;
+}
 .accusation-control {
   margin-top: auto;
   padding-top: 8px;

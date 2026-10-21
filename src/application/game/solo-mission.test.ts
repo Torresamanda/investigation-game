@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { prepareNextRound, startSoloMission, TOTAL_ROUNDS } from './solo-mission'
+import {
+  canPerformBasicAction,
+  canPerformActionWithCard,
+  performBasicAction,
+  performActionWithCard,
+  prepareNextRound,
+  startSoloMission,
+  TOTAL_ROUNDS,
+} from './solo-mission'
 
 describe('solo mission', () => {
   it('inicia todos os baralhos com quatro cartas e PA do investigador ativo', () => {
@@ -44,6 +52,56 @@ describe('solo mission', () => {
     expect(() =>
       startSoloMission({ activeInvestigatorId: 'livia', supportInvestigatorId: 'livia' }),
     ).toThrow('O investigador ativo e o apoio precisam ser diferentes.')
+  })
+
+  it('desconta PA ao realizar uma ação básica compatível', () => {
+    const mission = startSoloMission({
+      activeInvestigatorId: 'rafael',
+      supportInvestigatorId: 'livia',
+    })
+
+    expect(canPerformBasicAction(mission, 'analyse')).toBe(true)
+    expect(performBasicAction(mission, 'analyse').actionPoints).toEqual({
+      general: 3,
+      specialty: 0,
+      specialtyPoint: 'technical',
+    })
+  })
+
+  it('rejeita uma ação básica quando não há PA aplicável', () => {
+    const mission = startSoloMission({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const withoutPoints = {
+      ...mission,
+      actionPoints: { general: 1, specialty: 0, specialtyPoint: null },
+    }
+
+    expect(canPerformBasicAction(withoutPoints, 'examine')).toBe(false)
+    expect(() => performBasicAction(withoutPoints, 'examine')).toThrow(
+      'Pontos de ação insuficientes para esta ação.',
+    )
+  })
+
+  it('gasta a carta e seus PA somente em uma ação compatível', () => {
+    const mission = startSoloMission({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+      random: () => 0,
+    })
+    const flashlight = mission.decks.livia!.hand.find(
+      (card) => card.definition.id === 'ultraviolet-flashlight',
+    )!
+
+    expect(canPerformActionWithCard(mission, 'examine', flashlight.instanceId)).toBe(true)
+    expect(canPerformActionWithCard(mission, 'research', flashlight.instanceId)).toBe(false)
+
+    const resolved = performActionWithCard(mission, 'examine', flashlight.instanceId)
+
+    expect(resolved.actionPoints.general).toBe(2)
+    expect(resolved.decks.livia!.hand).not.toContainEqual(flashlight)
+    expect(resolved.decks.livia!.discardPile).toContainEqual(flashlight)
   })
 
   it('não cria uma rodada depois do prazo final', () => {

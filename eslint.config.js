@@ -17,5 +17,12 @@ export default defineConfig([
       parserOptions: { parser: ts.parser },
     },
   },
+  {
+    files: ['server/**/*.ts'],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: { parser: ts.parser },
+    },
+  },
   prettier,
 ])

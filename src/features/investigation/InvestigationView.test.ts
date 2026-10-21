@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import InvestigationView from './InvestigationView.vue'
 import { useInvestigationStore } from '../../stores/investigation'
@@ -16,13 +16,29 @@ describe('fluxos da investigação', () => {
       global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } },
     })
 
-  it('conecta a escolha do local e a ação ao cenário sem gastar pontos', async () => {
+  it('conecta a escolha do local e desconta os PA da ação no cenário', async () => {
     const view = createView()
     await view.findAll('.location-list button')[1]!.trigger('click')
     expect(view.get('.scene-panel h2').text()).toBe('Sala de Segurança')
     await view.findAll('.action-grid button')[3]!.trigger('click')
-    expect(view.get('[role="status"]').text()).toBe('Pesquisar: linha de investigação selecionada.')
+    await flushPromises()
+    expect(view.get('[role="status"]').text()).toBe('Pesquisar: 2 PA gastos.')
+    expect(view.get('.point-label').text()).toBe('3 PA gerais')
+    view.unmount()
+  })
+
+  it('prepara a rodada seguinte ao encerrar o turno', async () => {
+    const view = createView()
+    await view.findAll('.action-grid button')[0]!.trigger('click')
+    await flushPromises()
+    expect(view.get('.point-label').text()).toBe('3 PA gerais')
+
+    await view.get('.end-turn').trigger('click')
+    await flushPromises()
+
+    expect(view.get('.round-indicator').text()).toContain('02')
     expect(view.get('.point-label').text()).toBe('5 PA gerais')
+    expect(view.get('[role="status"]').text()).toContain('Rodada 02 preparada')
     view.unmount()
   })
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
-defineProps<{ open: boolean; pinned: boolean }>()
+defineProps<{ open: boolean; pinned: boolean; round: number }>()
 const emit = defineEmits<{ enter: []; leave: []; toggle: [] }>()
 const journalButton = ref<HTMLButtonElement | null>(null)
 defineExpose({ focusBookmark: () => journalButton.value?.focus() })
@@ -24,7 +24,7 @@ defineExpose({ focusBookmark: () => journalButton.value?.focus() })
     </div>
     <div class="case-tools">
       <div class="round-indicator">
-        <small>Rodada</small><strong>01 <span>/ 06</span></strong>
+        <small>Rodada</small><strong>{{ String(round).padStart(2, '0') }} <span>/ 06</span></strong>
       </div>
       <button
         ref="journalButton"
