@@ -25,7 +25,7 @@ function start() {
       <div class="world-introduction">
         <ArtPlaceholder label="Arte da Cidade das Brumas" symbol="⌂" />
         <div class="world-description">
-          <p class="eyebrow">Mundo 01 · Crime e intriga humana</p>
+          <p class="eyebrow">Mundo 01 · Crime e intriga</p>
           <h2>Cidade das Brumas</h2>
           <p class="muted">
             Entre canais, patrimônio e névoa, uma cidade portuária guarda crimes de aparência

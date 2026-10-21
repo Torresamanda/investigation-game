@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { Suspect } from '../../../content/case01'
+import { getPortrait } from '../../../content/portraits'
+import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 defineProps<{ person: Suspect }>()
 const emit = defineEmits<{ close: [] }>()
 </script>
@@ -7,7 +9,12 @@ const emit = defineEmits<{ close: [] }>()
 <template>
   <section class="suspect-profile" aria-label="Perfil do suspeito" aria-live="polite">
     <div class="suspect-profile-heading">
-      <span class="suspect-portrait" aria-hidden="true">{{ person.initials }}</span>
+      <CharacterPortrait
+        class="suspect-portrait"
+        :name="person.name"
+        :initials="person.initials"
+        :image="getPortrait('suspects', person.portrait)"
+      />
       <div>
         <p class="eyebrow">Pessoa de interesse</p>
         <h3>{{ person.name }}</h3>

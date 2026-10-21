@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { suspectProfiles, type SuspectId } from '../../../content/case01'
+import { getPortrait } from '../../../content/portraits'
+import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 const selectedId = defineModel<SuspectId | null>({ required: true })
 </script>
 
@@ -17,7 +19,12 @@ const selectedId = defineModel<SuspectId | null>({ required: true })
         :aria-pressed="selectedId === person.id"
         @click="selectedId = person.id"
       >
-        <span class="suspect-avatar" aria-hidden="true">{{ person.initials }}</span>
+        <CharacterPortrait
+          class="suspect-avatar"
+          :name="person.name"
+          :initials="person.initials"
+          :image="getPortrait('suspects', person.portrait)"
+        />
         <span class="suspect-name">{{ person.name }}</span>
         <span class="suspect-occupation">{{ person.role }}</span>
       </button>

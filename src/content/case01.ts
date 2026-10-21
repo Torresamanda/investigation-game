@@ -31,6 +31,7 @@ export const suspectProfiles = [
     id: 'helena',
     name: 'Helena Duarte',
     initials: 'HD',
+    portrait: 'helena-duarte',
     role: 'Curadora-chefe',
     personality: 'Controlada · Sob pressão',
     introduction:
@@ -40,6 +41,7 @@ export const suspectProfiles = [
     id: 'raul',
     name: 'Raul Viana',
     initials: 'RV',
+    portrait: 'raul-viana',
     role: 'Chefe de segurança',
     personality: 'Cansado · Tenso',
     introduction:
@@ -49,6 +51,7 @@ export const suspectProfiles = [
     id: 'marta',
     name: 'Marta Lobo',
     initials: 'ML',
+    portrait: 'marta-lobo',
     role: 'Restauradora',
     personality: 'Cuidadosa · Franca',
     introduction:
@@ -58,6 +61,7 @@ export const suspectProfiles = [
     id: 'davi',
     name: 'Davi Orsini',
     initials: 'DO',
+    portrait: 'davi-orsini',
     role: 'Colecionador e patrocinador',
     personality: 'Carismático · Calculado',
     introduction:
