@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import ArtPlaceholder from '../../../components/ui/ArtPlaceholder.vue'
 import {
   locations,
   suspectProfiles,
@@ -40,7 +39,7 @@ const locationNumber = computed(() =>
         :person="selectedSuspect"
         @close="selectedSuspectId = null"
       />
-      <ArtPlaceholder v-else :label="`Cenário: ${location.name}`" :symbol="location.symbol" />
+      <img v-else class="scene-art" :src="location.artwork" :alt="`Cenário: ${location.name}`" />
       <p class="scene-description">{{ location.detail }}</p>
       <SuspectRoster v-model="selectedSuspectId" />
       <div v-if="!selectedSuspect" class="narrator">

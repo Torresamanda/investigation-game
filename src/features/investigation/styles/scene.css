@@ -26,9 +26,13 @@
   font-size: 24px;
   margin: 0 0 12px;
 }
-.scene-panel .art-placeholder {
+.scene-panel .scene-art {
   flex: 1 1 0;
   min-height: 70px;
+  width: 100%;
+  object-fit: cover;
+  border: 1px solid #c79a5355;
+  border-radius: 8px;
   margin: 0;
 }
 .scene-description {
@@ -76,7 +80,7 @@
   .scene-panel {
     grid-template-columns: 1fr;
   }
-  .scene-panel .art-placeholder {
+  .scene-panel .scene-art {
     min-height: 160px;
   }
   .journal-is-open .scene-panel {
