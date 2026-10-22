@@ -13,10 +13,11 @@ import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
 import type { ConversationOptions } from '../../services/game-api'
 import type { SuspectId } from '../../content/case01'
+import { feedbackFromEntry, statusFeedback } from './action-feedback'
 import './investigation.css'
 
 const session = useInvestigationStore()
-const feedback = ref('Escolha como deseja conduzir a investigação.')
+const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigação.'))
 const cards = computed(() => session.hand)
 const locationId = ref<LocationId>('gallery')
 watch(
@@ -68,14 +69,18 @@ async function executeAction(action: InvestigationAction) {
   }
   const preparedCard = session.preparedCard
   try {
+    const effectiveCost = session.actionCost(action, location.value.id)
     const journalEntry = await session.resolveAction(action, location.value.id)
-    feedback.value = journalEntry
-      ? `${journalEntry.title}: ${journalEntry.content}`
-      : preparedCard
-        ? `${preparedCard.name} aplicada em ${labels[action]}. ${2 + preparedCard.cost} PA gastos.`
-        : `${labels[action]}: 2 PA gastos.`
+    feedback.value = feedbackFromEntry(
+      journalEntry,
+      `${labels[action]} · ${location.value.name}`,
+      effectiveCost,
+      preparedCard?.name ?? null,
+    )
   } catch (error) {
-    feedback.value = error instanceof Error ? error.message : `${labels[action]}: PA insuficientes.`
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : `${labels[action]}: PA insuficientes.`,
+    )
   }
 }
 
@@ -85,48 +90,63 @@ async function moveToLocation() {
   const moveWasFree = session.moveCostLabel !== '1 PA'
   try {
     await session.moveInvestigator(locationId.value)
-    feedback.value = `Você se deslocou para ${location.value.name}. ${moveWasFree ? 'Deslocamento gratuito da rodada.' : '1 PA gasto.'}`
+    feedback.value = statusFeedback(
+      `Deslocamento · ${location.value.name} · ${moveWasFree ? 'Gratuito nesta rodada.' : '1 PA gasto.'}`,
+    )
   } catch (error) {
     locationId.value = session.currentLocationId
-    feedback.value = error instanceof Error ? error.message : 'Não foi possível se deslocar.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível se deslocar.',
+    )
   }
 }
 
 async function prepareCard(instanceId: string) {
   try {
     if (!(await session.prepareCard(instanceId))) return
-    feedback.value = `${session.preparedCard?.name}: escolha uma ação compatível para aplicá-la.`
+    feedback.value = statusFeedback(
+      `${session.preparedCard?.name}: escolha uma ação compatível para aplicá-la.`,
+    )
   } catch (error) {
-    feedback.value = error instanceof Error ? error.message : 'Não foi possível preparar a carta.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível preparar a carta.',
+    )
   }
 }
 
 async function clearPreparedCard() {
   try {
     await session.clearPreparedCard()
-    feedback.value = 'Preparação removida. Escolha outra carta ou uma ação básica.'
+    feedback.value = statusFeedback('Preparação removida. Escolha outra carta ou uma ação básica.')
   } catch (error) {
-    feedback.value =
-      error instanceof Error ? error.message : 'Não foi possível remover a preparação.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível remover a preparação.',
+    )
   }
 }
 
 async function endTurn() {
   try {
-    feedback.value = (await session.endRemoteTurn())
-      ? `Rodada ${String(session.round).padStart(2, '0')} iniciada: mão renovada e PA restaurados.`
-      : 'Esta é a última rodada da missão.'
+    feedback.value = statusFeedback(
+      (await session.endRemoteTurn())
+        ? `Rodada ${String(session.round).padStart(2, '0')} iniciada: mão renovada e PA restaurados.`
+        : 'Esta é a última rodada da missão.',
+    )
   } catch (error) {
-    feedback.value = error instanceof Error ? error.message : 'Não foi possível encerrar o turno.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível encerrar o turno.',
+    )
   }
 }
 
 async function discardPreparedCard() {
   try {
     if (!(await session.discardPreparedCard())) return
-    feedback.value = 'Carta descartada e mão recomposta.'
+    feedback.value = statusFeedback('Carta descartada e mão recomposta.')
   } catch (error) {
-    feedback.value = error instanceof Error ? error.message : 'Não foi possível descartar a carta.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível descartar a carta.',
+    )
   }
 }
 
@@ -134,27 +154,38 @@ async function openConversation(personId: SuspectId) {
   try {
     conversation.value = await session.loadConversationOptions(personId, location.value.id)
   } catch (error) {
-    feedback.value = error instanceof Error ? error.message : 'Não foi possível abrir a conversa.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível abrir a conversa.',
+    )
   }
 }
 
 async function resolveConversation(questionId: string) {
   const activeConversation = conversation.value
   if (!activeConversation) return
+  const preparedCard = session.preparedCard
+  const questionCost =
+    activeConversation.questions.find((question) => question.id === questionId)?.cost ?? 0
   try {
     const entry = await session.resolveConversation(
       activeConversation.personId as SuspectId,
       questionId,
       location.value.id,
     )
-    feedback.value = entry ? `${entry.title}: ${entry.content}` : 'Declaração registrada no diário.'
+    feedback.value = feedbackFromEntry(
+      entry,
+      `Conversar · ${activeConversation.personName}`,
+      questionCost + (preparedCard?.cost ?? 0),
+      preparedCard?.name ?? null,
+    )
     conversation.value = await session.loadConversationOptions(
       activeConversation.personId as SuspectId,
       location.value.id,
     )
   } catch (error) {
-    feedback.value =
-      error instanceof Error ? error.message : 'Não foi possível resolver a pergunta.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível resolver a pergunta.',
+    )
   }
 }
 
@@ -163,13 +194,15 @@ async function prepareConversationCard(instanceId: string) {
   if (!activeConversation) return
   try {
     if (!(await session.prepareCard(instanceId))) return
-    feedback.value = 'Carta preparada para esta conversa.'
+    feedback.value = statusFeedback('Carta preparada para esta conversa.')
     conversation.value = await session.loadConversationOptions(
       activeConversation.personId as SuspectId,
       location.value.id,
     )
   } catch (error) {
-    feedback.value = error instanceof Error ? error.message : 'Não foi possível preparar a carta.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível preparar a carta.',
+    )
   }
 }
 
@@ -178,14 +211,15 @@ async function clearConversationCardPreparation() {
   if (!activeConversation) return
   try {
     await session.clearPreparedCard()
-    feedback.value = 'Preparação removida.'
+    feedback.value = statusFeedback('Preparação removida.')
     conversation.value = await session.loadConversationOptions(
       activeConversation.personId as SuspectId,
       location.value.id,
     )
   } catch (error) {
-    feedback.value =
-      error instanceof Error ? error.message : 'Não foi possível remover a preparação.'
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível remover a preparação.',
+    )
   }
 }
 </script>

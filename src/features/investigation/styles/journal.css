@@ -52,6 +52,12 @@
   font-size: 12px;
   color: var(--gold);
 }
+.timeline-entry small,
+.journal-entry-meta {
+  display: block;
+  color: #a9bfcd;
+  font-size: 10px;
+}
 .timeline-entry p {
   margin: 4px 0;
   line-height: 1.5;
@@ -121,4 +127,47 @@
   display: block;
   color: var(--gold);
   font-size: 11px;
+}
+.journal-group {
+  margin-top: 16px;
+}
+.journal-group h4 {
+  margin: 0;
+  color: var(--gold);
+  font-size: 13px;
+}
+.journal-entry {
+  display: grid;
+  gap: 6px;
+}
+.journal-entry-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.journal-status {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: #dce8ec;
+  background: #183044;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.journal-status--confirmed {
+  border-color: #70b99a;
+  color: #a9e6c8;
+}
+.journal-status--refuted {
+  border-color: #d38e82;
+  color: #f0b7ac;
+}
+.journal-status--contestable,
+.journal-status--indicio {
+  border-color: var(--gold);
+  color: #f3d7a6;
 }

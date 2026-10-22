@@ -8,6 +8,7 @@ import {
   type SuspectId,
 } from '../../../content/case01'
 import type { InvestigationAction } from '../../../domain/game/action-points'
+import type { InvestigationFeedback } from '../action-feedback'
 type VisibleInvestigationAction = Exclude<InvestigationAction, 'move' | 'card'>
 import SuspectProfile from './SuspectProfile.vue'
 import SuspectRoster from './SuspectRoster.vue'
@@ -17,7 +18,7 @@ const props = defineProps<{
   availableActions: readonly InvestigationAction[]
   actionCosts: Readonly<Record<VisibleInvestigationAction, number>>
   hasConfirmedRaulEvidence: boolean
-  feedback: string
+  feedback: InvestigationFeedback
   canEndTurn: boolean
   round: number
 }>()

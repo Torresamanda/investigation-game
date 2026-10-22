@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { InvestigationAction } from '../../../domain/game/action-points'
+import { journalStatusLabels, type InvestigationFeedback } from '../action-feedback'
 import { PhArrowRight } from '../../../components/icons'
 type VisibleInvestigationAction = Exclude<InvestigationAction, 'move' | 'card'>
 
 defineProps<{
   availableActions: readonly InvestigationAction[]
   actionCosts: Readonly<Record<VisibleInvestigationAction, number>>
-  feedback: string
+  feedback: InvestigationFeedback
   canEndTurn: boolean
 }>()
 const emit = defineEmits<{ execute: [action: InvestigationAction]; endTurn: [] }>()
@@ -35,7 +36,21 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
       </button>
     </div>
     <p class="help-text">O custo será descontado dos PA disponíveis neste turno.</p>
-    <p class="feedback" role="status">{{ feedback }}</p>
+    <div class="feedback" role="status" aria-live="polite" aria-atomic="true">
+      <p class="feedback-heading">
+        <strong>{{ feedback.target }}</strong>
+        <span v-if="feedback.cost !== null">{{ feedback.cost }} PA gastos</span>
+      </p>
+      <p v-if="feedback.cardName" class="feedback-card">Carta aplicada: {{ feedback.cardName }}</p>
+      <span
+        v-if="feedback.status"
+        class="journal-status"
+        :class="`journal-status--${feedback.status}`"
+      >
+        {{ journalStatusLabels[feedback.status] }}
+      </span>
+      <p class="feedback-result">{{ feedback.result }}</p>
+    </div>
     <button class="end-turn" :disabled="!canEndTurn" @click="emit('endTurn')">
       Encerrar turno <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
     </button>

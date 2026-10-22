@@ -1,14 +1,70 @@
 <script setup lang="ts">
-import { suspectProfiles } from '../../../content/case01'
+import { computed } from 'vue'
+import { locations, suspectProfiles, type LocationId } from '../../../content/case01'
 import type { MatchJournalEntry } from '../../../services/game-api'
 import { PhUserFocus, PhX } from '../../../components/icons'
+import { journalStatusLabels } from '../action-feedback'
 const notes = defineModel<string>('notes', { required: true })
-defineProps<{
+const props = defineProps<{
   hypotheses: readonly { id: number; text: string }[]
   journalEntries: readonly MatchJournalEntry[]
 }>()
 const tab = defineModel<'timeline' | 'clues' | 'suspects' | 'notes'>('tab', { required: true })
 const emit = defineEmits<{ enter: []; leave: []; pin: []; close: []; save: [] }>()
+
+const clueEntries = computed(() => props.journalEntries.filter((entry) => entry.type === 'clue'))
+const observationEntries = computed(() =>
+  props.journalEntries.filter(
+    (entry) => entry.type === 'observation' && !entry.relatedEntryIds?.length,
+  ),
+)
+const connectionEntries = computed(() =>
+  props.journalEntries.filter((entry) => Boolean(entry.relatedEntryIds?.length)),
+)
+const statementEntries = computed(() =>
+  props.journalEntries.filter((entry) => entry.type === 'statement'),
+)
+const journalGroups = computed(() => [
+  { title: 'Pistas', entries: clueEntries.value, empty: 'Nenhuma pista registrada.' },
+  {
+    title: 'Observações',
+    entries: observationEntries.value,
+    empty: 'Nenhuma observação registrada.',
+  },
+  {
+    title: 'Declarações',
+    entries: statementEntries.value,
+    empty: 'Nenhuma declaração registrada.',
+  },
+  { title: 'Conexões', entries: connectionEntries.value, empty: 'Nenhuma conexão registrada.' },
+])
+
+const locationNames = Object.fromEntries(
+  locations.map((location) => [location.id, location.name]),
+) as Record<LocationId, string>
+
+const timelineEvents = computed(() => {
+  const discoveredEvents = props.journalEntries.flatMap((entry) => {
+    const times = [...`${entry.title} ${entry.content}`.matchAll(/22h(13|14|16|21)/g)]
+    return times.map((match) => ({
+      time: `22h${match[1]}`,
+      content: entry.title,
+      round: entry.round,
+    }))
+  })
+  const baseEvents = [
+    { time: '22h14', content: 'Uma falha parcial de energia atinge o museu.', round: 1 },
+    { time: '22h21', content: 'A luz retorna. O Astrolábio de Navor desapareceu.', round: 1 },
+  ]
+  const uniqueEvents = new Map(
+    [...baseEvents, ...discoveredEvents].map((event) => [`${event.time}:${event.content}`, event]),
+  )
+  return [...uniqueEvents.values()].sort((left, right) => left.time.localeCompare(right.time))
+})
+
+function statusLabel(entry: MatchJournalEntry): string {
+  return journalStatusLabels[entry.status]
+}
 function save() {
   if (!notes.value.trim()) return
   emit('save')
@@ -53,28 +109,38 @@ const tabs = [
     <div class="journal-content">
       <template v-if="tab === 'timeline'"
         ><h3>A noite do desaparecimento</h3>
-        <div class="timeline-entry">
-          <strong>22h14</strong>
-          <p>Uma falha parcial de energia atinge o museu.</p>
-        </div>
-        <div class="timeline-entry">
-          <strong>22h21</strong>
-          <p>A luz retorna. O Astrolábio de Navor desapareceu.</p>
+        <div
+          v-for="event in timelineEvents"
+          :key="`${event.time}:${event.content}`"
+          class="timeline-entry"
+        >
+          <strong>{{ event.time }}</strong>
+          <p>{{ event.content }}</p>
+          <small>Rodada {{ event.round }}</small>
         </div></template
       ><template v-else-if="tab === 'clues'"
-        ><h3>O começo de um dossiê</h3>
-        <ol v-if="journalEntries.length" class="hypothesis-list">
-          <li v-for="entry in journalEntries" :key="entry.id">
-            <strong>{{ entry.title }}</strong>
-            <span>{{ entry.content }}</span>
-            <small v-if="entry.recordedWith === 'pocket-recorder'" class="journal-recorded">
-              Registrada com Gravador de Bolso
-            </small>
-          </li>
-        </ol>
-        <p v-else class="muted">
-          Nenhuma pista foi descoberta. Evidências aparecerão aqui.
-        </p></template
+        ><h3>Dossiê da investigação</h3>
+        <section v-for="group in journalGroups" :key="group.title" class="journal-group">
+          <h4>{{ group.title }}</h4>
+          <ol v-if="group.entries.length" class="hypothesis-list">
+            <li v-for="entry in group.entries" :key="entry.id" class="journal-entry">
+              <div class="journal-entry-heading">
+                <strong>{{ entry.title }}</strong>
+                <span class="journal-status" :class="`journal-status--${entry.status}`">{{
+                  statusLabel(entry)
+                }}</span>
+              </div>
+              <span>{{ entry.content }}</span>
+              <small class="journal-entry-meta">
+                {{ locationNames[entry.locationId] }} · Rodada {{ entry.round }}
+              </small>
+              <small v-if="entry.recordedWith === 'pocket-recorder'" class="journal-recorded">
+                Registrada com Gravador de Bolso
+              </small>
+            </li>
+          </ol>
+          <p v-else class="muted">{{ group.empty }}</p>
+        </section></template
       ><template v-else-if="tab === 'suspects'"
         ><h3>Pessoas de interesse</h3>
         <ul class="suspect-list">

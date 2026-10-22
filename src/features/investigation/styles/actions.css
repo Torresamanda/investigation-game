@@ -32,10 +32,30 @@
   line-height: 1.5;
 }
 .feedback {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #0c1b2a;
   color: #d6bc91;
   font-size: 12px;
   line-height: 1.5;
   margin: 8px 0 12px;
+}
+.feedback-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 4px;
+  color: var(--paper);
+}
+.feedback-heading span,
+.feedback-card {
+  color: var(--gold);
+  font-size: 10px;
+}
+.feedback-card,
+.feedback-result {
+  margin: 4px 0;
 }
 .end-turn {
   width: 100%;

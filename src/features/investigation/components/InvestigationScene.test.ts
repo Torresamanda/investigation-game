@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { locations } from '../../../content/case01'
+import { statusFeedback } from '../action-feedback'
 import InvestigationScene from './InvestigationScene.vue'
 
 describe('InvestigationScene', () => {
@@ -11,7 +12,7 @@ describe('InvestigationScene', () => {
         availableActions: ['converse'],
         actionCosts: { examine: 2, converse: 2, analyse: 2, research: 2 },
         hasConfirmedRaulEvidence: false,
-        feedback: '',
+        feedback: statusFeedback(''),
         canEndTurn: true,
         round: 1,
       },
@@ -35,7 +36,7 @@ describe('InvestigationScene', () => {
         availableActions: [],
         actionCosts: { examine: 2, converse: 2, analyse: 2, research: 2 },
         hasConfirmedRaulEvidence: false,
-        feedback: '',
+        feedback: statusFeedback(''),
         canEndTurn: true,
         round: 4,
       },
