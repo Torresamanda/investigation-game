@@ -79,6 +79,21 @@ export function drawToHand(deck: MatchDeck, handSize: number): MatchDeck {
   return { drawPile, discardPile, hand }
 }
 
+export function refreshHandForTurn(
+  deck: MatchDeck,
+  handSize: number,
+  random: () => number = Math.random,
+): MatchDeck {
+  return drawToHand(
+    {
+      drawPile: shuffle([...deck.drawPile, ...deck.hand], random),
+      discardPile: deck.discardPile,
+      hand: [],
+    },
+    handSize,
+  )
+}
+
 export function discardFromHand(deck: MatchDeck, instanceId: string): MatchDeck {
   const cardIndex = deck.hand.findIndex((card) => card.instanceId === instanceId)
   if (cardIndex === -1) throw new Error('A carta precisa estar na mão do investigador.')
@@ -140,10 +155,10 @@ export function addTemporaryCardToHand(
   }
 }
 
-function shuffle<T>(items: readonly T[]): T[] {
+function shuffle<T>(items: readonly T[], random: () => number = Math.random): T[] {
   const result = [...items]
   for (let index = result.length - 1; index > 0; index -= 1) {
-    const target = Math.floor(Math.random() * (index + 1))
+    const target = Math.floor(random() * (index + 1))
     ;[result[index], result[target]] = [result[target]!, result[index]!]
   }
   return result

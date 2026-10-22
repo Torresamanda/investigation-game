@@ -240,18 +240,35 @@ describe('MatchService', () => {
     expect(updated.actionPoints.general).toBe(3 - card.cost)
   })
 
-  it('preserva cartas restantes na mão ao encerrar turno e compra apenas até quatro', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
-    const match = service.createSoloMatch({
+  it('embaralha novamente a mão no início do turno e mantém exatamente quatro cartas', () => {
+    const repository = new InMemoryMatchRepository()
+    const seededService = new MatchService(repository, undefined, () => 'seeded-match')
+    const seededMatch = seededService.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
-    const startingHand = [...match.decks.livia.hand]
-    const changed = service.endTurn(match.id)
+    const temporaryCard = {
+      ...seededMatch.decks.livia.hand[0]!,
+      instanceId: 'temporary:extra:livia',
+      temporary: true,
+    }
+    repository.save({
+      ...seededMatch,
+      decks: {
+        ...seededMatch.decks,
+        livia: {
+          ...seededMatch.decks.livia,
+          hand: [...seededMatch.decks.livia.hand, temporaryCard],
+        },
+      },
+    })
+    const changed = seededService.endTurn(seededMatch.id)
 
-    expect(changed.decks.livia.hand).toEqual(startingHand)
     expect(changed.decks.livia.hand).toHaveLength(4)
-    expect(changed.decks.rafael.hand).toEqual(match.decks.rafael.hand)
+    expect([...changed.decks.livia.hand, ...changed.decks.livia.drawPile]).toContainEqual(
+      temporaryCard,
+    )
+    expect(changed.decks.rafael.hand).toEqual(seededMatch.decks.rafael.hand)
   })
 
   it('limpa a carta preparada quando ela é descartada', () => {

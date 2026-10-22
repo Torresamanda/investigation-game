@@ -16,6 +16,7 @@
 ## 2. Regras de Produto e Domínio do Jogo
 
 ### 2.1. Limites do Produto
+
 - O MVP é um jogo investigativo de cartas, por turnos, para navegador.
 - O modo jogável atual é **solo**: um investigador ativo e um apoio diferente, escolhidos antes da missão.
 - Uma futura partida cooperativa terá exatamente dois investigadores, definidos no início e mantidos até o fim da missão.
@@ -23,6 +24,7 @@
 - A **acusação** é desbloqueada somente após o encerramento da Rodada 4. Ela pode ser escolhida no início de um turno das Rodadas 5 ou 6 e consome esse turno inteiro.
 
 ### 2.2. Turnos e Pontos de Ação (PA)
+
 - Os pontos de ação (PA) são restaurados no começo de cada turno conforme o perfil do investigador.
 - Pontos de especialidade (`technical`, `social`, `research`) só podem ser gastos em ações compatíveis (`analyse`, `converse`, `research`, respectivamente) e devem ser consumidos antes dos PA gerais quando aplicáveis.
 - Ações básicas consomem os PA aplicáveis e precisam ser resolvidas pelo motor autoritativo do jogo no servidor, nunca apenas pela interface.
@@ -31,10 +33,11 @@
 - O jogador deve receber confirmação antes de encerrar o turno caso ainda possua PA utilizáveis.
 
 ### 2.3. Regras das Cartas
+
 - Cada investigador possui quatro tipos de carta, com duas cópias de cada: **oito cartas no total**.
-- A missão começa com quatro cartas na mão (`INITIAL_HAND_SIZE = 4`). No início de cada rodada, compra-se até voltar a quatro cartas.
+- A missão começa com quatro cartas na mão (`INITIAL_HAND_SIZE = 4`). No início de cada turno, as cartas não usadas da mão voltam ao monte de compra, esse monte é embaralhado e uma mão nova de exatamente quatro cartas é distribuída; se o monte acabar, o descarte é embaralhado para completar a mão.
 - Uma carta usada vai para o descarte (`discardPile`). Quando o baralho de compra (`drawPile`) acaba, o descarte é embaralhado e se torna o novo baralho de compra.
-- Cartas não retornam automaticamente ao baralho no fim do turno.
+- Cartas não usadas retornam ao ciclo de compra e são randomizadas no início do próximo turno; cartas usadas permanecem no descarte até o monte de compra acabar.
 - Uma carta só pode ser usada no turno de seu dono, mas pode beneficiar pistas e diário compartilhados.
 - Os custos possíveis são `0`, `1` ou `2` PA. Uma carta de `0` PA **não substitui** uma ação básica (o custo da carta soma-se ao custo da ação).
 - Uma carta exige contexto/ação compatível e nunca pode revelar automaticamente a solução de um caso.
@@ -88,6 +91,7 @@ src/                            Frontend (Vue 3 / Pinia / Vite)
 ```
 
 ### 3.2. Regras Arquiteturais Obrigatórias
+
 1. **Proibição de "God Files" / "God Classes" (SRP):**
    - Evite jogar múltiplas responsabilidades em um único arquivo.
    - Nunca misture definição de repositório (`InMemoryMatchRepository`), regras de domínio, dados narrativos de casos e orquestração de serviço no mesmo arquivo.
@@ -126,21 +130,23 @@ src/                            Frontend (Vue 3 / Pinia / Vite)
    - No backend, operações de embaralhamento devem usar geração criptograficamente segura (`crypto.randomInt` de `node:crypto`) através da porta `RandomGenerator`.
    - Operações de escrita em partida devem prevenir condições de corrida (bloqueio de submissão dupla no frontend com estado `isPending` e controle de versão/transação no repositório SQLite).
 6. **Autorização de Sessão e Proteção contra Abuso:**
-   - Nenhuma leitura ou mutação de partida em produção deve confiar apenas no UUID público da URL; valide o token de sessão vinculado à partida e aplique *rate limiting* nas rotas.
+   - Nenhuma leitura ou mutação de partida em produção deve confiar apenas no UUID público da URL; valide o token de sessão vinculado à partida e aplique _rate limiting_ nas rotas.
 
 ---
 
 ## 5. Padrões de Clean Code, UI, CSS e Componentização
 
 ### 5.1. Espaçamento e Legibilidade de Código
+
 - **Espaçamento claro entre blocos:** Mantenha sempre **uma linha em branco** separando:
   - Diferentes funções, métodos, classes, interfaces e types.
   - Blocos lógicos distintos dentro de um arquivo (ex.: bloco de `import`s → declarações de tipos → constantes → implementação).
   - Em arquivos Vue (`.vue`), separe claramente `<script setup>`, `<template>` e `<style>`, e dentro do `<script setup>` separe com linha em branco: imports, `defineProps`/`defineEmits`/`defineModel`, variáveis reativas (`ref`), propriedades computadas (`computed`), watchers e funções.
   - Em arquivos CSS, mantenha espaçamento consistente e claro entre blocos de regras/seletores e media queries, evitando blocos gigantes compactados sem separação visual.
-- **Funções pequenas e coesas:** Cada função ou método deve fazer apenas uma coisa e operar em um único nível de abstração. Evite aninhamentos profundos (`if/else` encadeados ou ternários aninhados complexos); prefira *early returns* (*guard clauses*) e funções auxiliares bem nomeadas.
+- **Funções pequenas e coesas:** Cada função ou método deve fazer apenas uma coisa e operar em um único nível de abstração. Evite aninhamentos profundos (`if/else` encadeados ou ternários aninhados complexos); prefira _early returns_ (_guard clauses_) e funções auxiliares bem nomeadas.
 
 ### 5.2. Nomenclatura Significativa (Clean Naming & Ubiquitous Language)
+
 - Utilize nomes que expressem claramente **o que está sendo feito** e **qual o papel do elemento** no domínio:
   - **Evite nomes vagos ou genéricos:** `data`, `item`, `info`, `val`, `temp`, `res`, `handle`, `process`, `doAction`, `Manager`, `Helper`, `Utils`.
   - **Funções e Métodos:** Devem começar com verbos precisos que descrevam a ação ou consulta (ex.: `spendActionPoints`, `drawCardsToHand`, `resolveConversationQuestion`, `prepareInvestigatorCard`).
@@ -149,16 +155,19 @@ src/                            Frontend (Vue 3 / Pinia / Vite)
   - **Consistência de Idioma:** Código-fonte (identificadores, tipos, funções, variáveis, classes CSS e commits) deve ser escrito em **inglês**; textos de interface, mensagens voltadas ao jogador e documentação do projeto devem ser escritos em **português (pt-BR)**.
 
 ### 5.3. Componentização e Reuso no Frontend (`src/components/`)
+
 - **Componentizar elementos que se repetem:** Sempre que um padrão visual ou estrutural se repetir em dois ou mais lugares (ex.: cabeçalhos de seção com `eyebrow` + título, botões com ícone alinhado, selos/badges de PA, cards de perfil, modais de confirmação, abas, estados vazios), extraia-o para um componente reutilizável em `src/components/ui/`.
-- **Componentes de UI puros (*Presentational Components*):** Componentes em `src/components/ui/` devem receber dados exclusivamente via `props` e comunicar ações via `emit` / `v-model`. Eles não devem importar stores Pinia nem serviços de API.
-- **Tamanho de Componentes:** Se um componente Vue ultrapassar ~120–150 linhas ou começar a lidar com múltiplos sub-blocos independentes de interface, divida-o em subcomponentes menores e extraia a lógica reativa para um *composable* (`use<Feature>.ts`).
+- **Componentes de UI puros (_Presentational Components_):** Componentes em `src/components/ui/` devem receber dados exclusivamente via `props` e comunicar ações via `emit` / `v-model`. Eles não devem importar stores Pinia nem serviços de API.
+- **Tamanho de Componentes:** Se um componente Vue ultrapassar ~120–150 linhas ou começar a lidar com múltiplos sub-blocos independentes de interface, divida-o em subcomponentes menores e extraia a lógica reativa para um _composable_ (`use<Feature>.ts`).
 
 ### 5.4. Uso Estrito de Ícones (`src/components/icons/`)
+
 - **Ponto único de exportação:** Todos os ícones utilizados no projeto devem ser exportados pelo arquivo central [`src/components/icons/index.ts`](file:///c:/Users/Pichau/repos/investigation-game/src/components/icons/index.ts).
 - **Proibição de import direto:** **Nenhum** componente Vue ou arquivo TypeScript fora de `src/components/icons/` pode importar diretamente de `@phosphor-icons/vue` ou de qualquer outra biblioteca de ícones.
 - **Proibição de símbolos textuais improvisados:** Não utilize caracteres de texto (`+`, `-`, `×`, `←`, `→`) para representar ícones de interface; utilize sempre os componentes exportados de `src/components/icons` com `aria-hidden="true"` (quando decorativos) e rótulos acessíveis (`aria-label`) no botão/controle pai.
 
 ### 5.5. Organização e Externalização de CSS (`src/styles/`)
+
 - **Externalizar classes CSS que se repetem:** Regras visuais recorrentes (como superfícies de painel `.panel`, cabeçalhos `.section-heading`, textos auxiliares `.eyebrow`, `.muted`, `.help-text`, variantes de botões `.button-primary`, `.button-icon`, badges de PA, barras de rolagem customizadas e estados de foco) devem ser centralizadas e compartilhadas em `src/styles/` — nunca copiadas e coladas entre diferentes arquivos CSS de features ou blocos `<style>` de componentes.
 - **Uso de Design Tokens (Variáveis CSS):** Cores, famílias tipográficas, raios de borda, sombras e espaçamentos recorrentes devem ser definidos como custom properties em `:root` (`src/styles/main.css` ou `src/styles/tokens.css`) e referenciados via `var(--...)`. Evite valores hexadecimais mágicos espalhados nos arquivos CSS.
 - **Escopo claro de estilos:** Os arquivos CSS dentro de `src/features/<feature>/styles/` devem conter **apenas** o posicionamento, grid e ajustes específicos daquela funcionalidade, reaproveitando as classes utilitárias e de componentes base de `src/styles/`.
