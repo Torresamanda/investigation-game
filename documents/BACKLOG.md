@@ -31,6 +31,23 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
    - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
 
+### Prompt de Handoff para a Próxima IA
+
+```text
+Você está continuando o MVP do jogo investigativo "Cidade das Brumas" no repositório `investigation-game`.
+
+Leia primeiro, nesta ordem:
+1. `AGENTS.md` e `documents/PROJECT_RULES.md` — diretrizes obrigatórias de Clean Architecture, segurança, Clean Code, ícones e CSS.
+2. `documents/BACKLOG.md` — veja a seção "Ordem de Execução Recomendada para a Próxima IA" e os detalhes técnicos de cada task.
+3. `documents/COMMIT_CONVENTIONS.md` — regras de Conventional Commits. Nunca execute `git push` sem autorização explícita.
+4. `docs/gameplay/regras-fluxo-rodada (2).md`, `docs/gameplay/cartas-mvp.md`, `docs/private/caso-01-o-vazio-na-vitrine (1).md` e `docs/private/simulacao-caso-01-o-vazio-na-vitrine (1).md` (material privado de referência, nunca importe nem exponha no frontend/shared).
+
+Onde o projeto parou:
+- As tarefas `01A · ARQ-01`, `04A · SEC-03`, `04B · ARQ-02`, `23B · SEC-04`, `18 · BUG-03`, `03F · ARQ-03`, `12A · CASO-08`, `13 · CASO-03` e `04C · JOGO-05` já estão concluídas.
+- Sua primeira tarefa é implementar `04D · BUG-06` e, em seguida, avançar na ordem exata definida em `documents/BACKLOG.md` (`07 · CASO-04` → `08 · CASO-05` → `10 · INV-01` → `15 · INV-03` → `09 · CASO-06` + `09A · BUG-05` → `05 · DIARIO-01` + `06 · DIARIO-03` → `16 · DIARIO-02` → `14 · INV-02` → `19 · CASO-07`).
+- Ao concluir cada tarefa, adicione/atualize os testes automatizados correspondentes e rode `npm run check` antes de criar o commit.
+```
+
 ## P0 — Fundação visual transversal
 
 - [x] **00 · ICON-01 — Adotar Phosphor Icons como sistema único de ícones** `[Front] [Definição]`
