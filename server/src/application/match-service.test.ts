@@ -165,6 +165,34 @@ describe('MatchService', () => {
     expect(updated.actionPoints.general).toBe(3 - card.cost)
   })
 
+  it('preserva cartas restantes na mão ao encerrar turno e compra apenas até quatro', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const startingHand = [...match.decks.livia.hand]
+    const changed = service.endTurn(match.id)
+
+    expect(changed.decks.livia.hand).toEqual(startingHand)
+    expect(changed.decks.livia.hand).toHaveLength(4)
+    expect(changed.decks.rafael.hand).toEqual(match.decks.rafael.hand)
+  })
+
+  it('limpa a carta preparada quando ela é descartada', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const card = match.decks.livia.hand[0]!
+    service.prepareCard(match.id, card.instanceId)
+
+    const discarded = service.discardCard(match.id, card.instanceId)
+
+    expect(discarded.preparedCardInstanceId).toBeNull()
+  })
+
   it('oferece perguntas da pessoa presente e registra a declaração ao resolvê-la', () => {
     const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
     service.createSoloMatch({ activeInvestigatorId: 'isadora', supportInvestigatorId: 'rafael' })
@@ -208,6 +236,7 @@ describe('MatchService', () => {
     expect(fingerprints).toMatchObject({
       canResolve: false,
       isEvidenceBlocked: true,
+      blockedReason: expect.any(String),
     })
     expect(() =>
       service.resolveConversation({
@@ -370,6 +399,27 @@ describe('MatchService', () => {
     expect(updated.preparedCardInstanceId).toBeNull()
   })
 
+  it('inclui o custo da carta preparada ao bloquear perguntas sem PA suficientes', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'rafael',
+    })
+    const recorder = putCardInHand(repository, match, 'pocket-recorder')
+    const updatedMatch = repository.findById(match.id)
+    if (!updatedMatch) throw new Error('A partida precisa permanecer persistida.')
+    repository.save({
+      ...updatedMatch,
+      actionPoints: { general: 2, specialty: 0, specialtyPoint: 'social' },
+    })
+    service.prepareCard(match.id, recorder.instanceId)
+
+    const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
+
+    expect(options.questions[0]).toMatchObject({ canResolve: false, cost: 2 })
+  })
+
   it('usa Pausa Calculada para liberar uma pergunta adicional gratuita', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository, undefined, () => 'match-1')
@@ -443,9 +493,10 @@ describe('MatchService', () => {
       questionId: 'insurance-review',
     })
 
-    expect(updated.decks.livia.drawPile).toContainEqual(
+    expect(updated.decks.livia.hand).toContainEqual(
       expect.objectContaining({ definitionId: 'curator-agenda', temporary: true }),
     )
+    expect(updated.decks.livia.hand).toHaveLength(5)
   })
 
   it('concede as cartas temporárias de Davi e Raul quando suas conversas são liberadas', () => {
@@ -465,7 +516,7 @@ describe('MatchService', () => {
       locationId: 'gallery',
       questionId: 'collectors',
     })
-    expect(afterDavi.decks.livia.drawPile).toContainEqual(
+    expect(afterDavi.decks.livia.hand).toContainEqual(
       expect.objectContaining({ definitionId: 'guest-list', temporary: true }),
     )
 
@@ -485,7 +536,7 @@ describe('MatchService', () => {
       locationId: 'security',
       questionId: 'security-procedure',
     })
-    expect(afterRaul.decks.livia.drawPile).toContainEqual(
+    expect(afterRaul.decks.livia.hand).toContainEqual(
       expect.objectContaining({ definitionId: 'patrol-map', temporary: true }),
     )
   })
@@ -513,7 +564,8 @@ describe('MatchService', () => {
       locationId: 'gallery',
     })
     expect(updated.actionPoints).toMatchObject({ general: 0, specialty: 0 })
-    expect(updated.decks.otavio.discardPile).toContainEqual(guestList)
+    expect(updated.decks.otavio.discardPile).not.toContainEqual(guestList)
+    expect(updated.decks.otavio.hand).not.toContainEqual(guestList)
   })
 })
 

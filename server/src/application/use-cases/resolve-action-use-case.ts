@@ -2,8 +2,9 @@ import { canPayAction, spendActionPoints } from '../../../../shared/domain/actio
 import type { ResolveActionCommand } from '../commands.js'
 import type { MatchRepository } from '../ports/match-repository.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'
-import { discardFromHand } from '../../domain/match-deck.js'
+import { recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
+import type { InvestigatorId } from '../../domain/match.js'
 import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class ResolveActionUseCase {
@@ -42,10 +43,7 @@ export class ResolveActionUseCase {
         amount: cost,
       }),
       decks: card
-        ? {
-            ...match.decks,
-            [match.activeInvestigatorId]: discardFromHand(activeDeck, card.instanceId),
-          }
+        ? recyclePreparedCard(match, activeDeck, card.instanceId, card.ownerId)
         : match.decks,
       preparedCardInstanceId: null,
       journalEntries: [...match.journalEntries, resolution.entry],
@@ -55,5 +53,20 @@ export class ResolveActionUseCase {
     }
     this.repository.save(updated)
     return updated
+  }
+}
+
+function recyclePreparedCard(
+  match: SoloMatch,
+  holderDeck: SoloMatch['decks'][SoloMatch['activeInvestigatorId']],
+  instanceId: string,
+  ownerId: InvestigatorId,
+): SoloMatch['decks'] {
+  const ownerDeck = match.decks[ownerId]
+  const recycled = recycleCardFromHand(holderDeck, ownerDeck, instanceId)
+  return {
+    ...match.decks,
+    [match.activeInvestigatorId]: recycled.holderDeck,
+    [ownerId]: recycled.ownerDeck,
   }
 }

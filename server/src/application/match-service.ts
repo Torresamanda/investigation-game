@@ -37,6 +37,7 @@ export interface ConversationOptions {
     readonly cost: 0 | 1 | 2
     readonly canResolve: boolean
     readonly isEvidenceBlocked: boolean
+    readonly blockedReason?: string
   })[]
 }
 
@@ -106,18 +107,20 @@ export class MatchService {
             id,
             match,
           )
+          const totalCost = (bonusQuestion ? 0 : cost) + (preparedCard?.cost ?? 0)
           return {
             id,
             text,
             cost: bonusQuestion ? 0 : cost,
             approach,
             isEvidenceBlocked: Boolean(blockedReason),
+            blockedReason: blockedReason ?? undefined,
             canResolve:
               (!questionLimitReached || bonusQuestion) &&
               !blockedReason &&
               canPayAction(match.actionPoints, {
                 action: 'converse',
-                amount: bonusQuestion ? 0 : cost,
+                amount: totalCost,
               }),
           }
         }),

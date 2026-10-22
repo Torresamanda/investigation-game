@@ -29,6 +29,8 @@ export class DiscardCardUseCase {
     const updated: SoloMatch = {
       ...match,
       decks,
+      preparedCardInstanceId:
+        match.preparedCardInstanceId === instanceId ? null : match.preparedCardInstanceId,
       hasDiscardedCardThisRound: true,
     }
     this.repository.save(updated)

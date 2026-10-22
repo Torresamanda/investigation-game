@@ -2,7 +2,7 @@ import { canPayAction, spendActionPoints } from '../../../../shared/domain/actio
 import type { ResolveConversationCommand } from '../commands.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import type { MatchRepository } from '../ports/match-repository.js'
-import { addTemporaryCardToDrawPile, discardFromHand } from '../../domain/match-deck.js'
+import { addTemporaryCardToHand, recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
 
@@ -68,27 +68,7 @@ export class ResolveConversationUseCase {
         action: 'converse',
         amount: totalCost,
       }),
-      decks: card
-        ? {
-            ...match.decks,
-            [match.activeInvestigatorId]: reward
-              ? addTemporaryCardToDrawPile(
-                  discardFromHand(activeDeck, card.instanceId),
-                  reward,
-                  match.activeInvestigatorId,
-                )
-              : discardFromHand(activeDeck, card.instanceId),
-          }
-        : reward
-          ? {
-              ...match.decks,
-              [match.activeInvestigatorId]: addTemporaryCardToDrawPile(
-                activeDeck,
-                reward,
-                match.activeInvestigatorId,
-              ),
-            }
-          : match.decks,
+      decks: resolveConversationDecks(match, activeDeck, card, reward),
       preparedCardInstanceId: null,
       journalEntries: [
         ...match.journalEntries,
@@ -126,6 +106,33 @@ export class ResolveConversationUseCase {
     if (!this.caseContentRepository.isPersonAvailableAtLocation(personId, locationId)) {
       throw new DomainError('Esta pessoa não está disponível neste local.')
     }
+  }
+}
+
+function resolveConversationDecks(
+  match: SoloMatch,
+  activeDeck: SoloMatch['decks'][SoloMatch['activeInvestigatorId']],
+  card: (typeof activeDeck.hand)[number] | undefined,
+  reward: ReturnType<CaseContentRepository['getConversationReward']>,
+): SoloMatch['decks'] {
+  let decks = match.decks
+  if (card) {
+    const recycled = recycleCardFromHand(activeDeck, match.decks[card.ownerId], card.instanceId)
+    decks = {
+      ...decks,
+      [match.activeInvestigatorId]: recycled.holderDeck,
+      [card.ownerId]: recycled.ownerDeck,
+    }
+  }
+  if (!reward) return decks
+  const recipientDeck = decks[match.activeInvestigatorId]
+  return {
+    ...decks,
+    [match.activeInvestigatorId]: addTemporaryCardToHand(
+      recipientDeck,
+      reward,
+      match.activeInvestigatorId,
+    ),
   }
 }
 
