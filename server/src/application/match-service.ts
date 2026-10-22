@@ -9,7 +9,7 @@ import {
   type LocationId,
   type SoloMatch,
 } from '../domain/match.js'
-import { drawToHand, INITIAL_HAND_SIZE } from '../domain/match-deck.js'
+import { discardFromHand, drawToHand, INITIAL_HAND_SIZE } from '../domain/match-deck.js'
 
 export interface CreateMatchCommand {
   readonly activeInvestigatorId: InvestigatorId
@@ -20,6 +20,7 @@ export interface ResolveActionCommand {
   readonly matchId: string
   readonly action: InvestigationAction
   readonly locationId: LocationId
+  readonly cardInstanceId?: string
 }
 
 export interface MatchRepository {
@@ -64,12 +65,27 @@ export class MatchService {
   resolveAction(command: ResolveActionCommand): SoloMatch {
     const match = this.getMatch(command.matchId)
     if (!match) throw new Error('Partida não encontrada.')
-    if (match.actionPoints.general < 2) throw new Error('PA insuficientes para esta ação.')
+    const activeDeck = match.decks[match.activeInvestigatorId]
+    const card = command.cardInstanceId
+      ? activeDeck.hand.find((item) => item.instanceId === command.cardInstanceId)
+      : undefined
+    if (command.cardInstanceId && (!card || !card.compatibleActions.includes(command.action))) {
+      throw new Error('A carta não pode ser usada nesta ação.')
+    }
+    const cost = 2 + (card?.cost ?? 0)
+    if (availablePoints(match, command.action) < cost)
+      throw new Error('PA insuficientes para esta ação.')
 
     const resolution = resolveCaseAction(match, command.action, command.locationId)
     const updated = {
       ...match,
-      actionPoints: { ...match.actionPoints, general: match.actionPoints.general - 2 },
+      actionPoints: spendPoints(match, command.action, cost),
+      decks: card
+        ? {
+            ...match.decks,
+            [match.activeInvestigatorId]: discardFromHand(activeDeck, card.instanceId),
+          }
+        : match.decks,
       journalEntries: [...match.journalEntries, resolution.entry],
       resolvedKeys: resolution.resolvedKey
         ? [...match.resolvedKeys, resolution.resolvedKey]
@@ -97,6 +113,27 @@ export class MatchService {
     }
     this.repository.save(updated)
     return updated
+  }
+}
+
+function availablePoints(match: SoloMatch, action: InvestigationAction) {
+  const specialtyEligible =
+    (match.actionPoints.specialtyPoint === 'technical' && action === 'analyse') ||
+    (match.actionPoints.specialtyPoint === 'social' && action === 'converse') ||
+    (match.actionPoints.specialtyPoint === 'research' && action === 'research')
+  return match.actionPoints.general + (specialtyEligible ? match.actionPoints.specialty : 0)
+}
+
+function spendPoints(match: SoloMatch, action: InvestigationAction, amount: number) {
+  const specialtyEligible =
+    (match.actionPoints.specialtyPoint === 'technical' && action === 'analyse') ||
+    (match.actionPoints.specialtyPoint === 'social' && action === 'converse') ||
+    (match.actionPoints.specialtyPoint === 'research' && action === 'research')
+  const specialtySpent = specialtyEligible ? Math.min(match.actionPoints.specialty, amount) : 0
+  return {
+    ...match.actionPoints,
+    general: match.actionPoints.general - (amount - specialtySpent),
+    specialty: match.actionPoints.specialty - specialtySpent,
   }
 }
 

@@ -58,10 +58,15 @@ export const gameApi = {
       body: JSON.stringify({ activeInvestigatorId, supportInvestigatorId }),
     })
   },
-  resolveAction(matchId: string, action: InvestigationAction, locationId: LocationId) {
+  resolveAction(
+    matchId: string,
+    action: InvestigationAction,
+    locationId: LocationId,
+    cardInstanceId?: string,
+  ) {
     return request<RemoteMatch>(`/api/matches/${matchId}/actions`, {
       method: 'POST',
-      body: JSON.stringify({ action, locationId }),
+      body: JSON.stringify({ action, locationId, cardInstanceId }),
     })
   },
   endTurn(matchId: string) {

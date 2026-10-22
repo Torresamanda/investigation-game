@@ -81,4 +81,25 @@ describe('MatchService', () => {
     expect(updated.decks.livia.hand.map((card) => card.instanceId)).toEqual(initialHand)
     expect(updated.decks.livia.hand).toHaveLength(4)
   })
+
+  it('valida a carta preparada e a move para o descarte após uma ação compatível', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const card = match.decks.livia.hand[0]
+    if (!card) throw new Error('A mão inicial precisa conter cartas para este cenário.')
+
+    const updated = service.resolveAction({
+      matchId: match.id,
+      action: card.compatibleActions[0]!,
+      locationId: 'gallery',
+      cardInstanceId: card.instanceId,
+    })
+
+    expect(updated.decks.livia.hand).not.toContainEqual(card)
+    expect(updated.decks.livia.discardPile).toContainEqual(card)
+    expect(updated.actionPoints.general).toBe(3 - card.cost)
+  })
 })

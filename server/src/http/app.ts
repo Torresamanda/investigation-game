@@ -19,6 +19,7 @@ interface MatchParams {
 interface ResolveActionBody {
   action?: unknown
   locationId?: unknown
+  cardInstanceId?: unknown
 }
 
 export function createApp(service = new MatchService(new InMemoryMatchRepository())) {
@@ -50,13 +51,18 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
   app.post<{ Params: MatchParams; Body: ResolveActionBody }>(
     '/api/matches/:id/actions',
     async (request, reply) => {
-      const { action, locationId } = request.body
+      const { action, locationId, cardInstanceId } = request.body
       if (!isInvestigationAction(action) || !isLocationId(locationId)) {
         return reply.code(400).send({ message: 'Ação ou local inválido.' })
       }
 
       try {
-        return service.resolveAction({ matchId: request.params.id, action, locationId })
+        return service.resolveAction({
+          matchId: request.params.id,
+          action,
+          locationId,
+          cardInstanceId: typeof cardInstanceId === 'string' ? cardInstanceId : undefined,
+        })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Não foi possível resolver a ação.'
         return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })

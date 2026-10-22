@@ -70,7 +70,7 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** completa o Caso 01; **P
   - Remover a duplicidade temporária entre o motor local do frontend e a API.
   - Critério de aceite: recarregar o cliente e buscar a partida retorna exatamente a mesma mão, PA, rodada e diário enquanto o servidor estiver em execução.
 
-- [ ] **03 · JOGO-02 — Resolver cartas no servidor** `[Front] [Back] [Definição]`
+- [x] **03 · JOGO-02 — Resolver cartas no servidor** `[Front] [Back] [Definição]`
   - Enviar o identificador da carta e a ação escolhida para a API.
   - Validar dono, contexto, compatibilidade, custo e descarte exclusivamente no backend.
   - Critério de aceite: uma carta incompatível não pode ser aplicada pela interface nem por uma chamada direta à API.

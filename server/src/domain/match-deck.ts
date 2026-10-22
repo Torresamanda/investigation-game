@@ -6,6 +6,8 @@ export interface MatchCard {
   readonly instanceId: string
   readonly definitionId: string
   readonly ownerId: InvestigatorId
+  readonly cost: 0 | 1 | 2
+  readonly compatibleActions: readonly ('examine' | 'converse' | 'analyse' | 'research')[]
 }
 
 export interface MatchDeck {
@@ -14,18 +16,38 @@ export interface MatchDeck {
   readonly hand: readonly MatchCard[]
 }
 
-const definitions: Record<InvestigatorId, readonly string[]> = {
-  livia: ['ultraviolet-flashlight', 'trace-marker', 'route-map', 'access-credential'],
-  rafael: ['comparative-magnifier', 'forensic-camera', 'custody-envelope', 'trace-reagent'],
-  isadora: ['pocket-recorder', 'calculated-pause', 'marked-transcript', 'contact-card'],
-  otavio: ['archive-box', 'chronological-thread', 'cross-reference', 'institutional-seal'],
+const definitions: Record<InvestigatorId, readonly Omit<MatchCard, 'instanceId' | 'ownerId'>[]> = {
+  livia: [
+    { definitionId: 'ultraviolet-flashlight', cost: 1, compatibleActions: ['examine'] },
+    { definitionId: 'trace-marker', cost: 0, compatibleActions: ['analyse'] },
+    { definitionId: 'route-map', cost: 1, compatibleActions: ['research'] },
+    { definitionId: 'access-credential', cost: 2, compatibleActions: ['research'] },
+  ],
+  rafael: [
+    { definitionId: 'comparative-magnifier', cost: 1, compatibleActions: ['analyse'] },
+    { definitionId: 'forensic-camera', cost: 1, compatibleActions: ['examine'] },
+    { definitionId: 'custody-envelope', cost: 0, compatibleActions: ['analyse'] },
+    { definitionId: 'trace-reagent', cost: 2, compatibleActions: ['analyse'] },
+  ],
+  isadora: [
+    { definitionId: 'pocket-recorder', cost: 1, compatibleActions: ['converse'] },
+    { definitionId: 'calculated-pause', cost: 0, compatibleActions: ['converse'] },
+    { definitionId: 'marked-transcript', cost: 1, compatibleActions: ['analyse'] },
+    { definitionId: 'contact-card', cost: 2, compatibleActions: ['research'] },
+  ],
+  otavio: [
+    { definitionId: 'archive-box', cost: 1, compatibleActions: ['research'] },
+    { definitionId: 'chronological-thread', cost: 1, compatibleActions: ['research'] },
+    { definitionId: 'cross-reference', cost: 1, compatibleActions: ['analyse'] },
+    { definitionId: 'institutional-seal', cost: 2, compatibleActions: ['research'] },
+  ],
 }
 
 export function createInvestigatorDeck(investigatorId: InvestigatorId): MatchDeck {
-  const cards = definitions[investigatorId].flatMap((definitionId) =>
+  const cards = definitions[investigatorId].flatMap((definition) =>
     [1, 2].map((copy) => ({
-      instanceId: `${investigatorId}:${definitionId}:${copy}`,
-      definitionId,
+      ...definition,
+      instanceId: `${investigatorId}:${definition.definitionId}:${copy}`,
       ownerId: investigatorId,
     })),
   )
@@ -47,6 +69,14 @@ export function drawToHand(deck: MatchDeck, handSize: number): MatchDeck {
     hand.push(next)
   }
   return { drawPile, discardPile, hand }
+}
+
+export function discardFromHand(deck: MatchDeck, instanceId: string): MatchDeck {
+  const cardIndex = deck.hand.findIndex((card) => card.instanceId === instanceId)
+  if (cardIndex === -1) throw new Error('A carta precisa estar na mão do investigador.')
+  const hand = [...deck.hand]
+  const [discarded] = hand.splice(cardIndex, 1)
+  return { drawPile: deck.drawPile, discardPile: [...deck.discardPile, discarded!], hand }
 }
 
 function shuffle<T>(items: readonly T[]): T[] {

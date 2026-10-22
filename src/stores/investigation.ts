@@ -92,7 +92,9 @@ export const useInvestigationStore = defineStore('investigation', () => {
   function canExecute(action: InvestigationAction) {
     if (remoteMatch.value) {
       const points = remoteMatch.value.actionPoints
-      return points.general + points.specialty >= 2
+      const card = preparedCard.value
+      if (card && !card.compatibleActions.includes(action)) return false
+      return points.general + points.specialty >= 2 + (card?.cost ?? 0)
     }
     if (!mission.value) return false
     return preparedCardId.value
@@ -135,16 +137,18 @@ export const useInvestigationStore = defineStore('investigation', () => {
   async function resolveAction(action: InvestigationAction, locationId: LocationId) {
     if (!mission.value || !canExecute(action)) return null
 
-    if (preparedCardId.value) {
-      return executeBasicAction(action) ? null : null
-    }
-
     if (!remoteMatch.value) {
       return executeBasicAction(action) ? null : null
     }
 
-    const updated = await gameApi.resolveAction(remoteMatch.value.id, action, locationId)
+    const updated = await gameApi.resolveAction(
+      remoteMatch.value.id,
+      action,
+      locationId,
+      preparedCardId.value ?? undefined,
+    )
     remoteMatch.value = updated
+    preparedCardId.value = null
     return updated.journalEntries.at(-1) ?? null
   }
 
