@@ -9,9 +9,6 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
 Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, execute as próximas tarefas pendentes exatamente nesta sequência:
 
 1. **Fundação, Arquitetura e Anti-Desincronização (`P0` / `P1` Base):**
-   - `01A · ARQ-01` → Unificar `shared/` e corrigir cálculo de PA especializado no frontend (`canExecute`).
-   - `04A · SEC-03` → Criar `MatchPresenter` para ocultar `drawPile`, baralho do apoio e chaves internas.
-   - `04B · ARQ-02` → Refatorar backend em Clean Architecture (Casos de Uso, Entidades Ricas e `CaseContentRepository`).
    - `23B · SEC-04` → Validar schemas HTTP, erros semânticos de domínio e sanitizar parâmetros.
    - `18 · BUG-03` + `03F · ARQ-03` → Remover contingência local divergente, dividir stores e remover `abandonInvestigation` automático do router.
 
@@ -115,7 +112,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Remover a duplicidade temporária entre o motor local do frontend e a API.
   - Critério de aceite: recarregar o cliente e buscar a partida retorna exatamente a mesma mão, PA, rodada e diário enquanto o servidor estiver em execução.
 
-- [ ] **01A · ARQ-01 — Unificar tipos, contratos e regras puras de PA em `shared/`** `[P0] [Front] [Back]`
+- [x] **01A · ARQ-01 — Unificar tipos, contratos e regras puras de PA em `shared/`** `[P0] [Front] [Back]`
   - Extrair identificadores primitivos (`InvestigatorId`, `LocationId`, `PersonId`, `InvestigationAction`), DTOs públicos da partida e a função pura `canPayAction` para `shared/`.
   - Corrigir a lógica de `canExecute` em `src/stores/investigation.ts` (que somava pontos de especialidade mesmo em ações incompatíveis) e remover a exigência de `mission.value` local quando `remoteMatch` estiver ativo.
   - Critério de aceite: frontend e backend importam a mesma função `canPayAction` de `shared/`; botões de ação só são habilitados quando os PA gerais e de especialidade compatíveis cobrem o custo real.
@@ -129,12 +126,12 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Registrar no servidor qual carta está preparada e limpar essa escolha ao usá-la, removê-la ou encerrar o turno.
   - Critério de aceite: dois clientes que consultam a mesma partida veem a mesma carta preparada.
 
-- [ ] **04A · SEC-03 — Ocultar baralho de compra e chaves internas nas respostas da API (`MatchPresenter`)** `[P0] [Front] [Back]`
+- [x] **04A · SEC-03 — Ocultar baralho de compra e chaves internas nas respostas da API (`MatchPresenter`)** `[P0] [Front] [Back]`
   - Criar `MatchPresenter` em `server/src/http/presenters/` para transformar a entidade de domínio em DTO público antes de enviá-la nas respostas HTTP.
   - Expor apenas `hand` do investigador ativo e contadores numéricos (`drawPileCount` e `discardPileCount`), removendo `drawPile` ordenado, baralho completo do apoio e `resolvedKeys` do payload público.
   - Critério de aceite: inspecionar qualquer resposta de `/api/matches/*` no navegador não revela a sequência de próximas cartas a comprar nem chaves internas de controle.
 
-- [ ] **04B · ARQ-02 — Refatorar backend em camadas estritas de Clean Architecture e Domínio Rico** `[P1] [Back]`
+- [x] **04B · ARQ-02 — Refatorar backend em camadas estritas de Clean Architecture e Domínio Rico** `[P1] [Back]`
   - Dividir `MatchService` em Casos de Uso independentes por responsabilidade (`CreateSoloMatchUseCase`, `ResolveActionUseCase`, `ResolveConversationUseCase`, `PrepareCardUseCase`, `EndTurnUseCase`) e mover `InMemoryMatchRepository` para `server/src/infrastructure/`.
   - Modelar `Match`, `InvestigatorDeck` e `TurnState` como entidades/Value Objects ricos que protegem suas invariantes, substituindo o array de strings mágicas `resolvedKeys` por estruturas tipadas e eliminando a dependência circular entre `match.ts` e `match-deck.ts`.
   - Extrair a resolução narrativa hardcoded do Caso 01 (`resolveCaseAction` e diálogos) para uma porta `CaseContentRepository` implementada na infraestrutura.
