@@ -7,6 +7,7 @@ import {
   MatchService,
 } from '../application/match-service.js'
 import { isPersonId } from '../content/case01-conversations.js'
+import { MatchPresenter } from './presenters/match-presenter.js'
 
 interface CreateMatchBody {
   activeInvestigatorId?: unknown
@@ -55,7 +56,7 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
 
     try {
       const match = service.createSoloMatch({ activeInvestigatorId, supportInvestigatorId })
-      return reply.code(201).send(match)
+      return reply.code(201).send(MatchPresenter.toPublicDto(match))
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível criar a partida.'
       return reply.code(400).send({ message })
@@ -65,7 +66,7 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
   app.get<{ Params: MatchParams }>('/api/matches/:id', async (request, reply) => {
     const match = service.getMatch(request.params.id)
     if (!match) return reply.code(404).send({ message: 'Partida não encontrada.' })
-    return match
+    return MatchPresenter.toPublicDto(match)
   })
 
   app.get<{ Params: ConversationParams; Querystring: ConversationQuery }>(
@@ -94,12 +95,13 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
       return reply.code(400).send({ message: 'Pessoa, pergunta ou local inválido.' })
     }
     try {
-      return service.resolveConversation({
+      const match = service.resolveConversation({
         matchId: request.params.id,
         personId,
         locationId,
         questionId,
       })
+      return MatchPresenter.toPublicDto(match)
     } catch (error) {
       return sendMatchError(reply, error, 'Não foi possível resolver a pergunta.')
     }
@@ -114,11 +116,12 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
       }
 
       try {
-        return service.resolveAction({
+        const match = service.resolveAction({
           matchId: request.params.id,
           action,
           locationId,
         })
+        return MatchPresenter.toPublicDto(match)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Não foi possível resolver a ação.'
         return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })
@@ -138,7 +141,8 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
         return reply.code(400).send({ message: 'Carta preparada inválida.' })
       }
       try {
-        return service.prepareCard(request.params.id, cardInstanceId ?? null)
+        const match = service.prepareCard(request.params.id, cardInstanceId ?? null)
+        return MatchPresenter.toPublicDto(match)
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Não foi possível preparar a carta.'
@@ -149,7 +153,8 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
 
   app.post<{ Params: MatchParams }>('/api/matches/:id/end-turn', async (request, reply) => {
     try {
-      return service.endTurn(request.params.id)
+      const match = service.endTurn(request.params.id)
+      return MatchPresenter.toPublicDto(match)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível encerrar o turno.'
       return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })

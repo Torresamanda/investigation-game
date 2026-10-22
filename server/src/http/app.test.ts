@@ -30,10 +30,17 @@ describe('API de partidas', () => {
     const match = create.json<{
       id: string
       round: number
-      decks: { livia: { hand: unknown[] } }
+      decks: {
+        livia: { hand: unknown[]; drawPileCount: number; discardPileCount: number }
+      }
     }>()
     expect(match.round).toBe(1)
     expect(match.decks.livia.hand).toHaveLength(4)
+    expect(match.decks.livia.drawPileCount).toBe(4)
+    expect(match.decks.livia.discardPileCount).toBe(0)
+    expect(match.decks).not.toHaveProperty('rafael')
+    expect(match).not.toHaveProperty('resolvedKeys')
+    expect(match.decks.livia).not.toHaveProperty('drawPile')
 
     const retrieve = await app.inject({ method: 'GET', url: `/api/matches/${match.id}` })
     expect(retrieve.statusCode).toBe(200)

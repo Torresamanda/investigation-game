@@ -14,6 +14,8 @@ export interface MatchJournalEntry {
 
 export interface PublicMatchDto {
   readonly id: string
+  readonly mode: 'solo'
+  readonly createdAt: string
   readonly preparedCardInstanceId: string | null
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
@@ -24,7 +26,17 @@ export interface PublicMatchDto {
     Partial<
       Record<
         InvestigatorId,
-        { readonly hand: readonly { readonly instanceId: string; readonly definitionId: string }[] }
+        {
+          readonly hand: readonly {
+            readonly instanceId: string
+            readonly definitionId: string
+            readonly cost: 0 | 1 | 2
+            readonly compatibleActions: readonly string[]
+            readonly temporary?: boolean
+          }[]
+          readonly drawPileCount: number
+          readonly discardPileCount: number
+        }
       >
     >
   >
