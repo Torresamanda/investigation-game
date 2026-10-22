@@ -26,6 +26,7 @@ import { PrepareCardUseCase } from './use-cases/prepare-card-use-case.js'
 import { ResolveActionUseCase } from './use-cases/resolve-action-use-case.js'
 import { ResolveConversationUseCase } from './use-cases/resolve-conversation-use-case.js'
 import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.js'
+import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 
 export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
 
@@ -35,7 +36,7 @@ export interface ConversationOptions {
   readonly locationId: LocationId
   readonly questionLimitReached: boolean
   readonly questions: readonly (Omit<ConversationQuestionContent, 'cost'> & {
-    readonly cost: 0 | 1 | 2
+    readonly cost: number
     readonly canResolve: boolean
     readonly isEvidenceBlocked: boolean
   })[]
@@ -109,11 +110,17 @@ export class MatchService {
             id,
             match,
           )
-          const totalCost = (bonusQuestion ? 0 : cost) + (preparedCard?.cost ?? 0)
+          const pressLeakSurcharge = pressLeakConversationSurcharge(
+            match,
+            personId,
+            Boolean(preparedCard?.compatibleActions.includes('converse')),
+          )
+          const totalCost =
+            (bonusQuestion ? 0 : cost) + pressLeakSurcharge + (preparedCard?.cost ?? 0)
           return {
             id,
             text,
-            cost: bonusQuestion ? 0 : cost,
+            cost: (bonusQuestion ? 0 : cost) + pressLeakSurcharge,
             approach,
             isEvidenceBlocked: Boolean(blockedReason),
             canResolve:

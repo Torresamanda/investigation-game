@@ -55,11 +55,29 @@ export class ResolveActionUseCase {
       throw new DomainError('PA insuficientes para esta ação.')
     }
 
-    const resolution = this.caseContentRepository.resolveAction(
+    const caseResolution = this.caseContentRepository.resolveAction(
       match,
       command.action,
       command.locationId,
     )
+    const resolution =
+      match.round === 6 && connectionCandidate && caseResolution.entry.type === 'clue'
+        ? {
+            entry: {
+              id: `journal-${match.journalEntries.length + 1}`,
+              type: 'observation' as const,
+              title: 'Exploração encerrada pelo prazo final',
+              content:
+                'A equipe organizou as evidências disponíveis sem iniciar uma nova linha de exploração.',
+              locationId: command.locationId,
+              round: match.round,
+              status: 'note' as const,
+            },
+          }
+        : caseResolution
+    if (match.round === 6 && command.action !== 'analyse' && resolution.entry.type === 'clue') {
+      throw new DomainError('O prazo final impede novas descobertas por exploração.')
+    }
     const actionPoints = spendActionPoints(match.actionPoints, {
       action: command.action,
       amount: cost,
@@ -80,6 +98,23 @@ export class ResolveActionUseCase {
         }
       : resolution.entry
     const journalEntries = [...match.journalEntries, resolvedEntry]
+    const revealsPreservedPerimeterDetail =
+      match.round === 1 &&
+      command.action === 'examine' &&
+      command.locationId === 'gallery' &&
+      !match.examinedLocationsThisRound.includes('gallery')
+    if (revealsPreservedPerimeterDetail) {
+      journalEntries.push({
+        id: `journal-${journalEntries.length + 1}`,
+        type: 'observation',
+        title: 'Detalhe do perímetro preservado',
+        content:
+          'A borda interna do painel conserva marcas recentes de pressão; não há sinal de dano na face externa.',
+        locationId: 'gallery',
+        round: match.round,
+        status: 'note',
+      })
+    }
     const resolvedKeys = [...match.resolvedKeys]
     if (resolution.resolvedKey) resolvedKeys.push(resolution.resolvedKey)
     if (usesRafaelPassive && resolution.resolvedKey === 'gallery-lock') {

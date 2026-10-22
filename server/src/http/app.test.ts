@@ -55,6 +55,12 @@ describe('API de partidas', () => {
       }
     }>()
     expect(match.round).toBe(1)
+    expect(match).toMatchObject({
+      canAccuse: false,
+      hasFreeConnectionThisRound: false,
+      hasUsedFreeConnectionThisRound: false,
+      hasUsedPressLeakConversationThisRound: false,
+    })
     expect(match.decks.livia.hand).toHaveLength(4)
     expect(match.decks.livia.drawPileCount).toBe(4)
     expect(match.decks.livia.discardPileCount).toBe(0)
@@ -82,10 +88,12 @@ describe('API de partidas', () => {
     })
 
     expect(resolve.statusCode).toBe(200)
-    expect(resolve.json()).toMatchObject({
-      actionPoints: { general: 4 },
-      journalEntries: [{ title: 'Fechadura de emergência da vitrine' }],
-    })
+    expect(resolve.json()).toMatchObject({ actionPoints: { general: 4 } })
+    expect(
+      resolve
+        .json<{ journalEntries: { title: string }[] }>()
+        .journalEntries.map((entry) => entry.title),
+    ).toEqual(['Fechadura de emergência da vitrine', 'Detalhe do perímetro preservado'])
   })
 
   it('move o investigador pelo endpoint validado e rejeita o corredor bloqueado', async () => {

@@ -16,6 +16,7 @@ const props = defineProps<{
   location: CaseLocation
   availableActions: readonly InvestigationAction[]
   actionCosts: Readonly<Record<VisibleInvestigationAction, number>>
+  hasConfirmedRaulEvidence: boolean
   feedback: string
   canEndTurn: boolean
   round: number
@@ -49,6 +50,11 @@ const locationNumber = computed(() =>
   String(locations.findIndex((item) => item.id === props.location.id) + 1).padStart(2, '0'),
 )
 const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpenings[0])
+const roundOpeningMessage = computed(() =>
+  props.round === 4 && props.hasConfirmedRaulEvidence
+    ? '“As evidências confirmadas já permitem questionar Raul sobre a rota de segurança.”'
+    : roundOpening.value.message,
+)
 </script>
 
 <template>
@@ -77,7 +83,7 @@ const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpeni
       <SuspectRoster v-model="selectedSuspectId" :location="location" />
       <div v-if="!selectedSuspect" class="narrator">
         <p class="eyebrow">{{ roundOpening.speaker }}</p>
-        <p>{{ roundOpening.message }}</p>
+        <p>{{ roundOpeningMessage }}</p>
         <small>{{ roundOpening.event }}</small>
       </div>
     </div>

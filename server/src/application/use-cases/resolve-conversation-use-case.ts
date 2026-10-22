@@ -5,6 +5,10 @@ import type { MatchRepository } from '../ports/match-repository.js'
 import { addTemporaryCardToHand, recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
+import {
+  isPressLeakConversation,
+  pressLeakConversationSurcharge,
+} from '../../domain/round-event.js'
 
 export class ResolveConversationUseCase {
   constructor(
@@ -45,7 +49,12 @@ export class ResolveConversationUseCase {
       throw new Error('Você já fez uma pergunta neste turno.')
     }
     const questionCost = bonusQuestion || usesPreparedPause ? 0 : question.cost
-    const totalCost = questionCost + (card?.cost ?? 0)
+    const pressLeakSurcharge = pressLeakConversationSurcharge(
+      match,
+      command.personId,
+      Boolean(card?.compatibleActions.includes('converse')),
+    )
+    const totalCost = questionCost + pressLeakSurcharge + (card?.cost ?? 0)
     const specialtyEligible = card?.ownerId === match.activeInvestigatorId
     if (
       !canPayAction(match.actionPoints, {
@@ -100,6 +109,9 @@ export class ResolveConversationUseCase {
         },
       ],
       hasUsedPassiveThisRound: match.hasUsedPassiveThisRound || usesIsadoraPassive,
+      hasUsedPressLeakConversationThisRound:
+        match.hasUsedPressLeakConversationThisRound ||
+        isPressLeakConversation(match, command.personId),
       resolvedKeys: [
         ...match.resolvedKeys,
         resolvedKey,

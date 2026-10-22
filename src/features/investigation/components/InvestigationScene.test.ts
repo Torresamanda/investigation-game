@@ -10,6 +10,7 @@ describe('InvestigationScene', () => {
         location: locations[0],
         availableActions: ['converse'],
         actionCosts: { examine: 2, converse: 2, analyse: 2, research: 2 },
+        hasConfirmedRaulEvidence: false,
         feedback: '',
         canEndTurn: true,
         round: 1,
@@ -25,5 +26,23 @@ describe('InvestigationScene', () => {
     expect(conversationButton().attributes('disabled')).toBeUndefined()
     await conversationButton().trigger('click')
     expect(view.emitted('converse')).toEqual([['davi']])
+  })
+
+  it('mantém neutra a abertura da Rodada 4 até haver pista confirmada ligada a Raul', async () => {
+    const view = mount(InvestigationScene, {
+      props: {
+        location: locations[0],
+        availableActions: [],
+        actionCosts: { examine: 2, converse: 2, analyse: 2, research: 2 },
+        hasConfirmedRaulEvidence: false,
+        feedback: '',
+        canEndTurn: true,
+        round: 4,
+      },
+    })
+
+    expect(view.get('.narrator').text()).not.toContain('Raul')
+    await view.setProps({ hasConfirmedRaulEvidence: true })
+    expect(view.get('.narrator').text()).toContain('questionar Raul')
   })
 })

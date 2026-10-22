@@ -109,12 +109,205 @@ describe('MatchService', () => {
       type: 'clue',
       title: 'Fechadura de emergência da vitrine',
     })
-    expect(second.journalEntries[1]).toMatchObject({ type: 'clue', title: 'Vestígio no pedestal' })
-    expect(third.journalEntries[2]).toMatchObject({
+    expect(second.journalEntries.at(-1)).toMatchObject({
+      type: 'clue',
+      title: 'Vestígio no pedestal',
+    })
+    expect(third.journalEntries.at(-1)).toMatchObject({
       type: 'observation',
       title: 'Sem nova descoberta: Galeria Principal',
     })
     expect(third.actionPoints.general).toBe(4)
+  })
+
+  it('registra o detalhe extra do Perímetro preservado no primeiro exame da Galeria', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'round-one')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    const firstExamine = service.resolveAction({
+      matchId: match.id,
+      action: 'examine',
+      locationId: 'gallery',
+    })
+    expect(firstExamine.journalEntries.at(-1)).toMatchObject({
+      type: 'observation',
+      title: 'Detalhe do perímetro preservado',
+      round: 1,
+    })
+
+    const secondExamine = service.resolveAction({
+      matchId: match.id,
+      action: 'examine',
+      locationId: 'gallery',
+    })
+    expect(
+      secondExamine.journalEntries.filter((entry) =>
+        entry.title.includes('Detalhe do perímetro preservado'),
+      ),
+    ).toHaveLength(1)
+  })
+
+  it('aplica o custo do Vazamento para a imprensa somente à primeira conversa com Helena ou Davi', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'press-leak')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({ ...match, round: 2 })
+
+    const helenaOptions = service.getConversationOptions(match.id, 'helena', 'office')
+    expect(
+      helenaOptions.questions.find((question) => question.id === 'marta-disagreement'),
+    ).toMatchObject({
+      cost: 2,
+      canResolve: true,
+    })
+    const afterHelena = service.resolveConversation({
+      matchId: match.id,
+      personId: 'helena',
+      locationId: 'office',
+      questionId: 'marta-disagreement',
+    })
+    expect(afterHelena.actionPoints.general).toBe(3)
+    expect(afterHelena.hasUsedPressLeakConversationThisRound).toBe(true)
+
+    const daviOptions = service.getConversationOptions(match.id, 'davi', 'gallery')
+    expect(daviOptions.questions.find((question) => question.id === 'collectors')).toMatchObject({
+      cost: 2,
+      canResolve: true,
+    })
+    expect(service.endTurn(match.id).hasUsedPressLeakConversationThisRound).toBe(false)
+  })
+
+  it('uma carta social compatível evita o adicional do Vazamento para a imprensa', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'press-card')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'rafael',
+    })
+    const pause = putCardInHand(repository, match, 'calculated-pause')
+    repository.save({ ...repository.findById(match.id)!, round: 2 })
+    service.prepareCard(match.id, pause.instanceId)
+
+    const options = service.getConversationOptions(match.id, 'helena', 'office')
+    expect(
+      options.questions.find((question) => question.id === 'marta-disagreement'),
+    ).toMatchObject({
+      cost: 1,
+      canResolve: true,
+    })
+  })
+
+  it('registra o evento da Rodada 3 e desbloqueia acusação e conexão gratuita nas rodadas previstas', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'round-events')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({ ...match, round: 2 })
+
+    const roundThree = service.endTurn(match.id)
+    expect(roundThree.journalEntries.at(-1)).toMatchObject({
+      type: 'observation',
+      title: 'Comunicado da manutenção municipal',
+      round: 3,
+    })
+    expect(roundThree.canAccuse).toBe(false)
+
+    repository.save({ ...roundThree, round: 4 })
+    const roundFive = service.endTurn(match.id)
+    expect(roundFive).toMatchObject({
+      round: 5,
+      canAccuse: true,
+      hasFreeConnectionThisRound: true,
+      hasUsedFreeConnectionThisRound: false,
+    })
+
+    const roundSix = service.endTurn(match.id)
+    expect(roundSix).toMatchObject({
+      round: 6,
+      canAccuse: true,
+      hasFreeConnectionThisRound: false,
+      hasUsedFreeConnectionThisRound: false,
+    })
+  })
+
+  it('impede novas pistas de exploração básica na Rodada 6 e ainda permite análise', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'final-deadline')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({ ...match, round: 6 })
+
+    expect(() =>
+      service.resolveAction({
+        matchId: match.id,
+        action: 'examine',
+        locationId: 'gallery',
+      }),
+    ).toThrow('O prazo final impede novas descobertas por exploração.')
+    expect(service.getMatch(match.id)).toEqual({ ...match, round: 6 })
+
+    repository.save({ ...match, round: 6, resolvedKeys: ['gallery-lock'] })
+    const analysis = service.resolveAction({
+      matchId: match.id,
+      action: 'analyse',
+      locationId: 'gallery',
+    })
+    expect(analysis.journalEntries.at(-1)).toMatchObject({ status: 'confirmed' })
+  })
+
+  it('permite organizar uma conexão na Rodada 6 sem revelar uma pista inédita', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'final-connection')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'otavio',
+      supportInvestigatorId: 'livia',
+    })
+    repository.save({
+      ...match,
+      round: 6,
+      journalEntries: [
+        {
+          id: 'confirmed-clue',
+          type: 'clue',
+          title: 'Registro confirmado',
+          content: 'Evidência validada.',
+          locationId: 'security',
+          round: 2,
+          status: 'confirmed',
+        },
+        {
+          id: 'pending-clue',
+          type: 'clue',
+          title: 'Pista pendente',
+          content: 'Indício a verificar.',
+          locationId: 'gallery',
+          round: 2,
+          status: 'unconfirmed',
+        },
+      ],
+    })
+
+    const updated = service.resolveAction({
+      matchId: match.id,
+      action: 'research',
+      locationId: 'security',
+    })
+
+    expect(updated.resolvedKeys).not.toContain('security-initial-report')
+    expect(updated.journalEntries.at(-1)).toMatchObject({
+      title: 'Conexão de Otávio',
+      relatedEntryIds: ['confirmed-clue', 'pending-clue'],
+    })
   })
 
   it('mantém descobertas disponíveis nas rodadas seguintes e libera análise com pré-requisitos', () => {
@@ -640,7 +833,11 @@ describe('MatchService', () => {
       activeInvestigatorId: 'otavio',
       supportInvestigatorId: 'rafael',
     })
-    service.endTurn(match.id)
+    const roundTwo = service.endTurn(match.id)
+    repository.save({
+      ...roundTwo,
+      actionPoints: { ...roundTwo.actionPoints, general: 4 },
+    })
     const afterConversation = service.resolveConversation({
       matchId: match.id,
       personId: 'davi',

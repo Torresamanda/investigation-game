@@ -100,7 +100,8 @@ export const roundOpenings = [
   {
     speaker: 'Sofia Moura · Abertura da Rodada 2',
     message: '“Alguém dentro do museu está controlando a narrativa — ou tentando fazê-lo.”',
-    event: 'Vazamento para a imprensa: conversas exigem atenção redobrada.',
+    event:
+      'Vazamento para a imprensa: a primeira conversa com Helena ou Davi custa +1 PA; uma carta social compatível evita o custo.',
   },
   {
     speaker: 'Sofia Moura · Abertura da Rodada 3',
@@ -109,13 +110,15 @@ export const roundOpenings = [
   },
   {
     speaker: 'Sofia Moura · Abertura da Rodada 4',
-    message: '“Ainda podemos reter Raul para esclarecimentos, mas não por muito tempo.”',
+    message:
+      '“A janela para decisão se aproxima. O dossiê ainda precisa sustentar qualquer acusação.”',
     event: 'Janela de acusação: ela será desbloqueada após o encerramento desta rodada.',
   },
   {
     speaker: 'Sofia Moura · Abertura da Rodada 5',
     message: '“O que parecia uma falha isolada agora parece uma sequência.”',
-    event: 'Linha do tempo consolidada: uma conexão entre pistas pode ser registrada sem custo.',
+    event:
+      'Linha do tempo consolidada: uma conexão formal entre pistas confirmadas pode ser registrada sem custo nesta rodada.',
   },
   {
     speaker: 'Sofia Moura · Abertura da Rodada 6',

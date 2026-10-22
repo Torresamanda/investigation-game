@@ -11,7 +11,7 @@ export type RemoteMatch = PublicMatchDto
 export interface ConversationQuestion {
   readonly id: string
   readonly text: string
-  readonly cost: 0 | 1 | 2
+  readonly cost: number
   readonly approach: 'inquiry' | 'pressure' | 'context'
   readonly canResolve: boolean
   readonly isEvidenceBlocked: boolean

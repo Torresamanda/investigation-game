@@ -11,16 +11,38 @@ export class EndTurnUseCase {
     if (!match) throw new MatchNotFoundError()
     if (match.round >= 6) throw new DomainError('A missão já alcançou o limite de rodadas.')
 
+    const nextRound = match.round + 1
+    const nextJournalEntries =
+      nextRound === 3
+        ? [
+            ...match.journalEntries,
+            {
+              id: `journal-${match.journalEntries.length + 1}`,
+              type: 'observation' as const,
+              title: 'Comunicado da manutenção municipal',
+              content:
+                'A verificação externa confirma que a rede municipal permaneceu ativa; a interrupção começou dentro do prédio.',
+              locationId: 'security' as const,
+              round: nextRound,
+              status: 'note' as const,
+            },
+          ]
+        : match.journalEntries
     const updated: SoloMatch = {
       ...match,
-      round: match.round + 1,
+      round: nextRound,
       examinedLocationsThisRound: [],
       hasUsedPassiveThisRound: false,
       hasReceivedSocialBonusThisRound: false,
+      hasUsedPressLeakConversationThisRound: false,
+      canAccuse: match.canAccuse || nextRound >= 5,
+      hasFreeConnectionThisRound: nextRound === 5,
+      hasUsedFreeConnectionThisRound: false,
       hasUsedFreeMoveThisRound: false,
       hasDiscardedCardThisRound: false,
       actionPoints: actionPointsFor(match.activeInvestigatorId),
       preparedCardInstanceId: null,
+      journalEntries: nextJournalEntries,
       decks: Object.fromEntries(
         Object.entries(match.decks).map(([investigatorId, deck]) => [
           investigatorId,

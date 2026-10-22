@@ -18,6 +18,10 @@ export const MatchPresenter = {
       examinedLocationsThisRound: match.examinedLocationsThisRound,
       hasUsedPassiveThisRound: match.hasUsedPassiveThisRound,
       hasReceivedSocialBonusThisRound: match.hasReceivedSocialBonusThisRound,
+      hasUsedPressLeakConversationThisRound: match.hasUsedPressLeakConversationThisRound,
+      canAccuse: match.canAccuse,
+      hasFreeConnectionThisRound: match.hasFreeConnectionThisRound,
+      hasUsedFreeConnectionThisRound: match.hasUsedFreeConnectionThisRound,
       canCreateInvestigatorConnection:
         match.activeInvestigatorId === 'otavio' && Boolean(findClueConnectionCandidate(match)),
       currentLocationId: match.currentLocationId,

@@ -41,6 +41,14 @@ const actionCosts = computed(() => ({
   analyse: session.actionCost('analyse', location.value.id),
   research: session.actionCost('research', location.value.id),
 }))
+const hasConfirmedRaulEvidence = computed(() =>
+  session.journalEntries.some(
+    (entry) =>
+      entry.type === 'clue' &&
+      entry.status === 'confirmed' &&
+      `${entry.title} ${entry.content}`.toLocaleLowerCase('pt-BR').includes('raul'),
+  ),
+)
 const journalTab = ref<'timeline' | 'clues' | 'suspects' | 'notes'>('timeline')
 const scene = ref<InstanceType<typeof InvestigationScene> | null>(null)
 const conversation = ref<ConversationOptions | null>(null)
@@ -217,6 +225,7 @@ async function clearConversationCardPreparation() {
         :location="location"
         :available-actions="availableActions"
         :action-costs="actionCosts"
+        :has-confirmed-raul-evidence="hasConfirmedRaulEvidence"
         :feedback="feedback"
         :can-end-turn="session.canEndTurn"
         :round="session.round"
