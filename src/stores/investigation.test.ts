@@ -46,13 +46,13 @@ describe('seleção da prévia solo', () => {
     expect(store.hypotheses).toEqual([])
   })
 
-  it('prepara uma carta e só a descarta ao executar uma ação compatível', () => {
+  it('prepara uma carta e só a descarta ao executar uma ação compatível', async () => {
     const store = useInvestigationStore()
     store.startInvestigation('livia', 'rafael')
     const card = store.hand[0]!
     const compatibleAction = card.compatibleActions[0]!
 
-    expect(store.prepareCard(card.instanceId)).toBe(true)
+    await expect(store.prepareCard(card.instanceId)).resolves.toBe(true)
     expect(store.preparedCard?.instanceId).toBe(card.instanceId)
     expect(store.canExecute(compatibleAction)).toBe(true)
     expect(store.executeBasicAction(compatibleAction)).toBe(true)

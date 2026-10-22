@@ -36,6 +36,7 @@ export interface SoloMatch {
   readonly journalEntries: readonly JournalEntry[]
   readonly resolvedKeys: readonly string[]
   readonly decks: Readonly<Record<InvestigatorId, MatchDeck>>
+  readonly preparedCardInstanceId: string | null
 }
 
 export interface CreateSoloMatchInput {
@@ -65,6 +66,7 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
       [input.activeInvestigatorId]: createInvestigatorDeck(input.activeInvestigatorId),
       [input.supportInvestigatorId]: createInvestigatorDeck(input.supportInvestigatorId),
     } as Record<InvestigatorId, MatchDeck>,
+    preparedCardInstanceId: null,
   }
 }
 

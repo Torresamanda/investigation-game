@@ -68,9 +68,10 @@ export const useInvestigationStore = defineStore('investigation', () => {
     return `${points.general} PA gerais + ${points.specialty} ${specialtyLabel}`
   })
   const canEndTurn = computed(() => round.value < TOTAL_ROUNDS)
-  const preparedCard = computed(() =>
-    hand.value.find((card) => card.instanceId === preparedCardId.value),
-  )
+  const preparedCard = computed(() => {
+    const instanceId = remoteMatch.value?.preparedCardInstanceId ?? preparedCardId.value
+    return hand.value.find((card) => card.instanceId === instanceId)
+  })
   const journalEntries = computed<readonly MatchJournalEntry[]>(
     () => remoteMatch.value?.journalEntries ?? [],
   )
@@ -112,13 +113,19 @@ export const useInvestigationStore = defineStore('investigation', () => {
     return true
   }
 
-  function prepareCard(instanceId: string) {
+  async function prepareCard(instanceId: string) {
     if (!hand.value.some((card) => card.instanceId === instanceId)) return false
+    if (remoteMatch.value) {
+      remoteMatch.value = await gameApi.prepareCard(remoteMatch.value.id, instanceId)
+    }
     preparedCardId.value = instanceId
     return true
   }
 
-  function clearPreparedCard() {
+  async function clearPreparedCard() {
+    if (remoteMatch.value) {
+      remoteMatch.value = await gameApi.prepareCard(remoteMatch.value.id, null)
+    }
     preparedCardId.value = null
   }
 
@@ -141,14 +148,9 @@ export const useInvestigationStore = defineStore('investigation', () => {
       return executeBasicAction(action) ? null : null
     }
 
-    const updated = await gameApi.resolveAction(
-      remoteMatch.value.id,
-      action,
-      locationId,
-      preparedCardId.value ?? undefined,
-    )
+    const updated = await gameApi.resolveAction(remoteMatch.value.id, action, locationId)
     remoteMatch.value = updated
-    preparedCardId.value = null
+    preparedCardId.value = updated.preparedCardInstanceId
     return updated.journalEntries.at(-1) ?? null
   }
 
@@ -156,7 +158,7 @@ export const useInvestigationStore = defineStore('investigation', () => {
     if (!remoteMatch.value) return endTurn()
     const updated = await gameApi.endTurn(remoteMatch.value.id)
     remoteMatch.value = updated
-    preparedCardId.value = null
+    preparedCardId.value = updated.preparedCardInstanceId
     return true
   }
 

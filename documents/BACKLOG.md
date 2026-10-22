@@ -75,7 +75,7 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** completa o Caso 01; **P
   - Validar dono, contexto, compatibilidade, custo e descarte exclusivamente no backend.
   - Critério de aceite: uma carta incompatível não pode ser aplicada pela interface nem por uma chamada direta à API.
 
-- [ ] **04 · JOGO-03 — Corrigir o estado de preparação de carta** `[Front] [Back]`
+- [x] **04 · JOGO-03 — Corrigir o estado de preparação de carta** `[Front] [Back]`
   - Registrar no servidor qual carta está preparada e limpar essa escolha ao usá-la, removê-la ou encerrar o turno.
   - Critério de aceite: dois clientes que consultam a mesma partida veem a mesma carta preparada.
 

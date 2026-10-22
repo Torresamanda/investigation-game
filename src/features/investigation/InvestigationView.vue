@@ -53,14 +53,23 @@ async function executeAction(action: InvestigationAction) {
   }
 }
 
-function prepareCard(instanceId: string) {
-  if (!session.prepareCard(instanceId)) return
-  feedback.value = `${session.preparedCard?.name}: escolha uma ação compatível para aplicá-la.`
+async function prepareCard(instanceId: string) {
+  try {
+    if (!(await session.prepareCard(instanceId))) return
+    feedback.value = `${session.preparedCard?.name}: escolha uma ação compatível para aplicá-la.`
+  } catch (error) {
+    feedback.value = error instanceof Error ? error.message : 'Não foi possível preparar a carta.'
+  }
 }
 
-function clearPreparedCard() {
-  session.clearPreparedCard()
-  feedback.value = 'Preparação removida. Escolha outra carta ou uma ação básica.'
+async function clearPreparedCard() {
+  try {
+    await session.clearPreparedCard()
+    feedback.value = 'Preparação removida. Escolha outra carta ou uma ação básica.'
+  } catch (error) {
+    feedback.value =
+      error instanceof Error ? error.message : 'Não foi possível remover a preparação.'
+  }
 }
 
 async function endTurn() {

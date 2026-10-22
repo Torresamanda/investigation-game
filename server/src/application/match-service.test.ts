@@ -90,12 +90,12 @@ describe('MatchService', () => {
     })
     const card = match.decks.livia.hand[0]
     if (!card) throw new Error('A mão inicial precisa conter cartas para este cenário.')
+    service.prepareCard(match.id, card.instanceId)
 
     const updated = service.resolveAction({
       matchId: match.id,
       action: card.compatibleActions[0]!,
       locationId: 'gallery',
-      cardInstanceId: card.instanceId,
     })
 
     expect(updated.decks.livia.hand).not.toContainEqual(card)

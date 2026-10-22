@@ -19,6 +19,9 @@ interface MatchParams {
 interface ResolveActionBody {
   action?: unknown
   locationId?: unknown
+}
+
+interface PrepareCardBody {
   cardInstanceId?: unknown
 }
 
@@ -51,7 +54,7 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
   app.post<{ Params: MatchParams; Body: ResolveActionBody }>(
     '/api/matches/:id/actions',
     async (request, reply) => {
-      const { action, locationId, cardInstanceId } = request.body
+      const { action, locationId } = request.body
       if (!isInvestigationAction(action) || !isLocationId(locationId)) {
         return reply.code(400).send({ message: 'Ação ou local inválido.' })
       }
@@ -61,10 +64,30 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
           matchId: request.params.id,
           action,
           locationId,
-          cardInstanceId: typeof cardInstanceId === 'string' ? cardInstanceId : undefined,
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Não foi possível resolver a ação.'
+        return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })
+      }
+    },
+  )
+
+  app.put<{ Params: MatchParams; Body: PrepareCardBody }>(
+    '/api/matches/:id/prepared-card',
+    async (request, reply) => {
+      const { cardInstanceId } = request.body
+      if (
+        cardInstanceId !== null &&
+        cardInstanceId !== undefined &&
+        typeof cardInstanceId !== 'string'
+      ) {
+        return reply.code(400).send({ message: 'Carta preparada inválida.' })
+      }
+      try {
+        return service.prepareCard(request.params.id, cardInstanceId ?? null)
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Não foi possível preparar a carta.'
         return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })
       }
     },

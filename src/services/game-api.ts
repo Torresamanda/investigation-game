@@ -14,6 +14,7 @@ export interface MatchJournalEntry {
 
 export interface RemoteMatch {
   readonly id: string
+  readonly preparedCardInstanceId: string | null
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly round: number
@@ -58,18 +59,19 @@ export const gameApi = {
       body: JSON.stringify({ activeInvestigatorId, supportInvestigatorId }),
     })
   },
-  resolveAction(
-    matchId: string,
-    action: InvestigationAction,
-    locationId: LocationId,
-    cardInstanceId?: string,
-  ) {
+  resolveAction(matchId: string, action: InvestigationAction, locationId: LocationId) {
     return request<RemoteMatch>(`/api/matches/${matchId}/actions`, {
       method: 'POST',
-      body: JSON.stringify({ action, locationId, cardInstanceId }),
+      body: JSON.stringify({ action, locationId }),
     })
   },
   endTurn(matchId: string) {
     return request<RemoteMatch>(`/api/matches/${matchId}/end-turn`, { method: 'POST' })
+  },
+  prepareCard(matchId: string, cardInstanceId: string | null) {
+    return request<RemoteMatch>(`/api/matches/${matchId}/prepared-card`, {
+      method: 'PUT',
+      body: JSON.stringify({ cardInstanceId }),
+    })
   },
 }

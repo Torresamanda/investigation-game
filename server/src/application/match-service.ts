@@ -20,7 +20,6 @@ export interface ResolveActionCommand {
   readonly matchId: string
   readonly action: InvestigationAction
   readonly locationId: LocationId
-  readonly cardInstanceId?: string
 }
 
 export interface MatchRepository {
@@ -66,10 +65,13 @@ export class MatchService {
     const match = this.getMatch(command.matchId)
     if (!match) throw new Error('Partida não encontrada.')
     const activeDeck = match.decks[match.activeInvestigatorId]
-    const card = command.cardInstanceId
-      ? activeDeck.hand.find((item) => item.instanceId === command.cardInstanceId)
+    const card = match.preparedCardInstanceId
+      ? activeDeck.hand.find((item) => item.instanceId === match.preparedCardInstanceId)
       : undefined
-    if (command.cardInstanceId && (!card || !card.compatibleActions.includes(command.action))) {
+    if (
+      match.preparedCardInstanceId &&
+      (!card || !card.compatibleActions.includes(command.action))
+    ) {
       throw new Error('A carta não pode ser usada nesta ação.')
     }
     const cost = 2 + (card?.cost ?? 0)
@@ -86,6 +88,7 @@ export class MatchService {
             [match.activeInvestigatorId]: discardFromHand(activeDeck, card.instanceId),
           }
         : match.decks,
+      preparedCardInstanceId: null,
       journalEntries: [...match.journalEntries, resolution.entry],
       resolvedKeys: resolution.resolvedKey
         ? [...match.resolvedKeys, resolution.resolvedKey]
@@ -104,6 +107,7 @@ export class MatchService {
       ...match,
       round: match.round + 1,
       actionPoints: actionPointsFor(match.activeInvestigatorId),
+      preparedCardInstanceId: null,
       decks: Object.fromEntries(
         Object.entries(match.decks).map(([investigatorId, deck]) => [
           investigatorId,
@@ -111,6 +115,20 @@ export class MatchService {
         ]),
       ) as SoloMatch['decks'],
     }
+    this.repository.save(updated)
+    return updated
+  }
+
+  prepareCard(matchId: string, instanceId: string | null): SoloMatch {
+    const match = this.getMatch(matchId)
+    if (!match) throw new Error('Partida não encontrada.')
+    if (
+      instanceId &&
+      !match.decks[match.activeInvestigatorId].hand.some((card) => card.instanceId === instanceId)
+    ) {
+      throw new Error('A carta precisa estar na mão do investigador.')
+    }
+    const updated = { ...match, preparedCardInstanceId: instanceId }
     this.repository.save(updated)
     return updated
   }
