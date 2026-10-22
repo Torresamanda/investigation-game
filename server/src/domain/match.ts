@@ -16,12 +16,12 @@ export interface ActionPoints {
 
 export interface JournalEntry {
   readonly id: string
-  readonly type: 'clue' | 'observation'
+  readonly type: 'clue' | 'observation' | 'statement'
   readonly title: string
   readonly content: string
   readonly locationId: LocationId
   readonly round: number
-  readonly status: 'unconfirmed' | 'note'
+  readonly status: 'unconfirmed' | 'note' | 'recorded'
 }
 
 export interface SoloMatch {

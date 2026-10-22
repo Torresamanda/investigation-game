@@ -102,4 +102,64 @@ describe('MatchService', () => {
     expect(updated.decks.livia.discardPile).toContainEqual(card)
     expect(updated.actionPoints.general).toBe(3 - card.cost)
   })
+
+  it('oferece perguntas da pessoa presente e registra a declaração ao resolvê-la', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    service.createSoloMatch({ activeInvestigatorId: 'isadora', supportInvestigatorId: 'rafael' })
+
+    const options = service.getConversationOptions('match-1', 'marta', 'laboratory')
+    const updated = service.resolveConversation({
+      matchId: 'match-1',
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'technical-assessment',
+    })
+
+    expect(options.questions).toHaveLength(3)
+    expect(options.questions[0]).toMatchObject({ cost: 2, canResolve: true })
+    expect(updated.actionPoints).toMatchObject({ general: 3, specialty: 0 })
+    expect(updated.journalEntries.at(-1)).toMatchObject({
+      type: 'statement',
+      title: 'Declaração de Marta Lobo',
+      locationId: 'laboratory',
+    })
+    expect(service.getConversationOptions('match-1', 'marta', 'laboratory').questions).toHaveLength(
+      2,
+    )
+  })
+
+  it('rejeita conversa fora do local, pergunta inexistente ou já resolvida sem alterar a partida', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    expect(() => service.getConversationOptions(match.id, 'marta', 'gallery')).toThrow(
+      'Esta pessoa não está disponível neste local.',
+    )
+    expect(() =>
+      service.resolveConversation({
+        matchId: match.id,
+        personId: 'marta',
+        locationId: 'laboratory',
+        questionId: 'not-found',
+      }),
+    ).toThrow('Pergunta inexistente para esta conversa.')
+    const resolved = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'davi-interest',
+    })
+    expect(() =>
+      service.resolveConversation({
+        matchId: match.id,
+        personId: 'marta',
+        locationId: 'laboratory',
+        questionId: 'davi-interest',
+      }),
+    ).toThrow('Esta pergunta já foi resolvida.')
+    expect(service.getMatch(match.id)).toEqual(resolved)
+  })
 })

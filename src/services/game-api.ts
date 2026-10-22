@@ -4,12 +4,26 @@ import type { LocationId } from '../content/case01'
 
 export interface MatchJournalEntry {
   readonly id: string
-  readonly type: 'clue' | 'observation'
+  readonly type: 'clue' | 'observation' | 'statement'
   readonly title: string
   readonly content: string
   readonly locationId: LocationId
   readonly round: number
-  readonly status: 'unconfirmed' | 'note'
+  readonly status: 'unconfirmed' | 'note' | 'recorded'
+}
+
+export interface ConversationQuestion {
+  readonly id: string
+  readonly text: string
+  readonly cost: 1 | 2
+  readonly canResolve: boolean
+}
+
+export interface ConversationOptions {
+  readonly personId: string
+  readonly personName: string
+  readonly locationId: LocationId
+  readonly questions: readonly ConversationQuestion[]
 }
 
 export interface RemoteMatch {
@@ -73,5 +87,25 @@ export const gameApi = {
       method: 'PUT',
       body: JSON.stringify({ cardInstanceId }),
     })
+  },
+  getConversationOptions(matchId: string, personId: string, locationId: LocationId) {
+    const query = new URLSearchParams({ locationId })
+    return request<ConversationOptions>(
+      `/api/matches/${matchId}/conversations/${personId}?${query}`,
+    )
+  },
+  resolveConversation(
+    matchId: string,
+    personId: string,
+    questionId: string,
+    locationId: LocationId,
+  ) {
+    return request<RemoteMatch>(
+      `/api/matches/${matchId}/conversations/${personId}/questions/${questionId}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ locationId }),
+      },
+    )
   },
 }

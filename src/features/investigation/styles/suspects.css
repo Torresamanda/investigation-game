@@ -124,6 +124,45 @@
   color: #a9bfcd;
   font-size: 10px;
 }
+.conversation-dialog {
+  position: fixed;
+  z-index: 10;
+  inset: auto 24px 24px auto;
+  width: min(480px, calc(100vw - 48px));
+  border: 1px solid #c79a53;
+  border-radius: 8px;
+  padding: 18px;
+  background: #10283a;
+  box-shadow: 0 18px 48px #0009;
+}
+.conversation-dialog header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.conversation-dialog h2 {
+  margin: 0;
+}
+.conversation-points,
+.conversation-help {
+  color: #afc7d3;
+  font-size: 13px;
+}
+.conversation-questions {
+  display: grid;
+  gap: 8px;
+}
+.conversation-questions button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  text-align: left;
+}
+.conversation-questions small {
+  color: var(--gold);
+  white-space: nowrap;
+}
 @media (max-width: 1400px) {
   .journal-is-open .suspect-tile {
     grid-template-columns: 1fr;

@@ -10,6 +10,9 @@ import InvestigationScene from './components/InvestigationScene.vue'
 import CardHand from './components/CardHand.vue'
 import CaseJournal from './components/CaseJournal.vue'
 import CaseIntroduction from './components/CaseIntroduction.vue'
+import ConversationDialog from './components/ConversationDialog.vue'
+import type { ConversationOptions } from '../../services/game-api'
+import type { SuspectId } from '../../content/case01'
 import './investigation.css'
 
 const session = useInvestigationStore()
@@ -17,7 +20,7 @@ const feedback = ref('Escolha como deseja conduzir a investigação.')
 const cards = computed(() => session.hand)
 const availableActions = computed<readonly InvestigationAction[]>(() =>
   (['examine', 'converse', 'analyse', 'research'] as const).filter((action) =>
-    session.canExecute(action),
+    action === 'converse' && session.remoteMatch ? true : session.canExecute(action),
   ),
 )
 const locationId = ref<LocationId>('gallery')
@@ -26,6 +29,7 @@ const location = computed(
 )
 const journalTab = ref<'timeline' | 'clues' | 'suspects' | 'notes'>('timeline')
 const scene = ref<InstanceType<typeof InvestigationScene> | null>(null)
+const conversation = ref<ConversationOptions | null>(null)
 const toolbar = ref<InstanceType<typeof CaseToolbar> | null>(null)
 const { open, pinned, enter, leave, toggle, pin, close } = useJournalDisclosure(() =>
   toolbar.value?.focusBookmark(),
@@ -81,6 +85,34 @@ async function endTurn() {
     feedback.value = error instanceof Error ? error.message : 'Não foi possível encerrar o turno.'
   }
 }
+
+async function openConversation(personId: SuspectId) {
+  try {
+    conversation.value = await session.loadConversationOptions(personId, location.value.id)
+  } catch (error) {
+    feedback.value = error instanceof Error ? error.message : 'Não foi possível abrir a conversa.'
+  }
+}
+
+async function resolveConversation(questionId: string) {
+  const activeConversation = conversation.value
+  if (!activeConversation) return
+  try {
+    const entry = await session.resolveConversation(
+      activeConversation.personId as SuspectId,
+      questionId,
+      location.value.id,
+    )
+    feedback.value = entry ? `${entry.title}: ${entry.content}` : 'Declaração registrada no diário.'
+    conversation.value = await session.loadConversationOptions(
+      activeConversation.personId as SuspectId,
+      location.value.id,
+    )
+  } catch (error) {
+    feedback.value =
+      error instanceof Error ? error.message : 'Não foi possível resolver a pergunta.'
+  }
+}
 </script>
 
 <template>
@@ -115,6 +147,7 @@ async function endTurn() {
         :can-end-turn="session.canEndTurn"
         :round="session.round"
         @execute="executeAction"
+        @converse="openConversation"
         @end-turn="endTurn"
       />
       <CardHand
@@ -139,5 +172,12 @@ async function endTurn() {
       />
     </div>
     <CaseIntroduction v-if="!session.introductionSeen" @close="session.introductionSeen = true" />
+    <ConversationDialog
+      v-if="conversation"
+      :conversation="conversation"
+      :points-label="session.pointsLabel"
+      @close="conversation = null"
+      @resolve="resolveConversation"
+    />
   </main>
 </template>

@@ -6,6 +6,7 @@ import {
   isLocationId,
   MatchService,
 } from '../application/match-service.js'
+import { isPersonId } from '../content/case01-conversations.js'
 
 interface CreateMatchBody {
   activeInvestigatorId?: unknown
@@ -23,6 +24,22 @@ interface ResolveActionBody {
 
 interface PrepareCardBody {
   cardInstanceId?: unknown
+}
+
+interface ConversationParams extends MatchParams {
+  personId: string
+}
+
+interface ConversationQuery {
+  locationId?: unknown
+}
+
+interface ConversationQuestionParams extends ConversationParams {
+  questionId: string
+}
+
+interface ResolveConversationBody {
+  locationId?: unknown
 }
 
 export function createApp(service = new MatchService(new InMemoryMatchRepository())) {
@@ -49,6 +66,43 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
     const match = service.getMatch(request.params.id)
     if (!match) return reply.code(404).send({ message: 'Partida não encontrada.' })
     return match
+  })
+
+  app.get<{ Params: ConversationParams; Querystring: ConversationQuery }>(
+    '/api/matches/:id/conversations/:personId',
+    async (request, reply) => {
+      const { personId } = request.params
+      const { locationId } = request.query
+      if (!isPersonId(personId) || !isLocationId(locationId)) {
+        return reply.code(400).send({ message: 'Pessoa ou local inválido.' })
+      }
+      try {
+        return service.getConversationOptions(request.params.id, personId, locationId)
+      } catch (error) {
+        return sendMatchError(reply, error, 'Não foi possível consultar a conversa.')
+      }
+    },
+  )
+
+  app.post<{
+    Params: ConversationQuestionParams
+    Body: ResolveConversationBody
+  }>('/api/matches/:id/conversations/:personId/questions/:questionId', async (request, reply) => {
+    const { personId, questionId } = request.params
+    const { locationId } = request.body
+    if (!isPersonId(personId) || !isLocationId(locationId) || !questionId) {
+      return reply.code(400).send({ message: 'Pessoa, pergunta ou local inválido.' })
+    }
+    try {
+      return service.resolveConversation({
+        matchId: request.params.id,
+        personId,
+        locationId,
+        questionId,
+      })
+    } catch (error) {
+      return sendMatchError(reply, error, 'Não foi possível resolver a pergunta.')
+    }
   })
 
   app.post<{ Params: MatchParams; Body: ResolveActionBody }>(
@@ -103,4 +157,13 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
   })
 
   return app
+}
+
+function sendMatchError(
+  reply: { code(statusCode: number): { send(payload: { message: string }): unknown } },
+  error: unknown,
+  fallback: string,
+) {
+  const message = error instanceof Error ? error.message : fallback
+  return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })
 }

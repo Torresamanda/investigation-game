@@ -18,7 +18,11 @@ const props = defineProps<{
   canEndTurn: boolean
   round: number
 }>()
-const emit = defineEmits<{ execute: [action: InvestigationAction]; endTurn: [] }>()
+const emit = defineEmits<{
+  execute: [action: InvestigationAction]
+  converse: [personId: SuspectId]
+  endTurn: []
+}>()
 const selectedSuspectId = ref<SuspectId | null>(null)
 defineExpose({
   clearSuspect: () => {
@@ -62,7 +66,11 @@ const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpeni
       :available-actions="availableActions"
       :feedback="feedback"
       :can-end-turn="canEndTurn"
-      @execute="emit('execute', $event)"
+      @execute="
+        $event === 'converse' && selectedSuspect
+          ? emit('converse', selectedSuspect.id)
+          : emit('execute', $event)
+      "
       @end-turn="emit('endTurn')"
     />
   </section>

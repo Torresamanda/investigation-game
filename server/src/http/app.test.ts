@@ -74,4 +74,67 @@ describe('API de partidas', () => {
     expect(endTurn.statusCode).toBe(200)
     expect(endTurn.json()).toMatchObject({ round: 2, actionPoints: { general: 5 } })
   })
+
+  it('consulta e resolve uma pergunta de conversa, atualizando PA e diário', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/matches',
+      payload: { activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' },
+    })
+    const { id } = create.json<{ id: string }>()
+
+    const options = await app.inject({
+      method: 'GET',
+      url: `/api/matches/${id}/conversations/marta?locationId=laboratory`,
+    })
+    expect(options.statusCode).toBe(200)
+    expect(options.json<{ questions: unknown[] }>().questions).toHaveLength(3)
+
+    const resolve = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/conversations/marta/questions/davi-interest`,
+      payload: { locationId: 'laboratory' },
+    })
+    expect(resolve.statusCode).toBe(200)
+    expect(resolve.json()).toMatchObject({
+      actionPoints: { general: 4 },
+      journalEntries: [{ type: 'statement', title: 'Declaração de Marta Lobo' }],
+    })
+  })
+
+  it('rejeita pessoa fora do local, pergunta desconhecida e repetição', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/matches',
+      payload: { activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' },
+    })
+    const { id } = create.json<{ id: string }>()
+
+    const unavailable = await app.inject({
+      method: 'GET',
+      url: `/api/matches/${id}/conversations/marta?locationId=gallery`,
+    })
+    expect(unavailable.statusCode).toBe(400)
+
+    const unknown = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/conversations/marta/questions/nope`,
+      payload: { locationId: 'laboratory' },
+    })
+    expect(unknown.statusCode).toBe(400)
+
+    const first = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/conversations/marta/questions/davi-interest`,
+      payload: { locationId: 'laboratory' },
+    })
+    expect(first.statusCode).toBe(200)
+    const repeated = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/conversations/marta/questions/davi-interest`,
+      payload: { locationId: 'laboratory' },
+    })
+    expect(repeated.statusCode).toBe(400)
+    expect(repeated.json()).toEqual({ message: 'Esta pergunta já foi resolvida.' })
+  })
 })

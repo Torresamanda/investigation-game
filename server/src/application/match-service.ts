@@ -10,6 +10,12 @@ import {
   type SoloMatch,
 } from '../domain/match.js'
 import { discardFromHand, drawToHand, INITIAL_HAND_SIZE } from '../domain/match-deck.js'
+import {
+  getConversation,
+  isPersonAvailableAtLocation,
+  type ConversationQuestion,
+  type PersonId,
+} from '../content/case01-conversations.js'
 
 export interface CreateMatchCommand {
   readonly activeInvestigatorId: InvestigatorId
@@ -20,6 +26,22 @@ export interface ResolveActionCommand {
   readonly matchId: string
   readonly action: InvestigationAction
   readonly locationId: LocationId
+}
+
+export interface ResolveConversationCommand {
+  readonly matchId: string
+  readonly personId: PersonId
+  readonly locationId: LocationId
+  readonly questionId: string
+}
+
+export interface ConversationOptions {
+  readonly personId: PersonId
+  readonly personName: string
+  readonly locationId: LocationId
+  readonly questions: readonly (Pick<ConversationQuestion, 'id' | 'text' | 'cost'> & {
+    readonly canResolve: boolean
+  })[]
 }
 
 export interface MatchRepository {
@@ -59,6 +81,64 @@ export class MatchService {
 
   getMatch(id: string): SoloMatch | undefined {
     return this.repository.findById(id)
+  }
+
+  getConversationOptions(
+    matchId: string,
+    personId: PersonId,
+    locationId: LocationId,
+  ): ConversationOptions {
+    const match = this.getMatch(matchId)
+    if (!match) throw new Error('Partida não encontrada.')
+    this.assertPersonAvailability(personId, locationId)
+    const conversation = getConversation(personId)
+    return {
+      personId,
+      personName: conversation.personName,
+      locationId,
+      questions: conversation.questions
+        .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
+        .map(({ id, text, cost }) => ({
+          id,
+          text,
+          cost,
+          canResolve: availablePoints(match, 'converse') >= cost,
+        })),
+    }
+  }
+
+  resolveConversation(command: ResolveConversationCommand): SoloMatch {
+    const match = this.getMatch(command.matchId)
+    if (!match) throw new Error('Partida não encontrada.')
+    this.assertPersonAvailability(command.personId, command.locationId)
+    const conversation = getConversation(command.personId)
+    const question = conversation.questions.find((item) => item.id === command.questionId)
+    if (!question) throw new Error('Pergunta inexistente para esta conversa.')
+    const resolvedKey = conversationKey(command.personId, question.id)
+    if (match.resolvedKeys.includes(resolvedKey)) throw new Error('Esta pergunta já foi resolvida.')
+    if (availablePoints(match, 'converse') < question.cost) {
+      throw new Error('PA insuficientes para esta pergunta.')
+    }
+
+    const updated: SoloMatch = {
+      ...match,
+      actionPoints: spendPoints(match, 'converse', question.cost),
+      journalEntries: [
+        ...match.journalEntries,
+        {
+          id: thisEntryId(match),
+          type: 'statement',
+          title: `Declaração de ${conversation.personName}`,
+          content: question.result,
+          locationId: command.locationId,
+          round: match.round,
+          status: 'recorded',
+        },
+      ],
+      resolvedKeys: [...match.resolvedKeys, resolvedKey],
+    }
+    this.repository.save(updated)
+    return updated
   }
 
   resolveAction(command: ResolveActionCommand): SoloMatch {
@@ -131,6 +211,12 @@ export class MatchService {
     const updated = { ...match, preparedCardInstanceId: instanceId }
     this.repository.save(updated)
     return updated
+  }
+
+  private assertPersonAvailability(personId: PersonId, locationId: LocationId) {
+    if (!isPersonAvailableAtLocation(personId, locationId)) {
+      throw new Error('Esta pessoa não está disponível neste local.')
+    }
   }
 }
 
@@ -224,4 +310,8 @@ function resolveCaseAction(
 
 function thisEntryId(match: SoloMatch): string {
   return `journal-${match.journalEntries.length + 1}`
+}
+
+function conversationKey(personId: PersonId, questionId: string) {
+  return `conversation:${personId}:${questionId}`
 }

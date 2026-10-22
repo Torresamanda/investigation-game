@@ -14,7 +14,7 @@ import {
 } from '../application/game/solo-mission'
 import type { InvestigationAction } from '../domain/game/action-points'
 import { gameApi, type MatchJournalEntry, type RemoteMatch } from '../services/game-api'
-import type { LocationId } from '../content/case01'
+import type { LocationId, SuspectId } from '../content/case01'
 
 export interface HandCard extends CardDefinition {
   readonly instanceId: string
@@ -162,6 +162,28 @@ export const useInvestigationStore = defineStore('investigation', () => {
     return true
   }
 
+  async function loadConversationOptions(personId: SuspectId, locationId: LocationId) {
+    if (!remoteMatch.value) throw new Error('A conversa exige uma partida conectada à API.')
+    return gameApi.getConversationOptions(remoteMatch.value.id, personId, locationId)
+  }
+
+  async function resolveConversation(
+    personId: SuspectId,
+    questionId: string,
+    locationId: LocationId,
+  ) {
+    if (!remoteMatch.value) throw new Error('A conversa exige uma partida conectada à API.')
+    const updated = await gameApi.resolveConversation(
+      remoteMatch.value.id,
+      personId,
+      questionId,
+      locationId,
+    )
+    remoteMatch.value = updated
+    preparedCardId.value = updated.preparedCardInstanceId
+    return updated.journalEntries.at(-1) ?? null
+  }
+
   function saveNote() {
     const text = notes.value.trim()
     if (!text || text.length > 4000) return false
@@ -203,6 +225,8 @@ export const useInvestigationStore = defineStore('investigation', () => {
     createRemoteMatch,
     resolveAction,
     endRemoteTurn,
+    loadConversationOptions,
+    resolveConversation,
     notes,
     hypotheses,
     introductionSeen,
