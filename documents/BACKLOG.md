@@ -9,12 +9,11 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
 Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, execute as próximas tarefas pendentes exatamente nesta sequência:
 
 1. **Fundação, Arquitetura e Anti-Desincronização (`P0` / `P1` Base):**
-   - Concluído: `18 · BUG-03` + `03F · ARQ-03` → Removida a contingência local divergente, stores divididas e removido o `abandonInvestigation` automático do router.
+   - Concluído: `01A · ARQ-01`, `04A · SEC-03`, `04B · ARQ-02`, `23B · SEC-04`, `18 · BUG-03` e `03F · ARQ-03`.
 
 2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
-   - Concluído: `12A · CASO-08` → Perguntas dependentes de evidência e recompensas temporárias agora ficam bloqueadas até o momento correto, com presença dos suspeitos indicada por local.
-   - Concluído: `13 · CASO-03` → Cartas de conversa integradas, com Pausa Calculada antes ou após a primeira pergunta e regra de PA concreta para a Lista de Convidados.
-   - Concluído: `04C · JOGO-05` → Descarte voluntário de uma carta por rodada, com reposição imediata e sem reposição para cartas usadas em investigações.
+   - Concluído: `12A · CASO-08`, `13 · CASO-03` e `04C · JOGO-05`.
+   - **PRÓXIMA TAREFA IMEDIATA:** `04D · BUG-06` → Corrigir regressões do ciclo de cartas e conversas (`preparedCardInstanceId: null` no descarte, preservar cartas na mão ao encerrar turno sem reembaralhar a mão de volta no `drawPile`, entregar cartas temporárias na `hand` removendo-as ao usar, e somar custo de carta preparada + exibir motivo de bloqueio em `getConversationOptions`).
 
 3. **Motor do Caso 01, Economia de PA e Investigadores (`P1` Core Loop):**
    - `07 · CASO-04` → Descobertas cumulativas por estado e `round >= minRound` (sem expirar pistas de rodadas anteriores) e indicação clara do alvo de `Examinar`/`Analisar`.
@@ -28,7 +27,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
    - `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas/habilidade; hipóteses livres a 0 PA).
    - `14 · INV-02` → Rotas investigativas alternativas por investigador.
    - `19 · CASO-07` → Acusação e desfechos (no modo solo, permitir acusar nas Rodadas 5 ou 6 pagando 3 PA para não inutilizar a Rodada 6).
-   
+
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
    - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
 
@@ -141,6 +140,13 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Respeitar `card.ownerId` no descarte para que cartas do apoio retornem ao `discardPile` do apoio e cartas temporárias sejam descartadas sem entrar na reciclagem permanente.
   - Critério de aceite: o jogador com 4 cartas travadas consegue renovar 1 carta por rodada sem precisar forçar uma ação incompatível.
 
+- [ ] **04D · BUG-06 — Corrigir ciclo da mão ao encerrar turno, destino de cartas temporárias e estado de carta preparada no descarte** `[P0] [Front] [Back]`
+  - **1. Limpar `preparedCardInstanceId` ao descartar (`server/src/application/use-cases/discard-card-use-case.ts`):** Ao executar `DiscardCardUseCase`, definir `preparedCardInstanceId: null` (se a carta descartada era a preparada) no `SoloMatch` persistido, evitando que `ResolveActionUseCase` lance erro `400 ("A carta não pode ser usada nesta ação.")` na ação seguinte por apontar para uma carta que já saiu da mão.
+  - **2. Preservar cartas da mão na virada de turno (`server/src/application/use-cases/end-turn-use-case.ts` e `server/src/domain/match-deck.ts`):** Remover `refreshHandForTurn` e usar `drawToHand(deck, INITIAL_HAND_SIZE)` em `EndTurnUseCase`. Conforme `PROJECT_RULES.md` (Seção 2.3) e `cartas-mvp.md`, cartas na mão **não** retornam ao `drawPile` no fim do turno; o investigador mantém as cartas não usadas e compra apenas o necessário para recompor até 4 cartas.
+  - **3. Entregar cartas temporárias na `hand` e removê-las ao usar em ações (`server/src/domain/match-deck.ts`, `resolve-conversation-use-case.ts` e `resolve-action-use-case.ts`):** Substituir `addTemporaryCardToDrawPile` por `addTemporaryCardToHand` em `ResolveConversationUseCase` para que recompensas de conversa (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`) entrem imediatamente na mão de quem conduziu a conversa. Em `ResolveActionUseCase` e `ResolveConversationUseCase`, usar `recycleCardFromHand` em vez de `discardFromHand` ao consumir a carta preparada, garantindo que cartas `temporary: true` sejam eliminadas após o uso e cartas do apoio retornem para `decks[card.ownerId].discardPile`.
+  - **4. Somar custo da carta preparada e expor requisito de bloqueio em `getConversationOptions` (`server/src/application/match-service.ts` e `ConversationDialog.vue`):** Em `getConversationOptions`, calcular `canResolve` somando o custo da pergunta (`bonusQuestion ? 0 : cost`) ao custo da carta preparada compatível (`preparedCard?.cost ?? 0`), impedindo que perguntas fiquem clicáveis quando preparar `Gravador de Bolso` (1 PA) exceder os PA disponíveis. Incluir também a string `blockedReason` no retorno de cada pergunta bloqueada e exibi-la no modal (`Diálogo bloqueado: necessário evidência — <blockedReason>`).
+  - Critério de aceite: descartar uma carta limpa `preparedCardInstanceId` no servidor; encerrar o turno preserva as cartas restantes na mão e compra apenas até 4; cartas temporárias entram direto na mão ao conversar e somem após usadas; preparar carta de custo > 0 em conversa atualiza `canResolve` corretamente.
+
 - [x] **20 · JOGO-04 — Persistir partidas e diário** `[Back]`
   - Substituir o repositório em memória por SQLite local durante o MVP.
   - Persistir partida, ações, diário, cartas e hipóteses compartilhadas.
@@ -171,58 +177,96 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Critério de aceite: `Gravador de Bolso` registra uma declaração utilizável depois; `Pausa Calculada` abre uma pergunta adicional sem substituir a conversa base (tanto preparada antes quanto após a 1ª pergunta).
 
 - [ ] **07 · CASO-04 — Implementar descobertas de todos os locais e rodadas** `[Front] [Back] [Definição]`
-  - Modelar no backend os resultados oficiais de Galeria, Segurança, Laboratório, Curadoria e Corredor de Serviço usando condições cumulativas de estado e rodada mínima (`round >= minRound` + pré-requisitos), garantindo que pistas físicas e documentais **nunca expirem** ao avançar de rodada (a menos que um evento interdite explicitamente o local).
-  - Registrar pistas como indício, não confirmada, confirmada ou refutada.
-  - Deixar claro no feedback ou em seletor contextual simples qual elemento do local está sendo examinado e permitir que `Analisar` confirme pistas `unconfirmed` já descobertas naquele contexto.
-  - Critério de aceite: a rota E1–E6 da simulação pode ser concluída em qualquer ordem válida de visitação sem *softlock* por rodada e sem expor a solução do caso no frontend.
+  - **Escopo técnico (`server/src/infrastructure/content/case01-content-repository.ts` e `shared/`):**
+    - Remover a trava `match.round === 1` da Galeria Principal e modelar todas as descobertas oficiais dos 5 locais (`gallery`, `security`, `laboratory`, `office`, `service-corridor`) usando condições cumulativas `match.round >= minRound` combinadas com pré-requisitos em `resolvedKeys`. Pistas físicas e documentais **nunca expiram** ao avançar de rodada.
+    - Mapear as descobertas da simulação oficial (`docs/private/simulacao-caso-01-o-vazio-na-vitrine (1).md`):
+      - **Galeria (`gallery`):** `Examinar` vitrine (`round >= 1` → `E1 unconfirmed`, chave `'gallery-lock'`); `Examinar` pedestal (`round >= 1` → indício de óleo/poeira para `E4`, chave `'gallery-pedestal'`); `Examinar` porta de serviço (`round >= 3` → `E4 unconfirmed` + desbloqueia Corredor de Serviço, chave `'gallery-service-door'`); `Analisar` vitrine (`requires: 'gallery-lock'` → confirma `E1`, chave `'e1-confirmed'`).
+      - **Sala de Segurança (`security`):** `Pesquisar` relatório inicial (`round >= 1` → linha do tempo 22h14–22h21, chave `'security-initial-report'`); `Pesquisar` registros do terminal (`round >= 2` → `E3 unconfirmed` lacuna às 22h13, chave `'security-log-gap'`); `Analisar` relatório de apagão (`round >= 3` → confirma `E2` acionamento manual às 22h14, chave `'e2-confirmed'`); `Analisar` lacuna de registros (`round >= 3`, `requires: 'security-log-gap'` → confirma `E3` exclusão no terminal da segurança, chave `'e3-confirmed'`); `Pesquisar` controle de acesso (`round >= 4` → confirma `E6` retorno do cartão de Raul às 22h16, chave `'e6-confirmed'`).
+      - **Laboratório (`laboratory`):** `Examinar` ou `Analisar` ferramentas de Marta (`round >= 1` → pista falsa sobre marcas de ferramenta; se usar carta `treatment-sheet` ou analisar após `'gallery-lock'`, refuta a pista falsa datando-a da semana anterior, chave `'marta-tools-refuted'`).
+      - **Curadoria (`office`):** `Pesquisar` avaliação do seguro (`round >= 1` → pista falsa do seguro; se usar `curator-agenda` ou pesquisar em `round >= 2`, refuta a pista falsa confirmando exigência prévia da seguradora, chave `'helena-insurance-refuted'`).
+      - **Corredor de Serviço (`service-corridor`):** `Examinar` piso e área técnica (`round >= 3`, `requires: 'gallery-service-door'` → confirma `E4` óleo recente até área técnica, chave `'e4-confirmed'`); `Pesquisar` arquivo técnico (`round >= 4`, `requires: 'gallery-service-door'` → `E5 unconfirmed` relatório de câmera inoperante adiada pela segurança, chave `'corridor-camera-report'`, confirmável via conversa com Helena ou análise); `Analisar` resíduo do corredor (`round >= 5`, `requires: 'e4-confirmed'` → confirma óleo do carrinho da segurança).
+    - Expandir o status de `JournalEntry` para suportar `'indicio' | 'unconfirmed' | 'confirmed' | 'refuted' | 'note' | 'recorded' | 'contestable' | 'blocked'` (ou equivalente em inglês consistente com o domínio) e indicar claramente no título/conteúdo do retorno qual elemento específico do local foi examinado/analisado.
+  - Critério de aceite: a rota E1–E6 e a refutação das pistas falsas podem ser concluídas em qualquer ordem válida de visitação (`round >= minRound`) sem *softlock* por rodada e sem expor a solução futura no frontend.
 
 - [ ] **08 · CASO-05 — Liberar locais e deslocamento** `[Front] [Back] [Definição]`
-  - Implementar primeiro deslocamento gratuito da rodada e os deslocamentos seguintes por 1 PA.
-  - Liberar o Corredor de Serviço pelas condições definidas no caso.
-  - Critério de aceite: um local bloqueado não pode ser selecionado até a descoberta correspondente.
+  - **Escopo técnico (`shared/domain/identifiers.ts`, `SoloMatch`, `LocationsPanel.vue` e rota de deslocamento):**
+    - Adicionar `'service-corridor'` (`Corredor de Serviço`) a `locationIds` e ao catálogo visual `src/content/case01.ts`, mantendo-o oculto/bloqueado no início da partida (`unlockedLocations: ['gallery', 'security', 'laboratory', 'office']`).
+    - Rastrear no servidor o local atual do investigador (`currentLocationId: LocationId`, iniciando em `'gallery'`) e se o deslocamento gratuito da rodada já foi utilizado (`hasUsedFreeMoveThisRound: boolean`, resetado para `false` em `EndTurnUseCase`).
+    - Criar caso de uso e endpoint `POST /api/matches/:id/move` (recebendo `locationId`):
+      - Validar se o destino está em `unlockedLocations` (rejeitar com `DomainError` caso bloqueado).
+      - Se `hasUsedFreeMoveThisRound === false`, mover com custo `0 PA` e marcar `hasUsedFreeMoveThisRound = true`.
+      - Se `hasUsedFreeMoveThisRound === true`, exigir e descontar `1 PA` geral.
+    - Desbloquear automaticamente `'service-corridor'` quando a chave `'gallery-service-door'` (ou carta de acesso aplicável a partir da Rodada 3) for resolvida.
+    - Na interface (`LocationsPanel.vue`), exibir o custo do deslocamento (`Grátis (1º da rodada)` ou `1 PA`) e substituir o botão estático `Área não descoberta` pelo `Corredor de Serviço` ativo assim que desbloqueado.
+  - Critério de aceite: o primeiro deslocamento de cada rodada custa `0 PA`, os seguintes custam `1 PA`, e o `Corredor de Serviço` permanece inacessível até que sua condição de abertura seja cumprida no servidor.
 
 - [ ] **09 · CASO-06 — Eventos de abertura e fechamento de rodada** `[Front] [Back] [Definição]`
-  - Aplicar os eventos da simulação, inclusive Perímetro Preservado, Vazamento para a Imprensa e Linha do Tempo Consolidada.
-  - Critério de aceite: a narrativa, custos e opções disponíveis mudam conforme a rodada.
+  - **Escopo técnico (`SoloMatch`, `ResolveActionUseCase`, `ResolveConversationUseCase`, `EndTurnUseCase`):**
+    - Aplicar no motor autoritativo os efeitos mecânicos de cada evento de rodada descritos na simulação oficial:
+      - **Rodada 1 (`Perímetro preservado`):** O primeiro `Examinar` na Galeria Principal nesta rodada revela um detalhe adicional no registro do diário.
+      - **Rodada 2 (`Vazamento para a imprensa`):** A primeira conversa com `helena` ou `davi` na Rodada 2 custa `+1 PA` extra, a menos que o investigador prepare `calculated-pause` (`Pausa Calculada`) ou outra carta social compatível.
+      - **Rodada 3 (`Comando manual`):** Registra no diário na abertura da Rodada 3 a confirmação externa de que a queda de energia começou dentro do prédio e habilita o exame da porta de serviço na Galeria.
+      - **Rodada 4 (`Janela de acusação`):** Ao encerrar a Rodada 4 (passando para a Rodada 5), desbloqueia a ação de Acusação (`canAccuse = true`).
+      - **Rodada 5 (`Linha do tempo consolidada`):** Concede 1 conexão formal gratuita (`0 PA`) entre duas pistas confirmadas durante a Rodada 5 (`hasFreeConnectionThisRound = true`).
+      - **Rodada 6 (`Prazo final`):** Impede o surgimento de pistas inéditas de exploração básica (permitindo apenas analisar pistas pendentes, criar conexões, confrontar inconsistências ou acusar).
+  - Critério de aceite: custos, bônus e restrições de cada rodada são validados pelo servidor e comunicados ao jogador na abertura da rodada.
 
 - [ ] **19 · CASO-07 — Acusação e desfechos** `[Front] [Back] [Definição]`
-  - Desbloquear acusação somente após o encerramento da Rodada 4, disponível nas Rodadas 5 e 6.
-  - Em **cooperação**, a acusação deve ser escolhida no início de um turno e consome o turno completo daquele investigador; no **modo solo**, permitir apresentar a acusação nas Rodadas 5 ou 6 consumindo **3 PA** (permitindo que o jogador solo use os 2 PA restantes no início da Rodada 6 para concluir uma última análise ou conexão antes de acusar).
-  - Validar três evidências confirmadas, dois vínculos e os eixos meios, oportunidade e vínculo.
-  - Critério de aceite: o jogador solo consegue realizar 1 ação final de 2 PA e ainda acusar na Rodada 6; acusações insuficientes não revelam a solução; desfechos corretos e incorretos encerram a partida.
+  - **Escopo técnico (`AccuseSuspectUseCase`, `POST /api/matches/:id/accuse` e modal de Acusação no frontend):**
+    - Desbloquear acusação somente após o encerramento da Rodada 4, disponível nas Rodadas 5 e 6.
+    - **Regra de custo Solo vs. Coop:** Em **cooperação**, a acusação deve ser escolhida no início de um turno (`hasActedThisTurn === false`) e consome o turno completo daquele investigador; no **modo solo**, permitir apresentar a acusação em qualquer momento das Rodadas 5 ou 6 desde que o investigador possua e gaste **3 PA** (permitindo que o jogador solo use até 2 PA na Rodada 6 para concluir uma última análise ou conexão antes de acusar).
+    - Validar no servidor os 3 pré-requisitos estruturais antes de aceitar o dossiê:
+      1. Pelo menos **3 pistas confirmadas** (`status === 'confirmed'`);
+      2. Pelo menos **2 conexões formais** registradas no diário;
+      3. Preenchimento dos 3 eixos da acusação (**meios**, **oportunidade** e **vínculo**) com pistas confirmadas.
+    - Se os pré-requisitos estruturais não forem atendidos, retornar erro de domínio informando apenas que o dossiê ainda não está sustentado (sem gastar o turno/PA e sem encerrar a partida).
+    - Se o dossiê estiver sustentado: verificar se o suspeito acusado é `raul` e se as evidências cobrem meios (`E1` ou `E5`), oportunidade (`E2` ou `E6`) e vínculo (`E3`, `E4`, `E5` ou `E6`). Atualizar `match.status` para `'won'` (vitória) ou `'lost'` (derrota, caso acuse outro suspeito ou eixos incompatíveis, **sem revelar quem era o culpado**).
+    - Caso o jogador encerre a Rodada 6 em `EndTurnUseCase` sem vitória, encerrar a partida com `status: 'lost'`.
+  - Critério de aceite: o jogador solo consegue realizar 1 ação de 2 PA e ainda acusar por 3 PA na Rodada 6; acusações sem os pré-requisitos avisam que falta base; acusações formais encerram a partida em vitória ou derrota sem entregar a resposta em caso de falha.
 
 ## P1 — Identidade e especialização dos investigadores
 
 - [ ] **10 · INV-01 — Aplicar habilidades passivas por investigador** `[Front] [Back] [Definição]`
-  - Lívia: primeiro `Examinar` de cada local por rodada custa 1 PA a menos, mínimo 1.
-  - Rafael: usa PA técnico em análise e pode confirmar uma pista física uma vez por rodada.
-  - Isadora: usa PA social em conversa e pode marcar uma declaração como contestável.
-  - Otávio: usa PA de pesquisa e pode gastar 1 PA de pesquisa para conectar uma pista confirmada a uma não verificada, equilibrando sua economia de PA.
-  - Critério de aceite: a interface explica o benefício aplicado e o diário registra o resultado especial quando houver.
+  - **Escopo técnico (`ResolveActionUseCase`, `ResolveConversationUseCase`, `shared/domain/action-points.ts`):**
+    - **Lívia (`Instinto de Cena`):** O primeiro `Examinar` em cada local por rodada (`examinedLocationsThisRound`) custa `1 PA` a menos (custo base cai de `2 PA` para `1 PA`). Atualizar `canPayAction` / `canExecute` para refletir o custo reduzido de `1 PA` quando o local atual ainda não foi examinado por Lívia na rodada.
+    - **Rafael (`Cadeia de Custódia`):** Usa `1 PA` técnico em `Analisar` ou cartas técnicas; uma vez por rodada (`hasUsedPassiveThisRound`), ao analisar uma pista física não verificada, confirma-a imediatamente e registra a validação pericial no diário.
+    - **Isadora (`Leitura de Sala`):** Usa `1 PA` social em `Conversar` ou cartas sociais; uma vez por rodada, pode marcar uma declaração registrada como `contestable` e, ao contradizê-la com evidência, recebe `1 PA` social bônus na rodada.
+    - **Otávio (`Conexões Ocultas`):** Usa os `2 PA` de pesquisa em `Pesquisar` ou cartas de pesquisa e pode gastar `1 PA` de pesquisa para criar uma conexão no diário entre uma pista confirmada e uma não verificada, revelando uma dica de local ou pergunta.
+  - Critério de aceite: o desconto de Lívia e as habilidades de Rafael, Isadora e Otávio funcionam no servidor e na validação de botões da UI, equilibrando o gasto de PA de cada perfil.
 
 - [ ] **14 · INV-02 — Criar rotas investigativas alternativas** `[Back] [Definição]`
-  - Garantir que cada investigador possua ao menos uma forma própria de gerar, confirmar ou conectar informação relevante.
-  - Critério de aceite: a missão pode alcançar uma acusação fundamentada por mais de uma combinação de investigadores e cartas.
+  - **Escopo técnico (`Case01ContentRepository` e efeitos de cartas):**
+    - Garantir que todas as cartas dos baralhos iniciais (`Lanterna Ultravioleta`, `Marcador de Vestígio`, `Mapa de Rotas`, `Credencial de Acesso`, `Lupa Comparativa`, `Câmera Forense`, `Envelope de Custódia`, `Reagente de Traços`, `Transcrição Marcada`, `Cartão de Contato`, `Caixa de Arquivo`, `Fio Cronológico`, `Cruzamento de Registros`, `Selo Institucional`) apliquem seu benefício mecânico real ao serem usadas com uma ação compatível (reduzindo custo da próxima análise, confirmando pista física, organizando cronologia 22h13–22h16–22h21, abrindo acesso restrito ou gerando conexão).
+    - Garantir que tanto a **rota técnica** (`E1 + E2 + E3`) quanto a **rota exploratória/documental** (`E4 + E5 + E6`) permitam vencer com qualquer dupla de investigadores.
+  - Critério de aceite: nenhuma carta gasta PA em vão sem produzir seu efeito descrito, e a missão pode ser vencida por múltiplas combinações de investigadores.
 
 - [ ] **15 · INV-03 — Implementar apoio de plantão no modo solo** `[Front] [Back] [Definição]`
-  - Uma vez por rodada, permitir trazer uma carta do apoio para a mão do investigador ativo com **desconto de 1 PA no seu uso** (ou conceder **+1 PA da especialidade do apoio** na rodada), compensando a economia de ações do modo solo em relação à dupla cooperativa.
-  - Ao usar ou descartar uma carta do apoio, verificar sempre `card.ownerId` para devolvê-la à pilha de descarte do baralho do apoio (`decks[card.ownerId].discardPile`), nunca ao baralho do investigador ativo.
-  - Critério de aceite: o apoio equilibra a economia de PA no solo sem receber turno próprio, respeita o limite de uma intervenção por rodada e preserva a propriedade das cartas no descarte.
+  - **Escopo técnico (`RequestSupportCardUseCase`, `POST /api/matches/:id/support-card` e UI de Apoio):**
+    - Uma vez por rodada (`hasUsedSupportThisRound: boolean`), permitir que o jogador solo acione o Apoio de Plantão para trazer 1 carta do topo do baralho do apoio (`decks[supportInvestigatorId]`) para a mão do investigador ativo **com desconto de `1 PA` no seu custo de uso** (mínimo `0 PA`), compensando a metade de turnos do modo solo em relação ao cooperativo.
+    - Exibir na interface (`LocationsPanel.vue` ou `CardHand.vue`) o botão `Acionar apoio (<Nome>) · 1x por rodada` quando disponível.
+    - Garantir que, ao usar ou descartar uma carta cujo `ownerId === supportInvestigatorId`, `recycleCardFromHand` devolva a carta para `decks[supportInvestigatorId].discardPile`.
+  - Critério de aceite: o jogador solo pode puxar 1 carta do apoio por rodada com desconto de 1 PA, o apoio não recebe turno próprio e suas cartas retornam sempre ao baralho do apoio ao serem usadas ou descartadas.
 
 ## P1 — Diário e feedback de jogo
 
 - [ ] **05 · DIARIO-01 — Separar pistas, observações, declarações e conexões** `[Front] [Back]`
-  - Exibir cada tipo de registro com estado, origem, rodada e relações relevantes.
-  - Critério de aceite: uma tentativa sem descoberta aparece como observação, sem ser confundida com uma pista de acusação.
+  - **Escopo técnico (`CaseJournal.vue` e `MatchJournalEntry`):**
+    - Exibir cada registro com badge visual claro de estado (`Indício`, `Não confirmada`, `Confirmada`, `Refutada`, `Declaração`, `Contestável`, `Observação`), além do local de origem e número da rodada.
+    - Separar visualmente `observation` (tentativa sem descoberta nova) das pistas reais (`clue`) e declarações (`statement`), e atualizar a aba `Cronologia` dinamicamente conforme horários (`22h13`, `22h16`) são descobertos.
+  - Critério de aceite: uma tentativa sem descoberta aparece claramente como observação e o jogador distingue de imediato quais pistas já estão `Confirmadas` para a acusação.
 
 - [ ] **16 · DIARIO-02 — Criar conexões no diário** `[Front] [Back] [Definição]`
-  - Manter **Hipóteses (anotações livres)** sempre com custo `0 PA`.
-  - Definir custo de **1 PA** (geral ou de pesquisa) para criar uma **Conexão Formal entre duas pistas** (necessária para o requisito de 2 vínculos da acusação), sendo **gratuita (0 PA)** uma vez na Rodada 5 pelo evento *Linha do Tempo Consolidada* ou quando gerada por cartas/habilidades específicas (`Mapa de Rotas`, `Lupa Comparativa`, `Cruzamento de Registros`).
-  - Critério de aceite: as conexões formais validam contexto, consomem 1 PA (salvo isenções de evento/carta) e contam para o requisito da acusação.
+  - **Escopo técnico (`CreateJournalConnectionUseCase`, `POST /api/matches/:id/connections` e `CaseJournal.vue`):**
+    - Manter **Hipóteses (anotações livres)** sempre com custo `0 PA`.
+    - Permitir que o jogador selecione duas pistas registradas no diário para criar uma **Conexão Formal** (`JournalConnection`: `id`, `fromClueId`, `toClueId`, `round`).
+    - Cobrar **1 PA** (geral ou de pesquisa) para registrar a conexão formal, sendo **gratuita (`0 PA`)** uma vez na Rodada 5 (evento *Linha do Tempo Consolidada*) ou quando gerada por cartas/habilidades (`Mapa de Rotas`, `Lupa Comparativa`, `Cruzamento de Registros`).
+    - Validar pares coerentes de conexão (evitando conectar uma pista consigo mesma ou duplicar a mesma conexão).
+  - Critério de aceite: as conexões formais consomem 1 PA (salvo isenções), ficam listadas no diário e são contabilizadas nos 2 vínculos exigidos por `19 · CASO-07`.
 
 - [ ] **06 · DIARIO-03 — Melhorar feedback de ação** `[Front]`
-  - Mostrar alvo da ação, custo, carta aplicada, alteração de PA e resultado em uma mensagem única e acessível.
-  - Critério de aceite: após qualquer ação, o jogador entende o que aconteceu sem precisar abrir o diário.
+  - **Escopo técnico (`InvestigationView.vue` e `InvestigationActions.vue`):**
+    - Mostrar alvo da ação, custo efetivo em PA, carta aplicada e resultado narrativo em uma mensagem estruturada e acessível, destacando se gerou pista nova, confirmação, refutação ou observação.
+  - Critério de aceite: após qualquer ação, o jogador entende o que aconteceu, quanto custou e qual foi o resultado sem precisar abrir o diário.
 
 ## P2 — Cooperação, segurança e entrega
 
