@@ -8,6 +8,7 @@ export {
   PhLockKey,
   PhMinus,
   PhPlus,
+  PhTrash,
   PhUserFocus,
   PhX,
 } from '@phosphor-icons/vue'

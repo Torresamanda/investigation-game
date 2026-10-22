@@ -95,4 +95,20 @@ describe('artes por investigador', () => {
     await view.get('.discard-card').trigger('click')
     expect(view.emitted('discardPrepared')).toEqual([[]])
   })
+
+  it('mostra somente o ícone de descarte quando as ações estão compactas', () => {
+    const view = mount(CardHand, {
+      props: {
+        cards: [],
+        ownerLabel: 'Lívia Serrano',
+        preparedCardId: null,
+        canDiscardPreparedCard: false,
+        compactActions: true,
+      },
+      global: { stubs: { PhTrash: true } },
+    })
+
+    expect(view.get('.discard-card').attributes('aria-label')).toBe('Descartar carta')
+    expect(view.find('.discard-label').exists()).toBe(false)
+  })
 })

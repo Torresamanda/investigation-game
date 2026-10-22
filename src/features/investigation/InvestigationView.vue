@@ -289,6 +289,7 @@ async function clearConversationCardPreparation() {
         :owner-label="session.investigator?.name ?? ''"
         :prepared-card-id="session.preparedCard?.instanceId ?? null"
         :can-discard-prepared-card="session.canDiscardPreparedCard"
+        :compact-actions="open"
         @prepare="prepareCard"
         @clear-prepared="clearPreparedCard"
         @discard-prepared="discardPreparedCard"

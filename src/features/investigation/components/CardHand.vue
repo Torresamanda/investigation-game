@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { HandCard } from '../../../stores/investigation'
+import { PhTrash } from '../../../components/icons'
 import InvestigationCard from './InvestigationCard.vue'
 import CardDetails from './CardDetails.vue'
 const props = defineProps<{
@@ -8,6 +9,7 @@ const props = defineProps<{
   ownerLabel: string
   preparedCardId: string | null
   canDiscardPreparedCard: boolean
+  compactActions?: boolean
 }>()
 const emit = defineEmits<{
   prepare: [instanceId: string]
@@ -45,10 +47,13 @@ function toggleCard(instanceId: string) {
     <div class="hand-actions" aria-label="Ações da mão">
       <button
         class="discard-card"
+        :class="{ 'discard-card--icon-only': compactActions }"
+        aria-label="Descartar carta"
         :disabled="!canDiscardPreparedCard"
         @click="emit('discardPrepared')"
       >
-        Descartar carta
+        <PhTrash :size="16" weight="bold" aria-hidden="true" />
+        <span v-if="!compactActions" class="discard-label">Descartar carta</span>
       </button>
       <button v-if="preparedCardId" class="clear-prepared" @click="emit('clearPrepared')">
         Cancelar
