@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
+import { InMemoryMatchRepository } from '../infrastructure/persistence/in-memory-match-repository.js'
 import {
-  InMemoryMatchRepository,
   isInvestigationAction,
   isInvestigatorId,
   isLocationId,

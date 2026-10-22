@@ -1,0 +1,48 @@
+import type {
+  InvestigationAction,
+  LocationId,
+  PersonId,
+} from '../../../../shared/domain/identifiers.js'
+import type { JournalEntry, SoloMatch } from '../../domain/match.js'
+
+export interface ConversationQuestionContent {
+  readonly id: string
+  readonly text: string
+  readonly cost: 1 | 2
+  readonly approach: 'inquiry' | 'pressure' | 'context'
+}
+
+export interface ConversationContent {
+  readonly personName: string
+  readonly questions: readonly ConversationQuestionContent[]
+}
+
+export interface ConversationOutcomeContent {
+  readonly content: string
+  readonly status: 'recorded' | 'contestable' | 'blocked'
+}
+
+export interface CaseActionResolution {
+  readonly entry: JournalEntry
+  readonly resolvedKey?: string
+}
+
+export interface CaseContentRepository {
+  getConversation(personId: PersonId): ConversationContent
+  isPersonAvailableAtLocation(personId: PersonId, locationId: LocationId): boolean
+  resolveConversationOutcome(
+    personId: PersonId,
+    questionId: string,
+    match: SoloMatch,
+  ): ConversationOutcomeContent | undefined
+  getConversationReward(
+    personId: PersonId,
+    questionId: string,
+    round: number,
+  ): 'curator-agenda' | 'treatment-sheet' | 'guest-list' | 'patrol-map' | undefined
+  resolveAction(
+    match: SoloMatch,
+    action: Exclude<InvestigationAction, 'move' | 'card'>,
+    locationId: LocationId,
+  ): CaseActionResolution
+}

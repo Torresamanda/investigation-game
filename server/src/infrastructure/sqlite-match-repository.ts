@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { MatchRepository } from '../application/match-service.js'
+import type { MatchRepository } from '../application/ports/match-repository.js'
 import type { SoloMatch } from '../domain/match.js'
 
 interface StoredMatch {

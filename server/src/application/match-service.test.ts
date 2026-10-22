@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { InMemoryMatchRepository, MatchService } from './match-service.js'
+import { MatchService } from './match-service.js'
+import { InMemoryMatchRepository } from '../infrastructure/persistence/in-memory-match-repository.js'
 
 describe('MatchService', () => {
   it('cria uma partida solo com dupla fixa e estado inicial', () => {
