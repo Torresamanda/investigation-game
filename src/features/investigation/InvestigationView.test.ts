@@ -62,6 +62,19 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
+  it('permite conversar somente com a pessoa presente no local selecionado', async () => {
+    const view = createView()
+    const conversationButton = () => view.findAll('.action-grid button')[1]!
+
+    expect(conversationButton().attributes('disabled')).toBeDefined()
+    await view.findAll('.suspect-tile')[2]!.trigger('click')
+    expect(conversationButton().attributes('disabled')).toBeDefined()
+    await view.get('.profile-close').trigger('click')
+    await view.findAll('.suspect-tile')[3]!.trigger('click')
+    expect(conversationButton().attributes('disabled')).toBeDefined()
+    view.unmount()
+  })
+
   it.each([0, 1])(
     'selecionar um local encerra o foco do suspeito, inclusive no mesmo local (%s)',
     async (index) => {

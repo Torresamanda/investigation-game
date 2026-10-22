@@ -88,6 +88,24 @@ describe('API de partidas', () => {
     })
   })
 
+  it('rejeita conversar como uma ação de cenário', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/matches',
+      payload: { activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' },
+    })
+    const match = create.json<{ id: string }>()
+
+    const resolve = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/actions`,
+      payload: { action: 'converse', locationId: 'gallery' },
+    })
+
+    expect(resolve.statusCode).toBe(400)
+    expect(resolve.json()).toEqual({ message: 'Ação ou local inválido.' })
+  })
+
   it('encerra o turno e restaura os PA para a rodada seguinte', async () => {
     const create = await app.inject({
       method: 'POST',

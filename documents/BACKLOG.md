@@ -12,7 +12,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
    - Concluído: `18 · BUG-03` + `03F · ARQ-03` → Removida a contingência local divergente, stores divididas e removido o `abandonInvestigation` automático do router.
 
 2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
-   - `12A · CASO-08` → Exibir perguntas de confronto bloqueadas como desabilitadas com requisito visível (`Diálogo bloqueado: necessário evidência`), liberar perguntas com recompensa de Davi/Raul apenas na Rodada 2+ e indicar presença do suspeito no local atual.
+   - Concluído: `12A · CASO-08` → Perguntas dependentes de evidência e recompensas temporárias agora ficam bloqueadas até o momento correto, com presença dos suspeitos indicada por local.
    - `13 · CASO-03` → Integrar cartas de conversa (incluindo uso pós-pergunta de `Pausa Calculada` e substituição da penalidade de imprensa da `Lista de Convidados` por regra de PA concreta).
    - `04C · JOGO-05` → Permitir reciclar (descartar voluntariamente) até 1 carta na preparação da rodada antes de comprar até 4.
 
@@ -158,7 +158,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Variar declarações, pistas, contradições ou bloqueios conforme pergunta, rodada e evidências existentes.
   - Critério de aceite: escolher perguntas diferentes muda o conteúdo do diário ou as próximas oportunidades da missão.
 
-- [ ] **12A · CASO-08 — Prevenir bloqueio permanente de diálogos, alinhar timing de recompensas e indicar presença por local** `[P1] [Front] [Back] [Definição]`
+- [x] **12A · CASO-08 — Prevenir bloqueio permanente de diálogos, alinhar timing de recompensas e indicar presença por local** `[P1] [Front] [Back] [Definição]`
   - Exibir perguntas de confronto/pressão que dependem de evidência prévia (ex.: Helena sobre acesso institucional, Marta sobre digitais, Raul sobre queda de energia e Davi sobre mensagem) como **desabilitadas** no modal de conversa com aviso claro (`Diálogo bloqueado: necessário evidência — <requisito>`), impedindo que o jogador queime permanentemente a pergunta antes de cumprir o pré-requisito.
   - Disponibilizar as perguntas específicas que concedem cartas temporárias de Davi (`collectors` → `Lista de Convidados`) e Raul (`security-procedure` → `Mapa de Rondas`) somente a partir da **Rodada 2**, evitando que sejam consumidas na Rodada 1 sem entregar a recompensa.
   - Manter Davi Orsini alocado na `Galeria Principal` (alinhado aos 4 locais iniciais) e sinalizar visualmente em `SuspectRoster` / `SuspectProfile` quais pessoas de interesse estão presentes no local selecionado (desabilitando ou informando o local correto quando ausentes).

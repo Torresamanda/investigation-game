@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import type { Suspect } from '../../../content/case01'
+import { locations, type CaseLocation, type Suspect } from '../../../content/case01'
 import { getPortrait } from '../../../content/portraits'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 import { PhX } from '../../../components/icons'
-defineProps<{ person: Suspect }>()
+const props = defineProps<{ person: Suspect; location: CaseLocation }>()
 const emit = defineEmits<{ close: [] }>()
+const isPresent = () => props.person.locationId === props.location.id
+const personLocation = () =>
+  locations.find((location) => location.id === props.person.locationId)?.name ?? 'outro local'
 </script>
 
 <template>
@@ -20,6 +23,9 @@ const emit = defineEmits<{ close: [] }>()
         <p class="eyebrow">Pessoa de interesse</p>
         <h3>{{ person.name }}</h3>
         <p class="suspect-role">{{ person.role }}</p>
+        <p class="suspect-presence" :class="{ 'suspect-presence--absent': !isPresent() }">
+          {{ isPresent() ? 'Presente neste local' : `Ausente · presente em ${personLocation()}` }}
+        </p>
       </div>
       <p class="personality-label">Postura e personalidade</p>
       <p class="suspect-personality">{{ person.personality }}</p>

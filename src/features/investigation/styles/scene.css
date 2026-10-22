@@ -26,14 +26,31 @@
   font-size: 24px;
   margin: 0 0 12px;
 }
-.scene-panel .scene-art {
+.scene-art-frame {
   flex: 1 1 0;
   min-height: 70px;
+  position: relative;
+}
+.scene-panel .scene-art {
+  height: 100%;
   width: 100%;
   object-fit: cover;
   border: 1px solid #c79a5355;
   border-radius: 8px;
   margin: 0;
+}
+.scene-presence {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  margin: 0;
+  border: 1px solid #d9b16d;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #10283aeb;
+  color: #f3d7a6;
+  font-size: 11px;
+  font-weight: 700;
 }
 .scene-description {
   margin: 8px 0;
@@ -80,7 +97,7 @@
   .scene-panel {
     grid-template-columns: 1fr;
   }
-  .scene-panel .scene-art {
+  .scene-art-frame {
     min-height: 160px;
   }
   .journal-is-open .scene-panel {

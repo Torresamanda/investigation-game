@@ -157,6 +157,47 @@ export function isPersonAvailableAtLocation(personId: PersonId, locationId: Loca
   return getConversation(personId).locationId === locationId
 }
 
+export function getConversationBlockReason(
+  personId: PersonId,
+  questionId: string,
+  context: { readonly round: number; readonly resolvedKeys: readonly string[] },
+): string | undefined {
+  if (
+    (personId === 'helena' && questionId === 'institutional-access') ||
+    (personId === 'marta' && questionId === 'fingerprints')
+  ) {
+    return context.resolvedKeys.includes('gallery-lock')
+      ? undefined
+      : 'Examine a fechadura de emergência na Galeria Principal.'
+  }
+
+  if (personId === 'raul' && questionId === 'power-failure') {
+    return context.round >= 3
+      ? undefined
+      : 'Encontre um registro técnico que sustente a falha de energia.'
+  }
+
+  if (personId === 'davi' && questionId === 'message') {
+    return context.round >= 2
+      ? undefined
+      : 'Encontre uma evidência que relacione a mensagem ao desaparecimento.'
+  }
+
+  if (personId === 'davi' && questionId === 'collectors') {
+    return context.round >= 2
+      ? undefined
+      : 'Encontre uma evidência que justifique o acesso à Lista de Convidados.'
+  }
+
+  if (personId === 'raul' && questionId === 'security-procedure') {
+    return context.round >= 2
+      ? undefined
+      : 'Encontre uma evidência que justifique o acesso ao Mapa de Rondas.'
+  }
+
+  return undefined
+}
+
 export function resolveConversationOutcome(
   personId: PersonId,
   questionId: string,

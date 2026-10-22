@@ -19,6 +19,14 @@ export class ResolveConversationUseCase {
     const conversation = this.caseContentRepository.getConversation(command.personId)
     const question = conversation.questions.find((item) => item.id === command.questionId)
     if (!question) throw new Error('Pergunta inexistente para esta conversa.')
+    const blockedReason = this.caseContentRepository.getConversationBlockReason(
+      command.personId,
+      command.questionId,
+      match,
+    )
+    if (blockedReason) {
+      throw new DomainError('Diálogo bloqueado: necessário evidência')
+    }
     const resolvedKey = conversationKey(command.personId, question.id)
     if (match.resolvedKeys.includes(resolvedKey)) throw new Error('Esta pergunta já foi resolvida.')
     const bonusQuestion = hasConversationBonus(match, command.personId)

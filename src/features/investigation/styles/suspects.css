@@ -58,6 +58,15 @@
   font-size: 10px;
   line-height: 1.3;
 }
+.suspect-presence {
+  grid-column: 2;
+  color: #9bd3b1;
+  font-size: 9px;
+  line-height: 1.3;
+}
+.suspect-presence--absent {
+  color: #e7b3a2;
+}
 .suspect-profile {
   flex: 1 1 0;
   min-height: 70px;
@@ -171,6 +180,15 @@
   color: #afc7d3;
   font-size: 10px;
   text-transform: uppercase;
+}
+.conversation-questions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+.conversation-questions .conversation-blocked {
+  color: #e7b3a2;
+  font-size: 11px;
+  white-space: normal;
 }
 @media (max-width: 1400px) {
   .journal-is-open .suspect-tile {

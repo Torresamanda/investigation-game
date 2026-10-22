@@ -32,6 +32,17 @@ defineExpose({
 const selectedSuspect = computed(() =>
   suspectProfiles.find((item) => item.id === selectedSuspectId.value),
 )
+const suspectAtCurrentLocation = computed(() =>
+  suspectProfiles.find((item) => item.locationId === props.location.id),
+)
+const canConverseWithSelectedSuspect = computed(
+  () => selectedSuspect.value?.locationId === props.location.id,
+)
+const sceneActions = computed(() =>
+  props.availableActions.filter(
+    (action) => action !== 'converse' || canConverseWithSelectedSuspect.value,
+  ),
+)
 const locationNumber = computed(() =>
   String(locations.findIndex((item) => item.id === props.location.id) + 1).padStart(2, '0'),
 )
@@ -51,11 +62,17 @@ const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpeni
       <SuspectProfile
         v-if="selectedSuspect"
         :person="selectedSuspect"
+        :location="location"
         @close="selectedSuspectId = null"
       />
-      <img v-else class="scene-art" :src="location.artwork" :alt="`Cenário: ${location.name}`" />
+      <div v-else class="scene-art-frame">
+        <img class="scene-art" :src="location.artwork" :alt="`Cenário: ${location.name}`" />
+        <p v-if="suspectAtCurrentLocation" class="scene-presence" role="status">
+          {{ suspectAtCurrentLocation.name }} está aqui
+        </p>
+      </div>
       <p class="scene-description">{{ location.detail }}</p>
-      <SuspectRoster v-model="selectedSuspectId" />
+      <SuspectRoster v-model="selectedSuspectId" :location="location" />
       <div v-if="!selectedSuspect" class="narrator">
         <p class="eyebrow">{{ roundOpening.speaker }}</p>
         <p>{{ roundOpening.message }}</p>
@@ -63,11 +80,11 @@ const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpeni
       </div>
     </div>
     <InvestigationActions
-      :available-actions="availableActions"
+      :available-actions="sceneActions"
       :feedback="feedback"
       :can-end-turn="canEndTurn"
       @execute="
-        $event === 'converse' && selectedSuspect
+        $event === 'converse' && selectedSuspect && canConverseWithSelectedSuspect
           ? emit('converse', selectedSuspect.id)
           : emit('execute', $event)
       "

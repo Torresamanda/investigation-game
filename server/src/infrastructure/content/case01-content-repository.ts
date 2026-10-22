@@ -5,6 +5,7 @@ import type {
 import {
   getConversation,
   getConversationReward,
+  getConversationBlockReason,
   isPersonAvailableAtLocation,
   resolveConversationOutcome,
 } from '../../content/case01-conversations.js'
@@ -33,6 +34,10 @@ export class Case01ContentRepository implements CaseContentRepository {
     return isPersonAvailableAtLocation(personId, locationId)
   }
 
+  getConversationBlockReason(personId: PersonId, questionId: string, match: SoloMatch) {
+    return getConversationBlockReason(personId, questionId, match)
+  }
+
   resolveConversationOutcome(personId: PersonId, questionId: string, match: SoloMatch) {
     return resolveConversationOutcome(personId, questionId, match)
   }
@@ -43,7 +48,7 @@ export class Case01ContentRepository implements CaseContentRepository {
 
   resolveAction(
     match: SoloMatch,
-    action: Exclude<InvestigationAction, 'move' | 'card'>,
+    action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
     locationId: LocationId,
   ): CaseActionResolution {
     const entryId = `journal-${match.journalEntries.length + 1}`

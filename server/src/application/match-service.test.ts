@@ -91,11 +91,15 @@ describe('MatchService', () => {
     })
     const card = match.decks.livia.hand[0]
     if (!card) throw new Error('A mão inicial precisa conter cartas para este cenário.')
+    const action = card.compatibleActions[0]
+    if (!action || action === 'converse') {
+      throw new Error('A primeira carta precisa ser compatível com uma ação de cenário.')
+    }
     service.prepareCard(match.id, card.instanceId)
 
     const updated = service.resolveAction({
       matchId: match.id,
-      action: card.compatibleActions[0]!,
+      action,
       locationId: 'gallery',
     })
 
@@ -132,6 +136,44 @@ describe('MatchService', () => {
     expect(limitedOptions.questions).toHaveLength(2)
     expect(limitedOptions.questionLimitReached).toBe(true)
     expect(limitedOptions.questions.every((question) => !question.canResolve)).toBe(true)
+  })
+
+  it('mantém perguntas dependentes de evidência visíveis, mas bloqueadas sem consumir o turno', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
+    const fingerprints = options.questions.find((question) => question.id === 'fingerprints')
+    expect(fingerprints).toMatchObject({
+      canResolve: false,
+      isEvidenceBlocked: true,
+    })
+    expect(() =>
+      service.resolveConversation({
+        matchId: match.id,
+        personId: 'marta',
+        locationId: 'laboratory',
+        questionId: 'fingerprints',
+      }),
+    ).toThrow('Diálogo bloqueado: necessário evidência')
+    expect(service.getMatch(match.id)).toEqual(match)
+  })
+
+  it('bloqueia recompensas temporárias até a rodada em que elas podem ser entregues', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const options = service.getConversationOptions(match.id, 'davi', 'gallery')
+    expect(options.questions.find((question) => question.id === 'collectors')).toMatchObject({
+      canResolve: false,
+      isEvidenceBlocked: true,
+    })
   })
 
   it('aceita uma pergunta por pessoa a cada turno e libera outra na rodada seguinte', () => {
@@ -209,23 +251,21 @@ describe('MatchService', () => {
     expect(service.getMatch(match.id)).toEqual(resolved)
   })
 
-  it('altera o resultado de pressão conforme a rodada e as evidências já registradas', () => {
+  it('libera a pressão de Marta somente depois da evidência da Galeria', () => {
     const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
 
-    const blocked = service.resolveConversation({
-      matchId: match.id,
-      personId: 'marta',
-      locationId: 'laboratory',
-      questionId: 'fingerprints',
-    })
-    expect(blocked.journalEntries.at(-1)).toMatchObject({
-      status: 'blocked',
-      content: expect.stringContaining('vitrine seja examinada'),
-    })
+    expect(() =>
+      service.resolveConversation({
+        matchId: match.id,
+        personId: 'marta',
+        locationId: 'laboratory',
+        questionId: 'fingerprints',
+      }),
+    ).toThrow('Diálogo bloqueado: necessário evidência')
 
     const corroboratedService = new MatchService(
       new InMemoryMatchRepository(),

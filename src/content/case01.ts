@@ -34,6 +34,7 @@ export const locations = [
 export const suspectProfiles = [
   {
     id: 'helena',
+    locationId: 'office',
     name: 'Helena Duarte',
     initials: 'HD',
     portrait: 'helena-duarte',
@@ -44,6 +45,7 @@ export const suspectProfiles = [
   },
   {
     id: 'raul',
+    locationId: 'security',
     name: 'Raul Viana',
     initials: 'RV',
     portrait: 'raul-viana',
@@ -54,6 +56,7 @@ export const suspectProfiles = [
   },
   {
     id: 'marta',
+    locationId: 'laboratory',
     name: 'Marta Lobo',
     initials: 'ML',
     portrait: 'marta-lobo',
@@ -64,6 +67,7 @@ export const suspectProfiles = [
   },
   {
     id: 'davi',
+    locationId: 'gallery',
     name: 'Davi Orsini',
     initials: 'DO',
     portrait: 'davi-orsini',

@@ -19,6 +19,7 @@ describe('ConversationDialog', () => {
               cost: 2,
               approach: 'inquiry',
               canResolve: false,
+              isEvidenceBlocked: false,
             },
             {
               id: 'davi-interest',
@@ -26,6 +27,7 @@ describe('ConversationDialog', () => {
               cost: 1,
               approach: 'context',
               canResolve: true,
+              isEvidenceBlocked: false,
             },
           ],
         },
@@ -37,8 +39,8 @@ describe('ConversationDialog', () => {
     expect(view.text()).toContain('Apuração')
     expect(view.text()).toContain('Contexto')
     expect(view.findAll('.conversation-questions button').map((button) => button.text())).toEqual([
-      'ApuraçãoComo estava a vitrine?2 PA',
-      'ContextoDavi procurou você?1 PA',
+      'ApuraçãoComo estava a vitrine? 2 PA',
+      'ContextoDavi procurou você? 1 PA',
     ])
     expect(view.findAll('.conversation-questions button')[0]!.attributes('disabled')).toBeDefined()
     await view.findAll('.conversation-questions button')[1]!.trigger('click')
@@ -61,6 +63,7 @@ describe('ConversationDialog', () => {
               cost: 1,
               approach: 'context',
               canResolve: false,
+              isEvidenceBlocked: true,
             },
           ],
         },
@@ -68,6 +71,7 @@ describe('ConversationDialog', () => {
     })
 
     expect(view.text()).toContain('já fez uma pergunta neste turno')
+    expect(view.text()).toContain('Diálogo bloqueado: necessário evidência')
     expect(view.get('.conversation-questions button').attributes('disabled')).toBeDefined()
   })
 })

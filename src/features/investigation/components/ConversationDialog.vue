@@ -47,7 +47,10 @@ const emit = defineEmits<{ close: []; resolve: [questionId: string] }>()
                 ? 'Pressão'
                 : 'Contexto'
           }}</small
-          >{{ question.text }}</span
+          >{{ question.text }}
+          <small v-if="question.isEvidenceBlocked" class="conversation-blocked"
+            >Diálogo bloqueado: necessário evidência</small
+          ></span
         ><small>{{ question.cost }} PA</small>
       </button>
     </div>

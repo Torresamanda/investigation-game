@@ -35,6 +35,7 @@ export interface ConversationOptions {
   readonly questions: readonly (Omit<ConversationQuestionContent, 'cost'> & {
     readonly cost: 0 | 1 | 2
     readonly canResolve: boolean
+    readonly isEvidenceBlocked: boolean
   })[]
 }
 
@@ -89,18 +90,27 @@ export class MatchService {
       questionLimitReached: questionLimitReached && !bonusQuestion,
       questions: conversation.questions
         .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
-        .map(({ id, text, cost, approach }) => ({
-          id,
-          text,
-          cost: bonusQuestion ? 0 : cost,
-          approach,
-          canResolve:
-            (!questionLimitReached || bonusQuestion) &&
-            canPayAction(match.actionPoints, {
-              action: 'converse',
-              amount: bonusQuestion ? 0 : cost,
-            }),
-        })),
+        .map(({ id, text, cost, approach }) => {
+          const blockedReason = this.caseContentRepository.getConversationBlockReason(
+            personId,
+            id,
+            match,
+          )
+          return {
+            id,
+            text,
+            cost: bonusQuestion ? 0 : cost,
+            approach,
+            isEvidenceBlocked: Boolean(blockedReason),
+            canResolve:
+              (!questionLimitReached || bonusQuestion) &&
+              !blockedReason &&
+              canPayAction(match.actionPoints, {
+                action: 'converse',
+                amount: bonusQuestion ? 0 : cost,
+              }),
+          }
+        }),
     }
   }
 
@@ -137,8 +147,8 @@ export function isLocationId(value: unknown): value is LocationId {
 
 export function isInvestigationAction(
   value: unknown,
-): value is Exclude<SharedInvestigationAction, 'move' | 'card'> {
-  return typeof value === 'string' && ['examine', 'converse', 'analyse', 'research'].includes(value)
+): value is Exclude<SharedInvestigationAction, 'move' | 'card' | 'converse'> {
+  return typeof value === 'string' && ['examine', 'analyse', 'research'].includes(value)
 }
 
 function conversationKey(personId: PersonId, questionId: string) {

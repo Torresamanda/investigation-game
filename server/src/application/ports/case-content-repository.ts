@@ -30,6 +30,11 @@ export interface CaseActionResolution {
 export interface CaseContentRepository {
   getConversation(personId: PersonId): ConversationContent
   isPersonAvailableAtLocation(personId: PersonId, locationId: LocationId): boolean
+  getConversationBlockReason(
+    personId: PersonId,
+    questionId: string,
+    match: SoloMatch,
+  ): string | undefined
   resolveConversationOutcome(
     personId: PersonId,
     questionId: string,
@@ -42,7 +47,7 @@ export interface CaseContentRepository {
   ): 'curator-agenda' | 'treatment-sheet' | 'guest-list' | 'patrol-map' | undefined
   resolveAction(
     match: SoloMatch,
-    action: Exclude<InvestigationAction, 'move' | 'card'>,
+    action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
     locationId: LocationId,
   ): CaseActionResolution
 }

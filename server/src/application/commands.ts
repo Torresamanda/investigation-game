@@ -12,7 +12,7 @@ export interface CreateMatchCommand {
 
 export interface ResolveActionCommand {
   readonly matchId: string
-  readonly action: Exclude<InvestigationAction, 'move' | 'card'>
+  readonly action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>
   readonly locationId: LocationId
 }
 
