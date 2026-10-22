@@ -84,7 +84,7 @@ describe('API de partidas', () => {
     expect(resolve.statusCode).toBe(200)
     expect(resolve.json()).toMatchObject({
       actionPoints: { general: 3 },
-      journalEntries: [{ title: 'Fechadura de emergência' }],
+      journalEntries: [{ title: 'Fechadura de emergência da vitrine' }],
     })
   })
 

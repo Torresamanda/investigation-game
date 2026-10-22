@@ -60,14 +60,42 @@ describe('MatchService', () => {
 
     expect(first.journalEntries[0]).toMatchObject({
       type: 'clue',
-      title: 'Fechadura de emergência',
+      title: 'Fechadura de emergência da vitrine',
     })
     expect(second.journalEntries[1]).toMatchObject({ type: 'clue', title: 'Vestígio no pedestal' })
     expect(third.journalEntries[2]).toMatchObject({
       type: 'observation',
-      title: 'Nenhuma descoberta nova',
+      title: 'Sem nova descoberta: Galeria Principal',
     })
     expect(third.actionPoints.general).toBe(3)
+  })
+
+  it('mantém descobertas disponíveis nas rodadas seguintes e libera análise com pré-requisitos', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    service.resolveAction({ matchId: match.id, locationId: 'security', action: 'research' })
+    service.endTurn(match.id)
+    const gap = service.resolveAction({
+      matchId: match.id,
+      locationId: 'security',
+      action: 'research',
+    })
+    expect(gap.journalEntries.at(-1)).toMatchObject({ title: 'Lacuna no terminal' })
+
+    service.endTurn(match.id)
+    const technical = service.resolveAction({
+      matchId: match.id,
+      locationId: 'security',
+      action: 'analyse',
+    })
+    expect(technical.journalEntries.at(-1)).toMatchObject({
+      title: 'Acionamento manual confirmado',
+      status: 'confirmed',
+    })
+    expect(technical.resolvedKeys).toContain('security-log-gap')
   })
 
   it('descarta uma carta preparada e recompõe a mão imediatamente uma vez por rodada', () => {

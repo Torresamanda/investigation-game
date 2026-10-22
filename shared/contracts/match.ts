@@ -8,7 +8,15 @@ export interface MatchJournalEntry {
   readonly content: string
   readonly locationId: LocationId
   readonly round: number
-  readonly status: 'unconfirmed' | 'note' | 'recorded' | 'contestable' | 'blocked'
+  readonly status:
+    | 'indicio'
+    | 'unconfirmed'
+    | 'confirmed'
+    | 'refuted'
+    | 'note'
+    | 'recorded'
+    | 'contestable'
+    | 'blocked'
   readonly recordedWith?: 'pocket-recorder'
 }
 

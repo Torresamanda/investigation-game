@@ -52,50 +52,201 @@ export class Case01ContentRepository implements CaseContentRepository {
     locationId: LocationId,
   ): CaseActionResolution {
     const entryId = `journal-${match.journalEntries.length + 1}`
-    if (match.round === 1 && locationId === 'gallery' && action === 'examine') {
-      if (!match.resolvedKeys.includes('gallery-lock')) {
-        return {
-          resolvedKey: 'gallery-lock',
-          entry: {
-            id: entryId,
-            type: 'clue',
-            title: 'Fechadura de emergência',
-            content:
-              'A fechadura interna não tem dano. A vitrine foi aberta com uma chave de emergência.',
-            locationId,
-            round: match.round,
-            status: 'unconfirmed',
-          },
-        }
-      }
-      if (!match.resolvedKeys.includes('gallery-pedestal')) {
-        return {
-          resolvedKey: 'gallery-pedestal',
-          entry: {
-            id: entryId,
-            type: 'clue',
-            title: 'Vestígio no pedestal',
-            content:
-              'Resíduo escuro de óleo e pó fino segue em direção a uma porta de serviço lacrada.',
-            locationId,
-            round: match.round,
-            status: 'unconfirmed',
-          },
-        }
-      }
-    }
-
-    return {
+    const has = (key: string) => match.resolvedKeys.includes(key)
+    const cardId = match.decks[match.activeInvestigatorId].hand.find(
+      (card) => card.instanceId === match.preparedCardInstanceId,
+    )?.definitionId
+    const makeEntry = (
+      key: string,
+      title: string,
+      content: string,
+      status: 'indicio' | 'unconfirmed' | 'confirmed' | 'refuted',
+    ): CaseActionResolution => ({
+      resolvedKey: key,
+      entry: {
+        id: entryId,
+        type: 'clue',
+        title,
+        content,
+        locationId,
+        round: match.round,
+        status,
+      },
+    })
+    const observation: CaseActionResolution = {
       entry: {
         id: entryId,
         type: 'observation',
-        title: 'Nenhuma descoberta nova',
-        content:
-          'Esta abordagem não revelou informação nova neste contexto. Tente outro local ou uma nova ação.',
+        title: `Sem nova descoberta: ${locationName(locationId)}`,
+        content: `A ação ${actionLabel(action)} não revelou informação nova neste local.`,
         locationId,
         round: match.round,
         status: 'note',
       },
     }
+
+    if (locationId === 'gallery' && action === 'examine') {
+      if (!has('gallery-lock'))
+        return makeEntry(
+          'gallery-lock',
+          'Fechadura de emergência da vitrine',
+          'A fechadura interna não apresenta dano; o mecanismo foi operado por dentro.',
+          'unconfirmed',
+        )
+      if (!has('gallery-pedestal'))
+        return makeEntry(
+          'gallery-pedestal',
+          'Vestígio no pedestal',
+          'Óleo escuro e pó fino seguem em direção à porta de serviço.',
+          'indicio',
+        )
+      if (match.round >= 3 && !has('gallery-service-door'))
+        return makeEntry(
+          'gallery-service-door',
+          'Porta de serviço',
+          'Uma chapa solta revela poeira deslocada e uma marca de carrinho junto à passagem.',
+          'unconfirmed',
+        )
+    }
+    if (
+      locationId === 'gallery' &&
+      action === 'analyse' &&
+      has('gallery-lock') &&
+      !has('e1-confirmed')
+    ) {
+      return makeEntry(
+        'e1-confirmed',
+        'Chave de emergência confirmada',
+        'A inspeção confirma que a vitrine foi aberta pelo mecanismo interno, sem arrombamento.',
+        'confirmed',
+      )
+    }
+    if (locationId === 'security' && action === 'research') {
+      if (!has('security-initial-report'))
+        return makeEntry(
+          'security-initial-report',
+          'Relatório inicial do apagão',
+          'Os registros situam a interrupção entre 22h14 e 22h21.',
+          'unconfirmed',
+        )
+      if (match.round >= 2 && !has('security-log-gap'))
+        return makeEntry(
+          'security-log-gap',
+          'Lacuna no terminal',
+          'Um bloco de registros desapareceu do terminal pouco antes do apagão.',
+          'unconfirmed',
+        )
+      if (match.round >= 4 && !has('e6-confirmed'))
+        return makeEntry(
+          'e6-confirmed',
+          'Retorno do cartão de acesso',
+          'O cartão de Raul registrou retorno à sala às 22h16, sem passagem correspondente pelo acesso público.',
+          'confirmed',
+        )
+    }
+    if (locationId === 'security' && action === 'analyse') {
+      if (match.round >= 3 && !has('e2-confirmed'))
+        return makeEntry(
+          'e2-confirmed',
+          'Acionamento manual confirmado',
+          'A cronologia técnica confirma que o comando de interrupção foi acionado dentro do prédio às 22h14.',
+          'confirmed',
+        )
+      if (match.round >= 3 && has('security-log-gap') && !has('e3-confirmed'))
+        return makeEntry(
+          'e3-confirmed',
+          'Exclusão de registros confirmada',
+          'A lacuna foi criada no terminal da sala de segurança às 22h13.',
+          'confirmed',
+        )
+    }
+    if (locationId === 'laboratory' && (action === 'examine' || action === 'analyse')) {
+      if (!has('marta-tools'))
+        return makeEntry(
+          'marta-tools',
+          'Marcas nas ferramentas',
+          'As ferramentas de restauração podem explicar marcas encontradas perto da vitrine.',
+          'unconfirmed',
+        )
+      if (
+        !has('marta-tools-refuted') &&
+        (cardId === 'treatment-sheet' || (action === 'analyse' && has('gallery-lock')))
+      )
+        return makeEntry(
+          'marta-tools-refuted',
+          'Marcas de restauração refutadas',
+          'O registro técnico data as marcas da semana anterior à ocorrência.',
+          'refuted',
+        )
+    }
+    if (locationId === 'office' && action === 'research') {
+      if (!has('helena-insurance'))
+        return makeEntry(
+          'helena-insurance',
+          'Avaliação do seguro',
+          'A avaliação recente poderia parecer ligada ao desaparecimento e exige verificação documental.',
+          'unconfirmed',
+        )
+      if (!has('helena-insurance-refuted') && (cardId === 'curator-agenda' || match.round >= 2))
+        return makeEntry(
+          'helena-insurance-refuted',
+          'Avaliação do seguro refutada',
+          'O documento confirma que a avaliação foi solicitada antes da exposição.',
+          'refuted',
+        )
+    }
+    if (locationId === 'service-corridor' && has('gallery-service-door')) {
+      if (action === 'examine' && match.round >= 3 && !has('e4-confirmed'))
+        return makeEntry(
+          'e4-confirmed',
+          'Rota pelo corredor confirmada',
+          'Óleo recente acompanha as marcas do carrinho até a área técnica, sem sinal de passagem pelo acesso público.',
+          'confirmed',
+        )
+      if (action === 'research' && match.round >= 4 && !has('corridor-camera-report'))
+        return makeEntry(
+          'corridor-camera-report',
+          'Relatório da câmera',
+          'Um relatório antigo registra a câmera do corredor inoperante e a correção adiada.',
+          'unconfirmed',
+        )
+      if (
+        action === 'analyse' &&
+        match.round >= 5 &&
+        has('e4-confirmed') &&
+        !has('corridor-oil-confirmed')
+      )
+        return makeEntry(
+          'corridor-oil-confirmed',
+          'Resíduo do corredor analisado',
+          'O óleo corresponde ao lubrificante dos carrinhos da equipe técnica.',
+          'confirmed',
+        )
+      if (action === 'analyse' && has('corridor-camera-report') && !has('e5-confirmed'))
+        return makeEntry(
+          'e5-confirmed',
+          'Falha de câmera confirmada',
+          'O relatório técnico confirma que a falha foi conhecida e não formalizada.',
+          'confirmed',
+        )
+    }
+
+    return observation
   }
+}
+
+function locationName(locationId: LocationId): string {
+  const names: Record<LocationId, string> = {
+    gallery: 'Galeria Principal',
+    security: 'Sala de Segurança',
+    laboratory: 'Laboratório de Restauração',
+    office: 'Escritório da Curadoria',
+    'service-corridor': 'Corredor de Serviço',
+  }
+  return names[locationId]
+}
+
+function actionLabel(action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>): string {
+  const labels = { examine: 'Examinar', analyse: 'Analisar', research: 'Pesquisar' }
+  return labels[action]
 }

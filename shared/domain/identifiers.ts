@@ -2,7 +2,13 @@ export const investigatorIds = ['livia', 'rafael', 'isadora', 'otavio'] as const
 
 export type InvestigatorId = (typeof investigatorIds)[number]
 
-export const locationIds = ['gallery', 'security', 'laboratory', 'office'] as const
+export const locationIds = [
+  'gallery',
+  'security',
+  'laboratory',
+  'office',
+  'service-corridor',
+] as const
 
 export type LocationId = (typeof locationIds)[number]
 
