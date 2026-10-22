@@ -4,6 +4,38 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
 
 > Regra de prioridade: uma tarefa que implementa ou protege a mecânica do jogo vem antes de qualquer refinamento visual. A interface deve comunicar regras já funcionais; refinamentos de layout, animação e apresentação ficam para depois da mecânica principal.
 
+## Ordem de Execução Recomendada para a Próxima IA
+
+Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, execute as próximas tarefas pendentes exatamente nesta sequência:
+
+1. **Fundação, Arquitetura e Anti-Desincronização (`P0` / `P1` Base):**
+   - `01A · ARQ-01` → Unificar `shared/` e corrigir cálculo de PA especializado no frontend (`canExecute`).
+   - `04A · SEC-03` → Criar `MatchPresenter` para ocultar `drawPile`, baralho do apoio e chaves internas.
+   - `04B · ARQ-02` → Refatorar backend em Clean Architecture (Casos de Uso, Entidades Ricas e `CaseContentRepository`).
+   - `23B · SEC-04` → Validar schemas HTTP, erros semânticos de domínio e sanitizar parâmetros.
+   - `18 · BUG-03` + `03F · ARQ-03` → Remover contingência local divergente, dividir stores e remover `abandonInvestigation` automático do router.
+
+2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
+   - `12A · CASO-08` → Exibir perguntas de confronto bloqueadas como desabilitadas com requisito visível (`Diálogo bloqueado: necessário evidência`), liberar perguntas com recompensa de Davi/Raul apenas na Rodada 2+ e indicar presença do suspeito no local atual.
+   - `13 · CASO-03` → Integrar cartas de conversa (incluindo uso pós-pergunta de `Pausa Calculada` e substituição da penalidade de imprensa da `Lista de Convidados` por regra de PA concreta).
+   - `04C · JOGO-05` → Permitir reciclar (descartar voluntariamente) até 1 carta na preparação da rodada antes de comprar até 4.
+
+3. **Motor do Caso 01, Economia de PA e Investigadores (`P1` Core Loop):**
+   - `07 · CASO-04` → Descobertas cumulativas por estado e `round >= minRound` (sem expirar pistas de rodadas anteriores) e indicação clara do alvo de `Examinar`/`Analisar`.
+   - `08 · CASO-05` → Deslocamento (1º grátis na rodada, seguintes 1 PA) e desbloqueio do Corredor de Serviço.
+   - `10 · INV-01` → Habilidades passivas dos 4 investigadores (essencial para economia de PA de Lívia e Otávio).
+   - `15 · INV-03` → Apoio de plantão no modo solo com compensação de PA (+1 PA de especialidade ou desconto de 1 PA na carta do apoio) e devolução correta ao descarte do dono (`card.ownerId`).
+   - `09 · CASO-06` + `09A · BUG-05` → Eventos de abertura/fechamento de rodada e remoção do spoiler de Raul na Rodada 4.
+
+4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
+   - `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
+   - `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas/habilidade; hipóteses livres a 0 PA).
+   - `14 · INV-02` → Rotas investigativas alternativas por investigador.
+   - `19 · CASO-07` → Acusação e desfechos (no modo solo, permitir acusar nas Rodadas 5 ou 6 pagando 3 PA para não inutilizar a Rodada 6).
+   
+5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
+   - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
+
 ## P0 — Fundação visual transversal
 
 - [x] **00 · ICON-01 — Adotar Phosphor Icons como sistema único de ícones** `[Front] [Definição]`
@@ -108,6 +140,11 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Extrair a resolução narrativa hardcoded do Caso 01 (`resolveCaseAction` e diálogos) para uma porta `CaseContentRepository` implementada na infraestrutura.
   - Critério de aceite: cada classe, entidade, caso de uso e repositório reside em seu próprio arquivo com responsabilidade única, e `domain/` não possui dependências externas.
 
+- [ ] **04C · JOGO-05 — Permitir reciclagem voluntária de 1 carta na preparação da rodada** `[P1] [Front] [Back] [Definição]`
+  - Permitir que o investigador descarte voluntariamente até 1 carta da mão no encerramento/preparação da rodada antes de recompor a mão até `INITIAL_HAND_SIZE` (4 cartas), prevenindo bloqueio de mão cheia (*hand clogging*) com cartas contextuais ou temporárias.
+  - Respeitar `card.ownerId` no descarte para que cartas do apoio retornem ao `discardPile` do apoio e cartas temporárias sejam descartadas sem entrar na reciclagem permanente.
+  - Critério de aceite: o jogador com 4 cartas travadas consegue renovar 1 carta por rodada sem precisar forçar uma ação incompatível.
+
 - [x] **20 · JOGO-04 — Persistir partidas e diário** `[Back]`
   - Substituir o repositório em memória por SQLite local durante o MVP.
   - Persistir partida, ações, diário, cartas e hipóteses compartilhadas.
@@ -125,15 +162,23 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Variar declarações, pistas, contradições ou bloqueios conforme pergunta, rodada e evidências existentes.
   - Critério de aceite: escolher perguntas diferentes muda o conteúdo do diário ou as próximas oportunidades da missão.
 
-- [ ] **13 · CASO-03 — Integrar cartas de conversa** `[Front] [Back] [Definição]`
-  - Permitir preparar uma carta compatível antes de escolher uma pergunta.
-  - Aplicar cartas de Isadora em conversa e entregar cartas temporárias de suspeitos quando as condições forem atendidas.
-  - Critério de aceite: `Gravador de Bolso` registra uma declaração utilizável depois; `Pausa Calculada` abre uma pergunta adicional sem substituir a conversa base.
+- [ ] **12A · CASO-08 — Prevenir bloqueio permanente de diálogos, alinhar timing de recompensas e indicar presença por local** `[P1] [Front] [Back] [Definição]`
+  - Exibir perguntas de confronto/pressão que dependem de evidência prévia (ex.: Helena sobre acesso institucional, Marta sobre digitais, Raul sobre queda de energia e Davi sobre mensagem) como **desabilitadas** no modal de conversa com aviso claro (`Diálogo bloqueado: necessário evidência — <requisito>`), impedindo que o jogador queime permanentemente a pergunta antes de cumprir o pré-requisito.
+  - Disponibilizar as perguntas específicas que concedem cartas temporárias de Davi (`collectors` → `Lista de Convidados`) e Raul (`security-procedure` → `Mapa de Rondas`) somente a partir da **Rodada 2**, evitando que sejam consumidas na Rodada 1 sem entregar a recompensa.
+  - Manter Davi Orsini alocado na `Galeria Principal` (alinhado aos 4 locais iniciais) e sinalizar visualmente em `SuspectRoster` / `SuspectProfile` quais pessoas de interesse estão presentes no local selecionado (desabilitando ou informando o local correto quando ausentes).
+  - Critério de aceite: nenhuma pergunta com pré-requisito ou carta temporária pode ser perdida permanentemente por *timing* precoce, e o jogador sabe exatamente quem está presente em cada sala antes de acionar `Conversar`.
 
-- [ ] **07 · CASO-04 — Implementar descobertas de todos os locais e rodadas** `[Back] [Definição]`
-  - Modelar no backend os resultados oficiais de Galeria, Segurança, Laboratório, Curadoria e Corredor de Serviço.
+- [ ] **13 · CASO-03 — Integrar cartas de conversa** `[Front] [Back] [Definição]`
+  - Permitir preparar uma carta compatível antes de escolher uma pergunta e permitir também que `Pausa Calculada` seja preparada/acionada **após** a primeira pergunta do turno para abrir imediatamente uma pergunta adicional a custo `0 PA`.
+  - Aplicar cartas de Isadora em conversa e entregar cartas temporárias de suspeitos quando as condições forem atendidas.
+  - Substituir no MVP a penalidade de "avançar pressão da imprensa" da `Lista de Convidados` por uma regra concreta de PA (ex.: custo normal de `1 PA` na pesquisa ou `+1 PA` fora do Escritório da Curadoria), deixando o medidor global de imprensa para evolução futura.
+  - Critério de aceite: `Gravador de Bolso` registra uma declaração utilizável depois; `Pausa Calculada` abre uma pergunta adicional sem substituir a conversa base (tanto preparada antes quanto após a 1ª pergunta).
+
+- [ ] **07 · CASO-04 — Implementar descobertas de todos os locais e rodadas** `[Front] [Back] [Definição]`
+  - Modelar no backend os resultados oficiais de Galeria, Segurança, Laboratório, Curadoria e Corredor de Serviço usando condições cumulativas de estado e rodada mínima (`round >= minRound` + pré-requisitos), garantindo que pistas físicas e documentais **nunca expirem** ao avançar de rodada (a menos que um evento interdite explicitamente o local).
   - Registrar pistas como indício, não confirmada, confirmada ou refutada.
-  - Critério de aceite: a rota E1–E6 da simulação pode ser concluída sem expor a solução do caso no frontend.
+  - Deixar claro no feedback ou em seletor contextual simples qual elemento do local está sendo examinado e permitir que `Analisar` confirme pistas `unconfirmed` já descobertas naquele contexto.
+  - Critério de aceite: a rota E1–E6 da simulação pode ser concluída em qualquer ordem válida de visitação sem *softlock* por rodada e sem expor a solução do caso no frontend.
 
 - [ ] **08 · CASO-05 — Liberar locais e deslocamento** `[Front] [Back] [Definição]`
   - Implementar primeiro deslocamento gratuito da rodada e os deslocamentos seguintes por 1 PA.
@@ -145,9 +190,10 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Critério de aceite: a narrativa, custos e opções disponíveis mudam conforme a rodada.
 
 - [ ] **19 · CASO-07 — Acusação e desfechos** `[Front] [Back] [Definição]`
-  - Desbloquear acusação somente após o encerramento da Rodada 4 e somente no início de turno das Rodadas 5 e 6.
+  - Desbloquear acusação somente após o encerramento da Rodada 4, disponível nas Rodadas 5 e 6.
+  - Em **cooperação**, a acusação deve ser escolhida no início de um turno e consome o turno completo daquele investigador; no **modo solo**, permitir apresentar a acusação nas Rodadas 5 ou 6 consumindo **3 PA** (permitindo que o jogador solo use os 2 PA restantes no início da Rodada 6 para concluir uma última análise ou conexão antes de acusar).
   - Validar três evidências confirmadas, dois vínculos e os eixos meios, oportunidade e vínculo.
-  - Critério de aceite: acusações insuficientes não revelam a solução; desfechos corretos e incorretos encerram a partida.
+  - Critério de aceite: o jogador solo consegue realizar 1 ação final de 2 PA e ainda acusar na Rodada 6; acusações insuficientes não revelam a solução; desfechos corretos e incorretos encerram a partida.
 
 ## P1 — Identidade e especialização dos investigadores
 
@@ -155,7 +201,7 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Lívia: primeiro `Examinar` de cada local por rodada custa 1 PA a menos, mínimo 1.
   - Rafael: usa PA técnico em análise e pode confirmar uma pista física uma vez por rodada.
   - Isadora: usa PA social em conversa e pode marcar uma declaração como contestável.
-  - Otávio: usa PA de pesquisa e pode conectar pistas conforme a habilidade.
+  - Otávio: usa PA de pesquisa e pode gastar 1 PA de pesquisa para conectar uma pista confirmada a uma não verificada, equilibrando sua economia de PA.
   - Critério de aceite: a interface explica o benefício aplicado e o diário registra o resultado especial quando houver.
 
 - [ ] **14 · INV-02 — Criar rotas investigativas alternativas** `[Back] [Definição]`
@@ -163,9 +209,9 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Critério de aceite: a missão pode alcançar uma acusação fundamentada por mais de uma combinação de investigadores e cartas.
 
 - [ ] **15 · INV-03 — Implementar apoio de plantão no modo solo** `[Front] [Back] [Definição]`
-  - Uma vez por rodada, permitir trazer uma carta do apoio para a mão do investigador ativo.
-  - Ao usar a carta, descartá-la no baralho do apoio.
-  - Critério de aceite: o apoio não recebe turno, não compartilha todas as cartas e respeita o limite de uma carta por rodada.
+  - Uma vez por rodada, permitir trazer uma carta do apoio para a mão do investigador ativo com **desconto de 1 PA no seu uso** (ou conceder **+1 PA da especialidade do apoio** na rodada), compensando a economia de ações do modo solo em relação à dupla cooperativa.
+  - Ao usar ou descartar uma carta do apoio, verificar sempre `card.ownerId` para devolvê-la à pilha de descarte do baralho do apoio (`decks[card.ownerId].discardPile`), nunca ao baralho do investigador ativo.
+  - Critério de aceite: o apoio equilibra a economia de PA no solo sem receber turno próprio, respeita o limite de uma intervenção por rodada e preserva a propriedade das cartas no descarte.
 
 ## P1 — Diário e feedback de jogo
 
@@ -174,11 +220,12 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Critério de aceite: uma tentativa sem descoberta aparece como observação, sem ser confundida com uma pista de acusação.
 
 - [ ] **16 · DIARIO-02 — Criar conexões no diário** `[Front] [Back] [Definição]`
-  - Permitir que o jogador relacione duas pistas, com validação de contexto quando exigida por habilidade ou evento.
-  - Critério de aceite: as conexões contam para o requisito da acusação e ficam visíveis para a equipe.
+  - Manter **Hipóteses (anotações livres)** sempre com custo `0 PA`.
+  - Definir custo de **1 PA** (geral ou de pesquisa) para criar uma **Conexão Formal entre duas pistas** (necessária para o requisito de 2 vínculos da acusação), sendo **gratuita (0 PA)** uma vez na Rodada 5 pelo evento *Linha do Tempo Consolidada* ou quando gerada por cartas/habilidades específicas (`Mapa de Rotas`, `Lupa Comparativa`, `Cruzamento de Registros`).
+  - Critério de aceite: as conexões formais validam contexto, consomem 1 PA (salvo isenções de evento/carta) e contam para o requisito da acusação.
 
 - [ ] **06 · DIARIO-03 — Melhorar feedback de ação** `[Front]`
-  - Mostrar custo, carta aplicada, alteração de PA e resultado em uma mensagem única e acessível.
+  - Mostrar alvo da ação, custo, carta aplicada, alteração de PA e resultado em uma mensagem única e acessível.
   - Critério de aceite: após qualquer ação, o jogador entende o que aconteceu sem precisar abrir o diário.
 
 ## P2 — Cooperação, segurança e entrega
@@ -240,6 +287,11 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Introduzir um CMS/headless CMS somente se a edição por pessoas não técnicas ou o fluxo editorial justificar a complexidade; ele deve publicar para a mesma camada de banco, nunca diretamente para o navegador.
   - Definir uma interface de repositório de conteúdo no servidor para que o motor consulte diálogos, perguntas e variantes sem depender do formato de origem.
   - Critério de aceite: um novo caso pode ser adicionado ou uma conversa pode ser corrigida por uma nova versão de conteúdo, sem alteração do motor; a API continua entregando apenas opções e resultados já desbloqueados.
+
+- [ ] **32 · JOGO-06 — Medidor global de Pressão da Imprensa** `[Pós-MVP] [Front] [Back] [Definição]`
+  - Implementar um medidor de pressão externa/imprensa que sobe com eventos de rodada, ações ruidosas ou cartas de risco (como `Lista de Convidados`).
+  - Associar limiares de pressão a efeitos mecânicos concretos (ex.: aumento de custo social em conversas ou bloqueio de favores institucionais).
+  - Critério de aceite: a pressão da imprensa é visível na interface e altera dinamicamente as decisões de risco da equipe.
 
 ## Bugs e refinamentos: estado e prioridade
 
