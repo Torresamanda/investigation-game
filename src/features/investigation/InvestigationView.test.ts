@@ -16,6 +16,33 @@ describe('fluxos da investigação', () => {
       global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } },
     })
 
+  it('organiza cenário, personagens, mão e investigação em seções independentes', async () => {
+    const view = createView()
+    const layout = view.get('.investigation-layout')
+
+    expect(layout.find('.locations-panel').exists()).toBe(true)
+    expect(layout.find('.scene-panel').exists()).toBe(true)
+    expect(layout.find('.suspect-section').exists()).toBe(true)
+    expect(layout.find('.hand-panel').exists()).toBe(true)
+    expect(layout.find('.investigation-controls').exists()).toBe(true)
+    expect(layout.get('.investigator-points').text()).toContain('PA disponíveis')
+    expect(layout.find('.hand-points').exists()).toBe(false)
+    expect(layout.find('.scene-panel .suspect-section').exists()).toBe(false)
+    expect(layout.find('.scene-panel .investigation-controls').exists()).toBe(false)
+
+    await view.get('.journal-bookmark').trigger('click')
+    expect(layout.find('.journal-panel').exists()).toBe(true)
+    view.unmount()
+  })
+
+  it('mantém as ações de descarte junto às cartas sem texto auxiliar', () => {
+    const view = createView()
+
+    expect(view.find('.hand-hint').exists()).toBe(false)
+    expect(view.get('.hand-actions .discard-card').attributes('disabled')).toBeDefined()
+    view.unmount()
+  })
+
   it('informa que ações exigem uma conexão ativa com a API', async () => {
     const view = createView()
     await view.findAll('.location-list button')[1]!.trigger('click')
@@ -52,13 +79,16 @@ describe('fluxos da investigação', () => {
     const view = createView()
     expect(view.findAll('.suspect-tile')).toHaveLength(4)
     expect(view.get('.suspect-roster').text()).toContain('Chefe de segurança')
+    expect(view.findAll('.suspect-tile')[3]!.attributes('aria-pressed')).toBe('true')
+    expect(view.findAll('.suspect-roster .suspect-presence')).toHaveLength(0)
+    expect(view.get('.suspect-profile').text()).toContain('Davi Orsini')
+    expect(view.get('.suspect-profile .suspect-presence').text()).toBe('Presente neste local')
     await view.findAll('.suspect-tile')[2]!.trigger('click')
     expect(view.get('.suspect-profile').text()).toContain('Marta Lobo')
     expect(view.get('.suspect-profile').text()).toContain('Cuidadosa · Franca')
     expect(view.findAll('.investigation-card')).toHaveLength(0)
-    await view.get('.profile-close').trigger('click')
-    expect(view.find('.suspect-profile').exists()).toBe(false)
     expect(view.find('.narrator').exists()).toBe(true)
+    expect(view.find('.profile-close').exists()).toBe(false)
     view.unmount()
   })
 
@@ -69,20 +99,22 @@ describe('fluxos da investigação', () => {
     expect(conversationButton().attributes('disabled')).toBeDefined()
     await view.findAll('.suspect-tile')[2]!.trigger('click')
     expect(conversationButton().attributes('disabled')).toBeDefined()
-    await view.get('.profile-close').trigger('click')
     await view.findAll('.suspect-tile')[3]!.trigger('click')
     expect(conversationButton().attributes('disabled')).toBeDefined()
     view.unmount()
   })
 
-  it.each([0, 1])(
-    'selecionar um local encerra o foco do suspeito, inclusive no mesmo local (%s)',
-    async (index) => {
+  it.each([
+    { locationIndex: 0, suspectIndex: 3, suspectName: 'Davi Orsini' },
+    { locationIndex: 1, suspectIndex: 1, suspectName: 'Raul Viana' },
+  ])(
+    'selecionar um cenário ativa a pessoa correspondente (%s)',
+    async ({ locationIndex, suspectIndex, suspectName }) => {
       const view = createView()
       await view.findAll('.suspect-tile')[0]!.trigger('click')
-      expect(view.find('.suspect-profile').exists()).toBe(true)
-      await view.findAll('.location-list button')[index]!.trigger('click')
-      expect(view.find('.suspect-profile').exists()).toBe(false)
+      await view.findAll('.location-list button')[locationIndex]!.trigger('click')
+      expect(view.get('.suspect-profile').text()).toContain(suspectName)
+      expect(view.findAll('.suspect-tile')[suspectIndex]!.attributes('aria-pressed')).toBe('true')
       view.unmount()
     },
   )

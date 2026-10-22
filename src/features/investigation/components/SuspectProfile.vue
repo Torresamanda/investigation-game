@@ -2,9 +2,7 @@
 import { locations, type CaseLocation, type Suspect } from '../../../content/case01'
 import { getPortrait } from '../../../content/portraits'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
-import { PhX } from '../../../components/icons'
 const props = defineProps<{ person: Suspect; location: CaseLocation }>()
-const emit = defineEmits<{ close: [] }>()
 const isPresent = () => props.person.locationId === props.location.id
 const personLocation = () =>
   locations.find((location) => location.id === props.person.locationId)?.name ?? 'outro local'
@@ -32,8 +30,5 @@ const personLocation = () =>
       <p class="suspect-introduction">{{ person.introduction }}</p>
       <small>Conversas e descobertas serão registradas no diário.</small>
     </div>
-    <button class="profile-close" aria-label="Voltar ao cenário" @click="emit('close')">
-      <PhX :size="18" weight="bold" aria-hidden="true" />
-    </button>
   </section>
 </template>

@@ -20,7 +20,7 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
 </script>
 
 <template>
-  <div class="investigation-controls">
+  <section class="panel investigation-controls" aria-label="Seção de investigação">
     <div>
       <p class="eyebrow">Decisão do investigador</p>
       <h3>Como deseja investigar?</h3>
@@ -60,5 +60,5 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
         No início de um turno das Rodadas 5 ou 6. Consome o turno completo.
       </p>
     </div>
-  </div>
+  </section>
 </template>

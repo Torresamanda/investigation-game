@@ -12,15 +12,14 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
    - Concluído: `01A · ARQ-01`, `04A · SEC-03`, `04B · ARQ-02`, `23B · SEC-04`, `18 · BUG-03` e `03F · ARQ-03`.
 
 2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
-   - Concluído: `12A · CASO-08`, `13 · CASO-03` e `04C · JOGO-05`.
-   - **PRÓXIMA TAREFA IMEDIATA:** `04D · BUG-06` → Corrigir regressões do ciclo de cartas e conversas (`preparedCardInstanceId: null` no descarte, preservar cartas na mão ao encerrar turno sem reembaralhar a mão de volta no `drawPile`, entregar cartas temporárias na `hand` removendo-as ao usar, e somar custo de carta preparada + exibir motivo de bloqueio em `getConversationOptions`).
+   - Concluído: `12A · CASO-08`, `13 · CASO-03`, `04C · JOGO-05` e `04D · BUG-06`.
+   - A virada de turno recolhe e embaralha as cartas não usadas e distribui uma mão nova de exatamente quatro cartas; as cartas usadas continuam no descarte.
 
 3. **Motor do Caso 01, Economia de PA e Investigadores (`P1` Core Loop):**
-   - `07 · CASO-04` → Descobertas cumulativas por estado e `round >= minRound` (sem expirar pistas de rodadas anteriores) e indicação clara do alvo de `Examinar`/`Analisar`.
-   - `08 · CASO-05` → Deslocamento (1º grátis na rodada, seguintes 1 PA) e desbloqueio do Corredor de Serviço.
-   - `10 · INV-01` → Habilidades passivas dos 4 investigadores (essencial para economia de PA de Lívia e Otávio).
-   - `15 · INV-03` → Apoio de plantão no modo solo com compensação de PA (+1 PA de especialidade ou desconto de 1 PA na carta do apoio) e devolução correta ao descarte do dono (`card.ownerId`).
-   - `09 · CASO-06` + `09A · BUG-05` → Eventos de abertura/fechamento de rodada e remoção do spoiler de Raul na Rodada 4.
+   - Concluído: `07 · CASO-04` (descobertas cumulativas por local/rodada) e `08 · CASO-05` (deslocamento e desbloqueio do Corredor de Serviço).
+   - Concluído: `10 · INV-01` (passivas de Lívia, Rafael, Isadora e Otávio; custo e viabilidade refletidos na interface).
+   - **PRÓXIMA TAREFA IMEDIATA:** `15 · INV-03` → Apoio de plantão no modo solo com compensação de PA (+1 PA de especialidade ou desconto de 1 PA na carta do apoio) e devolução correta ao descarte do dono (`card.ownerId`).
+   - Concluído: `09 · CASO-06` + `09A · BUG-05` (eventos aplicados no servidor e abertura da Rodada 4 condicionada às evidências confirmadas no diário).
 
 4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
    - `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
@@ -32,21 +31,6 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
    - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
 
 ### Prompt de Handoff para a Próxima IA
-
-```text
-Você está continuando o MVP do jogo investigativo "Cidade das Brumas" no repositório `investigation-game`.
-
-Leia primeiro, nesta ordem:
-1. `AGENTS.md` e `documents/PROJECT_RULES.md` — diretrizes obrigatórias de Clean Architecture, segurança, Clean Code, ícones e CSS.
-2. `documents/BACKLOG.md` — veja a seção "Ordem de Execução Recomendada para a Próxima IA" e os detalhes técnicos de cada task.
-3. `documents/COMMIT_CONVENTIONS.md` — regras de Conventional Commits. Nunca execute `git push` sem autorização explícita.
-4. `docs/gameplay/regras-fluxo-rodada (2).md`, `docs/gameplay/cartas-mvp.md`, `docs/private/caso-01-o-vazio-na-vitrine (1).md` e `docs/private/simulacao-caso-01-o-vazio-na-vitrine (1).md` (material privado de referência, nunca importe nem exponha no frontend/shared).
-
-Onde o projeto parou:
-- As tarefas `01A · ARQ-01`, `04A · SEC-03`, `04B · ARQ-02`, `23B · SEC-04`, `18 · BUG-03`, `03F · ARQ-03`, `12A · CASO-08`, `13 · CASO-03` e `04C · JOGO-05` já estão concluídas.
-- Sua primeira tarefa é implementar `04D · BUG-06` e, em seguida, avançar na ordem exata definida em `documents/BACKLOG.md` (`07 · CASO-04` → `08 · CASO-05` → `10 · INV-01` → `15 · INV-03` → `09 · CASO-06` + `09A · BUG-05` → `05 · DIARIO-01` + `06 · DIARIO-03` → `16 · DIARIO-02` → `14 · INV-02` → `19 · CASO-07`).
-- Ao concluir cada tarefa, adicione/atualize os testes automatizados correspondentes e rode `npm run check` antes de criar o commit.
-```
 
 ## P0 — Fundação visual transversal
 
@@ -115,7 +99,7 @@ Onde o projeto parou:
   - Inserir separação visual e textual após `Nenhuma descoberta nova`, incluindo `:` antes do conteúdo da observação.
   - Critério de aceite: título e mensagem não aparecem unidos em interface, leitor de tela ou diário.
 
-- [ ] **09A · BUG-05 — Remover antecipação do suspeito na abertura da Rodada 4** `[P1] [Front] [Back] [Definição]`
+- [x] **09A · BUG-05 — Remover antecipação do suspeito na abertura da Rodada 4** `[P1] [Front] [Back] [Definição]`
   - Substituir a mensagem que nomeia Raul por uma formulação neutra enquanto ele não tiver sido associado pelo diário do jogador.
   - Definir condição de conteúdo para liberar menções diretas somente depois das pistas adequadas.
   - Critério de aceite: chegar à Rodada 4 sem investigar Raul não revela sua participação por meio da narrativa de Sofia.
@@ -157,12 +141,12 @@ Onde o projeto parou:
   - Respeitar `card.ownerId` no descarte para que cartas do apoio retornem ao `discardPile` do apoio e cartas temporárias sejam descartadas sem entrar na reciclagem permanente.
   - Critério de aceite: o jogador com 4 cartas travadas consegue renovar 1 carta por rodada sem precisar forçar uma ação incompatível.
 
-- [ ] **04D · BUG-06 — Corrigir ciclo da mão ao encerrar turno, destino de cartas temporárias e estado de carta preparada no descarte** `[P0] [Front] [Back]`
+- [x] **04D · BUG-06 — Corrigir ciclo da mão ao encerrar turno, destino de cartas temporárias e estado de carta preparada no descarte** `[P0] [Front] [Back]`
   - **1. Limpar `preparedCardInstanceId` ao descartar (`server/src/application/use-cases/discard-card-use-case.ts`):** Ao executar `DiscardCardUseCase`, definir `preparedCardInstanceId: null` (se a carta descartada era a preparada) no `SoloMatch` persistido, evitando que `ResolveActionUseCase` lance erro `400 ("A carta não pode ser usada nesta ação.")` na ação seguinte por apontar para uma carta que já saiu da mão.
-  - **2. Preservar cartas da mão na virada de turno (`server/src/application/use-cases/end-turn-use-case.ts` e `server/src/domain/match-deck.ts`):** Remover `refreshHandForTurn` e usar `drawToHand(deck, INITIAL_HAND_SIZE)` em `EndTurnUseCase`. Conforme `PROJECT_RULES.md` (Seção 2.3) e `cartas-mvp.md`, cartas na mão **não** retornam ao `drawPile` no fim do turno; o investigador mantém as cartas não usadas e compra apenas o necessário para recompor até 4 cartas.
+  - **2. Reembaralhar a mão ao iniciar o próximo turno (`server/src/application/use-cases/end-turn-use-case.ts` e `server/src/domain/match-deck.ts`):** Recolher as cartas não usadas da mão ao monte de compra, embaralhá-lo e distribuir uma mão nova de exatamente `INITIAL_HAND_SIZE` (4) cartas. Se necessário, embaralhar o descarte para completar quatro.
   - **3. Entregar cartas temporárias na `hand` e removê-las ao usar em ações (`server/src/domain/match-deck.ts`, `resolve-conversation-use-case.ts` e `resolve-action-use-case.ts`):** Substituir `addTemporaryCardToDrawPile` por `addTemporaryCardToHand` em `ResolveConversationUseCase` para que recompensas de conversa (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`) entrem imediatamente na mão de quem conduziu a conversa. Em `ResolveActionUseCase` e `ResolveConversationUseCase`, usar `recycleCardFromHand` em vez de `discardFromHand` ao consumir a carta preparada, garantindo que cartas `temporary: true` sejam eliminadas após o uso e cartas do apoio retornem para `decks[card.ownerId].discardPile`.
   - **4. Somar custo da carta preparada e expor requisito de bloqueio em `getConversationOptions` (`server/src/application/match-service.ts` e `ConversationDialog.vue`):** Em `getConversationOptions`, calcular `canResolve` somando o custo da pergunta (`bonusQuestion ? 0 : cost`) ao custo da carta preparada compatível (`preparedCard?.cost ?? 0`), impedindo que perguntas fiquem clicáveis quando preparar `Gravador de Bolso` (1 PA) exceder os PA disponíveis. Incluir também a string `blockedReason` no retorno de cada pergunta bloqueada e exibi-la no modal (`Diálogo bloqueado: necessário evidência — <blockedReason>`).
-  - Critério de aceite: descartar uma carta limpa `preparedCardInstanceId` no servidor; encerrar o turno preserva as cartas restantes na mão e compra apenas até 4; cartas temporárias entram direto na mão ao conversar e somem após usadas; preparar carta de custo > 0 em conversa atualiza `canResolve` corretamente.
+  - Critério de aceite: descartar uma carta limpa `preparedCardInstanceId` no servidor; a virada de turno randomiza a mão e sempre distribui 4 cartas; cartas temporárias entram direto na mão ao conversar e somem após usadas; preparar carta de custo > 0 em conversa atualiza `canResolve` corretamente.
 
 - [x] **20 · JOGO-04 — Persistir partidas e diário** `[Back]`
   - Substituir o repositório em memória por SQLite local durante o MVP.
@@ -193,7 +177,7 @@ Onde o projeto parou:
   - Substituir no MVP a penalidade de "avançar pressão da imprensa" da `Lista de Convidados` por uma regra concreta de PA (ex.: custo normal de `1 PA` na pesquisa ou `+1 PA` fora do Escritório da Curadoria), deixando o medidor global de imprensa para evolução futura.
   - Critério de aceite: `Gravador de Bolso` registra uma declaração utilizável depois; `Pausa Calculada` abre uma pergunta adicional sem substituir a conversa base (tanto preparada antes quanto após a 1ª pergunta).
 
-- [ ] **07 · CASO-04 — Implementar descobertas de todos os locais e rodadas** `[Front] [Back] [Definição]`
+- [x] **07 · CASO-04 — Implementar descobertas de todos os locais e rodadas** `[Front] [Back] [Definição]`
   - **Escopo técnico (`server/src/infrastructure/content/case01-content-repository.ts` e `shared/`):**
     - Remover a trava `match.round === 1` da Galeria Principal e modelar todas as descobertas oficiais dos 5 locais (`gallery`, `security`, `laboratory`, `office`, `service-corridor`) usando condições cumulativas `match.round >= minRound` combinadas com pré-requisitos em `resolvedKeys`. Pistas físicas e documentais **nunca expiram** ao avançar de rodada.
     - Mapear as descobertas da simulação oficial (`docs/private/simulacao-caso-01-o-vazio-na-vitrine (1).md`):
@@ -205,7 +189,7 @@ Onde o projeto parou:
     - Expandir o status de `JournalEntry` para suportar `'indicio' | 'unconfirmed' | 'confirmed' | 'refuted' | 'note' | 'recorded' | 'contestable' | 'blocked'` (ou equivalente em inglês consistente com o domínio) e indicar claramente no título/conteúdo do retorno qual elemento específico do local foi examinado/analisado.
   - Critério de aceite: a rota E1–E6 e a refutação das pistas falsas podem ser concluídas em qualquer ordem válida de visitação (`round >= minRound`) sem *softlock* por rodada e sem expor a solução futura no frontend.
 
-- [ ] **08 · CASO-05 — Liberar locais e deslocamento** `[Front] [Back] [Definição]`
+- [x] **08 · CASO-05 — Liberar locais e deslocamento** `[Front] [Back] [Definição]`
   - **Escopo técnico (`shared/domain/identifiers.ts`, `SoloMatch`, `LocationsPanel.vue` e rota de deslocamento):**
     - Adicionar `'service-corridor'` (`Corredor de Serviço`) a `locationIds` e ao catálogo visual `src/content/case01.ts`, mantendo-o oculto/bloqueado no início da partida (`unlockedLocations: ['gallery', 'security', 'laboratory', 'office']`).
     - Rastrear no servidor o local atual do investigador (`currentLocationId: LocationId`, iniciando em `'gallery'`) e se o deslocamento gratuito da rodada já foi utilizado (`hasUsedFreeMoveThisRound: boolean`, resetado para `false` em `EndTurnUseCase`).
@@ -217,7 +201,7 @@ Onde o projeto parou:
     - Na interface (`LocationsPanel.vue`), exibir o custo do deslocamento (`Grátis (1º da rodada)` ou `1 PA`) e substituir o botão estático `Área não descoberta` pelo `Corredor de Serviço` ativo assim que desbloqueado.
   - Critério de aceite: o primeiro deslocamento de cada rodada custa `0 PA`, os seguintes custam `1 PA`, e o `Corredor de Serviço` permanece inacessível até que sua condição de abertura seja cumprida no servidor.
 
-- [ ] **09 · CASO-06 — Eventos de abertura e fechamento de rodada** `[Front] [Back] [Definição]`
+- [x] **09 · CASO-06 — Eventos de abertura e fechamento de rodada** `[Front] [Back] [Definição]`
   - **Escopo técnico (`SoloMatch`, `ResolveActionUseCase`, `ResolveConversationUseCase`, `EndTurnUseCase`):**
     - Aplicar no motor autoritativo os efeitos mecânicos de cada evento de rodada descritos na simulação oficial:
       - **Rodada 1 (`Perímetro preservado`):** O primeiro `Examinar` na Galeria Principal nesta rodada revela um detalhe adicional no registro do diário.
@@ -243,7 +227,7 @@ Onde o projeto parou:
 
 ## P1 — Identidade e especialização dos investigadores
 
-- [ ] **10 · INV-01 — Aplicar habilidades passivas por investigador** `[Front] [Back] [Definição]`
+- [x] **10 · INV-01 — Aplicar habilidades passivas por investigador** `[Front] [Back] [Definição]`
   - **Escopo técnico (`ResolveActionUseCase`, `ResolveConversationUseCase`, `shared/domain/action-points.ts`):**
     - **Lívia (`Instinto de Cena`):** O primeiro `Examinar` em cada local por rodada (`examinedLocationsThisRound`) custa `1 PA` a menos (custo base cai de `2 PA` para `1 PA`). Atualizar `canPayAction` / `canExecute` para refletir o custo reduzido de `1 PA` quando o local atual ainda não foi examinado por Lívia na rodada.
     - **Rafael (`Cadeia de Custódia`):** Usa `1 PA` técnico em `Analisar` ou cartas técnicas; uma vez por rodada (`hasUsedPassiveThisRound`), ao analisar uma pista física não verificada, confirma-a imediatamente e registra a validação pericial no diário.

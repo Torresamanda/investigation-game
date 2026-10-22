@@ -6,7 +6,6 @@ import CardDetails from './CardDetails.vue'
 const props = defineProps<{
   cards: readonly HandCard[]
   ownerLabel: string
-  pointsLabel: string
   preparedCardId: string | null
   canDiscardPreparedCard: boolean
 }>()
@@ -32,10 +31,6 @@ function toggleCard(instanceId: string) {
         <p class="eyebrow">Recursos do investigador</p>
         <h2 id="hand-title">Sua mão</h2>
       </div>
-      <div class="hand-points">
-        <small>PA disponíveis</small>
-        <strong>{{ pointsLabel }}</strong>
-      </div>
     </div>
     <div class="card-hand">
       <InvestigationCard
@@ -47,26 +42,17 @@ function toggleCard(instanceId: string) {
         @inspect="inspectedCard = $event"
       />
     </div>
-    <div class="hand-hint">
-      <template v-if="preparedCardId">
-        <strong>Carta escolhida</strong>
-        <span>Escolha uma ação compatível para aplicá-la.</span>
-        <button
-          class="discard-card"
-          :disabled="!canDiscardPreparedCard"
-          @click="emit('discardPrepared')"
-        >
-          Descartar carta
-        </button>
-        <button class="clear-prepared" @click="emit('clearPrepared')">Cancelar</button>
-      </template>
-      <template v-else>
-        <strong>{{ ownerLabel }}</strong>
-        <span
-          >Clique em uma carta para prepará-la; use o ícone de informações para ler detalhes.</span
-        >
-      </template>
-      <button v-if="!preparedCardId" class="discard-card" disabled>Descartar carta</button>
+    <div class="hand-actions" aria-label="Ações da mão">
+      <button
+        class="discard-card"
+        :disabled="!canDiscardPreparedCard"
+        @click="emit('discardPrepared')"
+      >
+        Descartar carta
+      </button>
+      <button v-if="preparedCardId" class="clear-prepared" @click="emit('clearPrepared')">
+        Cancelar
+      </button>
     </div>
     <CardDetails
       v-if="inspectedCard"

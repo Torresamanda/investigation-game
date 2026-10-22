@@ -1,18 +1,8 @@
 <script setup lang="ts">
-import {
-  locations,
-  suspectProfiles,
-  type CaseLocation,
-  type SuspectId,
-} from '../../../content/case01'
+import { suspectProfiles, type SuspectId } from '../../../content/case01'
 import { getPortrait } from '../../../content/portraits'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 const selectedId = defineModel<SuspectId | null>({ required: true })
-const props = defineProps<{ location: CaseLocation }>()
-
-function locationName(locationId: CaseLocation['id']) {
-  return locations.find((location) => location.id === locationId)?.name ?? 'outro local'
-}
 </script>
 
 <template>
@@ -37,16 +27,6 @@ function locationName(locationId: CaseLocation['id']) {
         />
         <span class="suspect-name">{{ person.name }}</span>
         <span class="suspect-occupation">{{ person.role }}</span>
-        <span
-          class="suspect-presence"
-          :class="{ 'suspect-presence--absent': person.locationId !== props.location.id }"
-        >
-          {{
-            person.locationId === props.location.id
-              ? 'Presente aqui'
-              : `Em ${locationName(person.locationId)}`
-          }}
-        </span>
       </button>
     </div>
   </section>

@@ -14,7 +14,6 @@ describe('artes por investigador', () => {
       props: {
         cards,
         ownerLabel: investigator.name,
-        pointsLabel: '5 PA gerais',
         preparedCardId: null,
         canDiscardPreparedCard: false,
       },
@@ -43,7 +42,6 @@ describe('artes por investigador', () => {
           instanceId: `livia:${card.id}:${index}`,
         })),
         ownerLabel: 'Lívia Serrano',
-        pointsLabel: '5 PA gerais',
         preparedCardId: null,
         canDiscardPreparedCard: false,
       },
@@ -71,7 +69,6 @@ describe('artes por investigador', () => {
       props: {
         cards: [card],
         ownerLabel: 'Lívia Serrano',
-        pointsLabel: '5 PA gerais',
         preparedCardId: card.instanceId,
         canDiscardPreparedCard: true,
       },
@@ -90,7 +87,6 @@ describe('artes por investigador', () => {
       props: {
         cards: [card],
         ownerLabel: 'Lívia Serrano',
-        pointsLabel: '5 PA gerais',
         preparedCardId: card.instanceId,
         canDiscardPreparedCard: true,
       },

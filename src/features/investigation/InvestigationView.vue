@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { locations, type LocationId } from '../../content/case01'
+import { locations, suspectProfiles, type LocationId, type SuspectId } from '../../content/case01'
 import { useInvestigationStore } from '../../stores/investigation'
 import type { InvestigationAction } from '../../domain/game/action-points'
 import { useJournalDisclosure } from './composables/useJournalDisclosure'
@@ -8,11 +8,12 @@ import CaseToolbar from './components/CaseToolbar.vue'
 import LocationsPanel from './components/LocationsPanel.vue'
 import InvestigationScene from './components/InvestigationScene.vue'
 import CardHand from './components/CardHand.vue'
+import InvestigationActions from './components/InvestigationActions.vue'
+import SuspectSection from './components/SuspectSection.vue'
 import CaseJournal from './components/CaseJournal.vue'
 import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
 import type { ConversationOptions } from '../../services/game-api'
-import type { SuspectId } from '../../content/case01'
 import { feedbackFromEntry, statusFeedback } from './action-feedback'
 import './investigation.css'
 
@@ -20,6 +21,14 @@ const session = useInvestigationStore()
 const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigação.'))
 const cards = computed(() => session.hand)
 const locationId = ref<LocationId>('gallery')
+function findSuspectIdAtLocation(targetLocationId: LocationId): SuspectId | null {
+  return suspectProfiles.find((person) => person.locationId === targetLocationId)?.id ?? null
+}
+
+const selectedSuspectId = ref<SuspectId | null>(findSuspectIdAtLocation(locationId.value))
+watch(locationId, (targetLocationId) => {
+  selectedSuspectId.value = findSuspectIdAtLocation(targetLocationId)
+})
 watch(
   () => session.currentLocationId,
   (currentLocationId) => {
@@ -29,10 +38,16 @@ watch(
 const location = computed(
   () => locations.find((item) => item.id === locationId.value) ?? locations[0],
 )
+const selectedSuspect = computed(() =>
+  suspectProfiles.find((person) => person.id === selectedSuspectId.value),
+)
+const canConverseWithSelectedSuspect = computed(
+  () => selectedSuspect.value?.locationId === location.value.id,
+)
 const availableActions = computed<readonly InvestigationAction[]>(() =>
   (['examine', 'converse', 'analyse', 'research'] as const).filter((action) =>
-    action === 'converse' && session.remoteMatch
-      ? true
+    action === 'converse'
+      ? Boolean(session.remoteMatch && canConverseWithSelectedSuspect.value)
       : session.canExecute(action, location.value.id),
   ),
 )
@@ -51,7 +66,6 @@ const hasConfirmedRaulEvidence = computed(() =>
   ),
 )
 const journalTab = ref<'timeline' | 'clues' | 'suspects' | 'notes'>('timeline')
-const scene = ref<InstanceType<typeof InvestigationScene> | null>(null)
 const conversation = ref<ConversationOptions | null>(null)
 const toolbar = ref<InstanceType<typeof CaseToolbar> | null>(null)
 const { open, pinned, enter, leave, toggle, pin, close } = useJournalDisclosure(() =>
@@ -85,7 +99,7 @@ async function executeAction(action: InvestigationAction) {
 }
 
 async function moveToLocation() {
-  scene.value?.clearSuspect()
+  selectedSuspectId.value = findSuspectIdAtLocation(locationId.value)
   if (session.connectionState !== 'connected') return
   const moveWasFree = session.moveCostLabel !== '1 PA'
   try {
@@ -99,6 +113,16 @@ async function moveToLocation() {
       error instanceof Error ? error.message : 'Não foi possível se deslocar.',
     )
   }
+}
+
+function executeSelectedAction(action: InvestigationAction) {
+  if (action === 'converse') {
+    if (selectedSuspectId.value && canConverseWithSelectedSuspect.value) {
+      void openConversation(selectedSuspectId.value)
+    }
+    return
+  }
+  void executeAction(action)
 }
 
 async function prepareCard(instanceId: string) {
@@ -255,27 +279,27 @@ async function clearConversationCardPreparation() {
         @select="moveToLocation"
       />
       <InvestigationScene
-        ref="scene"
         :location="location"
-        :available-actions="availableActions"
-        :action-costs="actionCosts"
         :has-confirmed-raul-evidence="hasConfirmedRaulEvidence"
-        :feedback="feedback"
-        :can-end-turn="session.canEndTurn"
         :round="session.round"
-        @execute="executeAction"
-        @converse="openConversation"
-        @end-turn="endTurn"
       />
+      <SuspectSection v-model="selectedSuspectId" :location="location" />
       <CardHand
         :cards="cards"
         :owner-label="session.investigator?.name ?? ''"
-        :points-label="session.pointsLabel"
         :prepared-card-id="session.preparedCard?.instanceId ?? null"
         :can-discard-prepared-card="session.canDiscardPreparedCard"
         @prepare="prepareCard"
         @clear-prepared="clearPreparedCard"
         @discard-prepared="discardPreparedCard"
+      />
+      <InvestigationActions
+        :available-actions="availableActions"
+        :action-costs="actionCosts"
+        :feedback="feedback"
+        :can-end-turn="session.canEndTurn"
+        @execute="executeSelectedAction"
+        @end-turn="endTurn"
       />
       <CaseJournal
         v-if="open"

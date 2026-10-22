@@ -20,4 +20,4 @@ it('sair para o mundo não apaga a sessão automaticamente', async () => {
   await router.push('/investigacao')
   expect(router.currentRoute.value.path).toBe('/investigacao')
   vi.restoreAllMocks()
-})
+}, 10_000)

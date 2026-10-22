@@ -30,7 +30,10 @@ function selectLocation(id: LocationId) {
         :image="getPortrait('investigators', investigator.portrait)"
       />
       <h2>{{ investigator?.name }}</h2>
-      <p class="point-label">{{ pointsLabel }}</p>
+      <div class="investigator-points">
+        <small>PA disponíveis</small>
+        <strong>{{ pointsLabel }}</strong>
+      </div>
       <p class="help-text">Apoio: {{ support?.name }}</p>
     </div>
     <div class="museum-navigation">
