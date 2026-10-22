@@ -79,10 +79,19 @@ async function clearPreparedCard() {
 async function endTurn() {
   try {
     feedback.value = (await session.endRemoteTurn())
-      ? `Rodada ${String(session.round).padStart(2, '0')} preparada: mão recomposta e PA restaurados.`
+      ? `Rodada ${String(session.round).padStart(2, '0')} iniciada: mão renovada e PA restaurados.`
       : 'Esta é a última rodada da missão.'
   } catch (error) {
     feedback.value = error instanceof Error ? error.message : 'Não foi possível encerrar o turno.'
+  }
+}
+
+async function discardPreparedCard() {
+  try {
+    if (!(await session.discardPreparedCard())) return
+    feedback.value = 'Carta descartada e mão recomposta.'
+  } catch (error) {
+    feedback.value = error instanceof Error ? error.message : 'Não foi possível descartar a carta.'
   }
 }
 
@@ -190,8 +199,10 @@ async function clearConversationCardPreparation() {
         :owner-label="session.investigator?.name ?? ''"
         :points-label="session.pointsLabel"
         :prepared-card-id="session.preparedCard?.instanceId ?? null"
+        :can-discard-prepared-card="session.canDiscardPreparedCard"
         @prepare="prepareCard"
         @clear-prepared="clearPreparedCard"
+        @discard-prepared="discardPreparedCard"
       />
       <CaseJournal
         v-if="open"

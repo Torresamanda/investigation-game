@@ -16,6 +16,7 @@ describe('artes por investigador', () => {
         ownerLabel: investigator.name,
         pointsLabel: '5 PA gerais',
         preparedCardId: null,
+        canDiscardPreparedCard: false,
       },
     })
     expect(view.findAll('.investigation-card')).toHaveLength(4)
@@ -44,6 +45,7 @@ describe('artes por investigador', () => {
         ownerLabel: 'Lívia Serrano',
         pointsLabel: '5 PA gerais',
         preparedCardId: null,
+        canDiscardPreparedCard: false,
       },
     })
     await view.findAll('.investigation-card')[0]!.trigger('click')
@@ -71,10 +73,30 @@ describe('artes por investigador', () => {
         ownerLabel: 'Lívia Serrano',
         pointsLabel: '5 PA gerais',
         preparedCardId: card.instanceId,
+        canDiscardPreparedCard: true,
       },
     })
 
     await view.get('.investigation-card').trigger('click')
     expect(view.emitted('clearPrepared')).toEqual([[]])
+  })
+
+  it('descarta uma carta preparada quando a reciclagem está disponível', async () => {
+    const card = {
+      ...getInvestigatorCards('livia')[0]!,
+      instanceId: 'livia:ultraviolet-flashlight:0',
+    }
+    const view = mount(CardHand, {
+      props: {
+        cards: [card],
+        ownerLabel: 'Lívia Serrano',
+        pointsLabel: '5 PA gerais',
+        preparedCardId: card.instanceId,
+        canDiscardPreparedCard: true,
+      },
+    })
+
+    await view.get('.discard-card').trigger('click')
+    expect(view.emitted('discardPrepared')).toEqual([[]])
   })
 })

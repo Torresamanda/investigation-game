@@ -30,6 +30,7 @@ export interface SoloMatch {
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly round: number
+  readonly hasDiscardedCardThisRound: boolean
   readonly status: 'active'
   readonly createdAt: string
   readonly actionPoints: ActionPoints
@@ -57,6 +58,7 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     activeInvestigatorId: input.activeInvestigatorId,
     supportInvestigatorId: input.supportInvestigatorId,
     round: 1,
+    hasDiscardedCardThisRound: false,
     status: 'active',
     createdAt: input.createdAt,
     actionPoints: actionPointsFor(input.activeInvestigatorId),

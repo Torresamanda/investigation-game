@@ -47,6 +47,9 @@ export const useMatchStore = defineStore('match', () => {
           : 'de pesquisa'
     return `${points.general} PA gerais + ${points.specialty} ${specialtyLabel}`
   })
+  const canDiscardPreparedCard = computed(
+    () => Boolean(preparedCard.value) && !remoteMatch.value?.hasDiscardedCardThisRound,
+  )
   const canEndTurn = computed(() => Boolean(remoteMatch.value) && round.value < 6)
   const preparedCard = computed(() =>
     hand.value.find(
@@ -124,6 +127,16 @@ export const useMatchStore = defineStore('match', () => {
     return true
   }
 
+  async function discardPreparedCard(): Promise<boolean> {
+    if (!remoteMatch.value || !preparedCard.value || !canDiscardPreparedCard.value) return false
+    remoteMatch.value = await gameApi.discardCard(
+      remoteMatch.value.id,
+      preparedCard.value.instanceId,
+    )
+    preparedCardId.value = null
+    return true
+  }
+
   async function loadConversationOptions(personId: PersonId, locationId: LocationId) {
     if (!remoteMatch.value) throw new Error('A conversa exige uma partida conectada à API.')
     return gameApi.getConversationOptions(remoteMatch.value.id, personId, locationId)
@@ -169,6 +182,7 @@ export const useMatchStore = defineStore('match', () => {
     round,
     pointsLabel,
     canEndTurn,
+    canDiscardPreparedCard,
     preparedCard,
     journalEntries,
     canExecute,
@@ -177,6 +191,7 @@ export const useMatchStore = defineStore('match', () => {
     createRemoteMatch,
     resolveAction,
     endRemoteTurn,
+    discardPreparedCard,
     loadConversationOptions,
     resolveConversation,
     startInvestigation,

@@ -19,6 +19,7 @@ import {
   type ResolveConversationCommand,
 } from './commands.js'
 import { CreateSoloMatchUseCase } from './use-cases/create-solo-match-use-case.js'
+import { DiscardCardUseCase } from './use-cases/discard-card-use-case.js'
 import { EndTurnUseCase } from './use-cases/end-turn-use-case.js'
 import { GetMatchUseCase } from './use-cases/get-match-use-case.js'
 import { PrepareCardUseCase } from './use-cases/prepare-card-use-case.js'
@@ -41,6 +42,7 @@ export interface ConversationOptions {
 
 export class MatchService {
   private readonly createSoloMatchUseCase: CreateSoloMatchUseCase
+  private readonly discardCardUseCase: DiscardCardUseCase
   private readonly endTurnUseCase: EndTurnUseCase
   private readonly getMatchUseCase: GetMatchUseCase
   private readonly prepareCardUseCase: PrepareCardUseCase
@@ -54,6 +56,7 @@ export class MatchService {
     private readonly caseContentRepository: CaseContentRepository = new Case01ContentRepository(),
   ) {
     this.createSoloMatchUseCase = new CreateSoloMatchUseCase(repository, now, createId)
+    this.discardCardUseCase = new DiscardCardUseCase(repository)
     this.endTurnUseCase = new EndTurnUseCase(repository)
     this.getMatchUseCase = new GetMatchUseCase(repository)
     this.prepareCardUseCase = new PrepareCardUseCase(repository)
@@ -131,6 +134,10 @@ export class MatchService {
 
   endTurn(matchId: string): SoloMatch {
     return this.endTurnUseCase.execute(matchId)
+  }
+
+  discardCard(matchId: string, instanceId: string): SoloMatch {
+    return this.discardCardUseCase.execute(matchId, instanceId)
   }
 
   prepareCard(matchId: string, instanceId: string | null): SoloMatch {

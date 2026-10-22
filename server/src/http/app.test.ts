@@ -106,16 +106,31 @@ describe('API de partidas', () => {
     expect(resolve.json()).toEqual({ message: 'Ação ou local inválido.' })
   })
 
-  it('encerra o turno e restaura os PA para a rodada seguinte', async () => {
+  it('permite descartar uma carta e recompõe a mão imediatamente uma vez por rodada', async () => {
     const create = await app.inject({
       method: 'POST',
       url: '/api/matches',
       payload: { activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' },
     })
-    const match = create.json<{ id: string }>()
+    const match = create.json<{
+      id: string
+      decks: { livia: { hand: { instanceId: string }[] } }
+    }>()
 
-    const endTurn = await app.inject({ method: 'POST', url: `/api/matches/${match.id}/end-turn` })
+    const cardInstanceId = match.decks.livia.hand[0]?.instanceId
+    if (!cardInstanceId) throw new Error('A mão inicial precisa conter uma carta.')
+    const discard = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/discard-card`,
+      payload: { cardInstanceId },
+    })
+    expect(discard.statusCode).toBe(200)
+    expect(discard.json()).toMatchObject({ hasDiscardedCardThisRound: true })
 
+    const endTurn = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/end-turn`,
+    })
     expect(endTurn.statusCode).toBe(200)
     expect(endTurn.json()).toMatchObject({ round: 2, actionPoints: { general: 5 } })
   })

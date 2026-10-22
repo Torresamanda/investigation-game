@@ -8,8 +8,13 @@ const props = defineProps<{
   ownerLabel: string
   pointsLabel: string
   preparedCardId: string | null
+  canDiscardPreparedCard: boolean
 }>()
-const emit = defineEmits<{ prepare: [instanceId: string]; clearPrepared: [] }>()
+const emit = defineEmits<{
+  prepare: [instanceId: string]
+  clearPrepared: []
+  discardPrepared: []
+}>()
 const inspectedCard = ref<HandCard | null>(null)
 function toggleCard(instanceId: string) {
   if (props.preparedCardId === instanceId) {
@@ -44,8 +49,15 @@ function toggleCard(instanceId: string) {
     </div>
     <div class="hand-hint">
       <template v-if="preparedCardId">
-        <strong>Carta preparada</strong>
+        <strong>Carta escolhida</strong>
         <span>Escolha uma ação compatível para aplicá-la.</span>
+        <button
+          class="discard-card"
+          :disabled="!canDiscardPreparedCard"
+          @click="emit('discardPrepared')"
+        >
+          Descartar carta
+        </button>
         <button class="clear-prepared" @click="emit('clearPrepared')">Cancelar</button>
       </template>
       <template v-else>
@@ -54,6 +66,7 @@ function toggleCard(instanceId: string) {
           >Clique em uma carta para prepará-la; use o ícone de informações para ler detalhes.</span
         >
       </template>
+      <button v-if="!preparedCardId" class="discard-card" disabled>Descartar carta</button>
     </div>
     <CardDetails
       v-if="inspectedCard"

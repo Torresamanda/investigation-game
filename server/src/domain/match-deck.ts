@@ -98,6 +98,39 @@ export function discardFromHand(deck: MatchDeck, instanceId: string): MatchDeck 
   return { drawPile: deck.drawPile, discardPile: [...deck.discardPile, discarded!], hand }
 }
 
+export function recycleCardFromHand(
+  holderDeck: MatchDeck,
+  ownerDeck: MatchDeck,
+  instanceId: string,
+): { readonly holderDeck: MatchDeck; readonly ownerDeck: MatchDeck } {
+  const cardIndex = holderDeck.hand.findIndex((card) => card.instanceId === instanceId)
+  if (cardIndex === -1) throw new Error('A carta precisa estar na mão do investigador.')
+
+  const holderHand = [...holderDeck.hand]
+  const [recycledCard] = holderHand.splice(cardIndex, 1)
+  if (!recycledCard) throw new Error('A carta precisa estar na mão do investigador.')
+
+  const updatedHolderDeck = { ...holderDeck, hand: holderHand }
+  if (recycledCard.temporary) {
+    return holderDeck === ownerDeck
+      ? { holderDeck: updatedHolderDeck, ownerDeck: updatedHolderDeck }
+      : { holderDeck: updatedHolderDeck, ownerDeck }
+  }
+
+  if (holderDeck === ownerDeck) {
+    const updatedDeck = {
+      ...updatedHolderDeck,
+      discardPile: [...ownerDeck.discardPile, recycledCard],
+    }
+    return { holderDeck: updatedDeck, ownerDeck: updatedDeck }
+  }
+
+  return {
+    holderDeck: updatedHolderDeck,
+    ownerDeck: { ...ownerDeck, discardPile: [...ownerDeck.discardPile, recycledCard] },
+  }
+}
+
 export function addTemporaryCardToDrawPile(
   deck: MatchDeck,
   definitionId: keyof typeof temporaryDefinitions,

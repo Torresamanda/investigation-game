@@ -70,15 +70,22 @@ describe('MatchService', () => {
     expect(third.actionPoints.general).toBe(3)
   })
 
-  it('renova a mão com quatro cartas ao avançar para a rodada seguinte', () => {
+  it('descarta uma carta preparada e recompõe a mão imediatamente uma vez por rodada', () => {
     const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
-    const updated = service.endTurn(match.id)
+    const discardedCard = match.decks.livia.hand[0]
+    if (!discardedCard) throw new Error('A mão inicial precisa conter cartas para este cenário.')
+    const updated = service.discardCard(match.id, discardedCard.instanceId)
 
+    expect(updated.round).toBe(1)
     expect(updated.decks.livia.hand).toHaveLength(4)
+    expect(updated.decks.livia.discardPile).toContainEqual(discardedCard)
+    expect(() => service.discardCard(match.id, discardedCard.instanceId)).toThrow(
+      'Apenas uma carta pode ser descartada por rodada.',
+    )
     expect(
       new Set(
         [
@@ -88,6 +95,49 @@ describe('MatchService', () => {
         ].map((card) => card.instanceId),
       ),
     ).toHaveLength(8)
+  })
+
+  it('envia a carta descartada ao descarte do dono e remove cartas temporárias da partida', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const supportCard = match.decks.rafael.hand[0]
+    if (!supportCard) throw new Error('A mão de apoio precisa conter cartas para este cenário.')
+    repository.save({
+      ...match,
+      decks: {
+        ...match.decks,
+        livia: { ...match.decks.livia, hand: [supportCard, ...match.decks.livia.hand.slice(1)] },
+      },
+    })
+
+    const discardedSupportCard = service.discardCard(match.id, supportCard.instanceId)
+    expect(discardedSupportCard.decks.rafael.discardPile).toContainEqual(supportCard)
+    expect(discardedSupportCard.decks.livia.discardPile).not.toContainEqual(supportCard)
+
+    const nextMatch = service.endTurn(match.id)
+    const temporaryCard = {
+      ...nextMatch.decks.livia.hand[0]!,
+      instanceId: 'temporary:curator-agenda:livia',
+      temporary: true,
+    }
+    repository.save({
+      ...nextMatch,
+      decks: {
+        ...nextMatch.decks,
+        livia: {
+          ...nextMatch.decks.livia,
+          hand: [temporaryCard, ...nextMatch.decks.livia.hand.slice(1)],
+        },
+      },
+    })
+
+    const discardedTemporaryCard = service.discardCard(match.id, temporaryCard.instanceId)
+    expect(discardedTemporaryCard.decks.livia.discardPile).not.toContainEqual(temporaryCard)
+    expect(discardedTemporaryCard.decks.livia.hand).not.toContainEqual(temporaryCard)
   })
 
   it('valida a carta preparada e a move para o descarte após uma ação compatível', () => {

@@ -14,6 +14,7 @@ export const MatchPresenter = {
       activeInvestigatorId: match.activeInvestigatorId,
       supportInvestigatorId: match.supportInvestigatorId,
       round: match.round,
+      hasDiscardedCardThisRound: match.hasDiscardedCardThisRound,
       actionPoints: match.actionPoints,
       journalEntries: match.journalEntries,
       decks: {

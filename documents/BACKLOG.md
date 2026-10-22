@@ -14,7 +14,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
    - Concluído: `12A · CASO-08` → Perguntas dependentes de evidência e recompensas temporárias agora ficam bloqueadas até o momento correto, com presença dos suspeitos indicada por local.
    - Concluído: `13 · CASO-03` → Cartas de conversa integradas, com Pausa Calculada antes ou após a primeira pergunta e regra de PA concreta para a Lista de Convidados.
-   - `04C · JOGO-05` → Permitir reciclar (descartar voluntariamente) até 1 carta na preparação da rodada antes de comprar até 4.
+   - Concluído: `04C · JOGO-05` → Descarte voluntário de uma carta por rodada, com reposição imediata e sem reposição para cartas usadas em investigações.
 
 3. **Motor do Caso 01, Economia de PA e Investigadores (`P1` Core Loop):**
    - `07 · CASO-04` → Descobertas cumulativas por estado e `round >= minRound` (sem expirar pistas de rodadas anteriores) e indicação clara do alvo de `Examinar`/`Analisar`.
@@ -136,8 +136,8 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Extrair a resolução narrativa hardcoded do Caso 01 (`resolveCaseAction` e diálogos) para uma porta `CaseContentRepository` implementada na infraestrutura.
   - Critério de aceite: cada classe, entidade, caso de uso e repositório reside em seu próprio arquivo com responsabilidade única, e `domain/` não possui dependências externas.
 
-- [ ] **04C · JOGO-05 — Permitir reciclagem voluntária de 1 carta na preparação da rodada** `[P1] [Front] [Back] [Definição]`
-  - Permitir que o investigador descarte voluntariamente até 1 carta da mão no encerramento/preparação da rodada antes de recompor a mão até `INITIAL_HAND_SIZE` (4 cartas), prevenindo bloqueio de mão cheia (*hand clogging*) com cartas contextuais ou temporárias.
+- [x] **04C · JOGO-05 — Permitir descarte voluntário de 1 carta por rodada** `[P1] [Front] [Back] [Definição]`
+  - Permitir que o investigador descarte voluntariamente até 1 carta preparada da mão durante a rodada e receba reposição imediata até `INITIAL_HAND_SIZE` (4 cartas), prevenindo bloqueio de mão cheia (*hand clogging*) com cartas contextuais ou temporárias.
   - Respeitar `card.ownerId` no descarte para que cartas do apoio retornem ao `discardPile` do apoio e cartas temporárias sejam descartadas sem entrar na reciclagem permanente.
   - Critério de aceite: o jogador com 4 cartas travadas consegue renovar 1 carta por rodada sem precisar forçar uma ação incompatível.
 

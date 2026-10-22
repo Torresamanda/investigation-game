@@ -1,6 +1,6 @@
 import type { MatchRepository } from '../ports/match-repository.js'
 import { actionPointsFor, type SoloMatch } from '../../domain/match.js'
-import { refreshHandForTurn, INITIAL_HAND_SIZE } from '../../domain/match-deck.js'
+import { INITIAL_HAND_SIZE, refreshHandForTurn } from '../../domain/match-deck.js'
 import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class EndTurnUseCase {
@@ -11,9 +11,10 @@ export class EndTurnUseCase {
     if (!match) throw new MatchNotFoundError()
     if (match.round >= 6) throw new DomainError('A missão já alcançou o limite de rodadas.')
 
-    const updated = {
+    const updated: SoloMatch = {
       ...match,
       round: match.round + 1,
+      hasDiscardedCardThisRound: false,
       actionPoints: actionPointsFor(match.activeInvestigatorId),
       preparedCardInstanceId: null,
       decks: Object.fromEntries(

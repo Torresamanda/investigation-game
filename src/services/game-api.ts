@@ -54,29 +54,41 @@ export const gameApi = {
       body: JSON.stringify({ activeInvestigatorId, supportInvestigatorId }),
     })
   },
+
   resolveAction(matchId: string, action: InvestigationAction, locationId: LocationId) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/actions`, {
       method: 'POST',
       body: JSON.stringify({ action, locationId }),
     })
   },
+
   endTurn(matchId: string) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/end-turn`, {
       method: 'POST',
     })
   },
+
+  discardCard(matchId: string, cardInstanceId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/discard-card`, {
+      method: 'POST',
+      body: JSON.stringify({ cardInstanceId }),
+    })
+  },
+
   prepareCard(matchId: string, cardInstanceId: string | null) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/prepared-card`, {
       method: 'PUT',
       body: JSON.stringify({ cardInstanceId }),
     })
   },
+
   getConversationOptions(matchId: string, personId: string, locationId: LocationId) {
     const query = new URLSearchParams({ locationId })
     return request<ConversationOptions>(
       `/api/matches/${encodePathSegment(matchId)}/conversations/${encodePathSegment(personId)}?${query}`,
     )
   },
+
   resolveConversation(
     matchId: string,
     personId: string,

@@ -120,6 +120,25 @@
   color: var(--gold-soft);
   font-size: 11px;
 }
+.discard-card {
+  justify-self: start;
+  margin-top: 5px;
+  padding: 7px 10px;
+  border: 1px solid var(--gold);
+  border-radius: 5px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.discard-card:disabled {
+  cursor: not-allowed;
+  border-color: #c79a5355;
+  background: #c79a5322;
+  color: #9eb7c6;
+  opacity: 1;
+}
 .journal-is-open .hand-hint {
   display: none;
 }

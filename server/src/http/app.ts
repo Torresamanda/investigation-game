@@ -29,6 +29,10 @@ interface PrepareCardBody {
   cardInstanceId?: unknown
 }
 
+interface DiscardCardBody {
+  cardInstanceId?: unknown
+}
+
 interface ConversationParams extends MatchParams {
   personId: string
 }
@@ -288,6 +292,37 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
         return MatchPresenter.toPublicDto(match)
       } catch (error) {
         return sendMatchError(reply, error, 'Não foi possível encerrar o turno.')
+      }
+    },
+  )
+
+  app.post<{ Params: MatchParams; Body: DiscardCardBody }>(
+    '/api/matches/:id/discard-card',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+        body: {
+          type: 'object',
+          required: ['cardInstanceId'],
+          additionalProperties: false,
+          properties: { cardInstanceId: { type: 'string', minLength: 1 } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { cardInstanceId } = request.body
+      if (typeof cardInstanceId !== 'string' || !cardInstanceId) {
+        return reply.code(400).send({ message: 'Carta para descarte inválida.' })
+      }
+      try {
+        const match = service.discardCard(request.params.id, cardInstanceId)
+        return MatchPresenter.toPublicDto(match)
+      } catch (error) {
+        return sendMatchError(reply, error, 'Não foi possível descartar a carta.')
       }
     },
   )
