@@ -1,0 +1,31 @@
+import type { ActionPointPool } from '../domain/action-points'
+import type { InvestigatorId, LocationId } from '../domain/identifiers'
+
+export interface MatchJournalEntry {
+  readonly id: string
+  readonly type: 'clue' | 'observation' | 'statement'
+  readonly title: string
+  readonly content: string
+  readonly locationId: LocationId
+  readonly round: number
+  readonly status: 'unconfirmed' | 'note' | 'recorded' | 'contestable' | 'blocked'
+  readonly recordedWith?: 'pocket-recorder'
+}
+
+export interface PublicMatchDto {
+  readonly id: string
+  readonly preparedCardInstanceId: string | null
+  readonly activeInvestigatorId: InvestigatorId
+  readonly supportInvestigatorId: InvestigatorId
+  readonly round: number
+  readonly actionPoints: ActionPointPool
+  readonly journalEntries: readonly MatchJournalEntry[]
+  readonly decks: Readonly<
+    Partial<
+      Record<
+        InvestigatorId,
+        { readonly hand: readonly { readonly instanceId: string; readonly definitionId: string }[] }
+      >
+    >
+  >
+}

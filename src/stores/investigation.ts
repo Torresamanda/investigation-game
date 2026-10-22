@@ -12,7 +12,8 @@ import {
   TOTAL_ROUNDS,
   type SoloMission,
 } from '../application/game/solo-mission'
-import type { InvestigationAction } from '../domain/game/action-points'
+import type { InvestigationAction } from '../../shared/domain/identifiers'
+import { canPayAction } from '../../shared/domain/action-points'
 import { gameApi, type MatchJournalEntry, type RemoteMatch } from '../services/game-api'
 import type { LocationId, SuspectId } from '../content/case01'
 
@@ -94,7 +95,7 @@ export const useInvestigationStore = defineStore('investigation', () => {
       const points = remoteMatch.value.actionPoints
       const card = preparedCard.value
       if (card && !card.compatibleActions.includes(action)) return false
-      return points.general + points.specialty >= 2 + (card?.cost ?? 0)
+      return canPayAction(points, { action, amount: 2 + (card?.cost ?? 0) })
     }
     if (!mission.value) return false
     return preparedCardId.value
@@ -141,7 +142,7 @@ export const useInvestigationStore = defineStore('investigation', () => {
   }
 
   async function resolveAction(action: InvestigationAction, locationId: LocationId) {
-    if (!mission.value || !canExecute(action)) return null
+    if (!canExecute(action)) return null
 
     if (!remoteMatch.value) {
       return executeBasicAction(action) ? null : null

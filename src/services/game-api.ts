@@ -1,17 +1,12 @@
-import type { InvestigatorId } from '../content/investigators'
-import type { InvestigationAction } from '../domain/game/action-points'
-import type { LocationId } from '../content/case01'
+import type { PublicMatchDto, MatchJournalEntry } from '../../shared/contracts/match'
+import type {
+  InvestigatorId,
+  InvestigationAction,
+  LocationId,
+} from '../../shared/domain/identifiers'
 
-export interface MatchJournalEntry {
-  readonly id: string
-  readonly type: 'clue' | 'observation' | 'statement'
-  readonly title: string
-  readonly content: string
-  readonly locationId: LocationId
-  readonly round: number
-  readonly status: 'unconfirmed' | 'note' | 'recorded' | 'contestable' | 'blocked'
-  readonly recordedWith?: 'pocket-recorder'
-}
+export type { MatchJournalEntry }
+export type RemoteMatch = PublicMatchDto
 
 export interface ConversationQuestion {
   readonly id: string
@@ -27,28 +22,6 @@ export interface ConversationOptions {
   readonly locationId: LocationId
   readonly questionLimitReached: boolean
   readonly questions: readonly ConversationQuestion[]
-}
-
-export interface RemoteMatch {
-  readonly id: string
-  readonly preparedCardInstanceId: string | null
-  readonly activeInvestigatorId: InvestigatorId
-  readonly supportInvestigatorId: InvestigatorId
-  readonly round: number
-  readonly actionPoints: {
-    readonly general: number
-    readonly specialty: number
-    readonly specialtyPoint: 'technical' | 'social' | 'research' | null
-  }
-  readonly journalEntries: readonly MatchJournalEntry[]
-  readonly decks: Readonly<
-    Partial<
-      Record<
-        InvestigatorId,
-        { readonly hand: readonly { readonly instanceId: string; readonly definitionId: string }[] }
-      >
-    >
-  >
 }
 
 interface ApiError {

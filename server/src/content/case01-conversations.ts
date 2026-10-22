@@ -1,7 +1,7 @@
 import type { LocationId } from '../domain/match.js'
+import { personIds, type PersonId } from '../../../shared/domain/identifiers.js'
 
-export const personIds = ['helena', 'raul', 'marta', 'davi'] as const
-export type PersonId = (typeof personIds)[number]
+export { personIds }
 export type ConversationApproach = 'inquiry' | 'pressure' | 'context'
 export type ConversationOutcomeStatus = 'recorded' | 'contestable' | 'blocked'
 export type ConversationReward = 'curator-agenda' | 'treatment-sheet' | 'guest-list' | 'patrol-map'

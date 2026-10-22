@@ -3,7 +3,7 @@ import {
   INITIAL_HAND_SIZE,
   type InvestigatorDeckCard,
 } from '../../content/cards'
-import type { InvestigatorId } from '../../content/investigators'
+import type { InvestigatorId } from '../../../shared/domain/identifiers'
 import {
   createDeck,
   discardFromHand,

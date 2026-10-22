@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto'
+import { canPayAction, spendActionPoints } from '../../../shared/domain/action-points.js'
+import { locationIds, type PersonId } from '../../../shared/domain/identifiers.js'
+import type { InvestigationAction as SharedInvestigationAction } from '../../../shared/domain/identifiers.js'
 import {
   createSoloMatch,
   investigatorIds,
@@ -21,7 +24,6 @@ import {
   getConversationReward,
   resolveConversationOutcome,
   type ConversationQuestion,
-  type PersonId,
 } from '../content/case01-conversations.js'
 
 export interface CreateMatchCommand {
@@ -31,7 +33,7 @@ export interface CreateMatchCommand {
 
 export interface ResolveActionCommand {
   readonly matchId: string
-  readonly action: InvestigationAction
+  readonly action: Exclude<SharedInvestigationAction, 'move' | 'card'>
   readonly locationId: LocationId
 }
 
@@ -117,7 +119,10 @@ export class MatchService {
           approach,
           canResolve:
             (!questionLimitReached || bonusQuestion) &&
-            availablePoints(match, 'converse') >= (bonusQuestion ? 0 : cost),
+            canPayAction(match.actionPoints, {
+              action: 'converse',
+              amount: bonusQuestion ? 0 : cost,
+            }),
         })),
     }
   }
@@ -147,7 +152,7 @@ export class MatchService {
     }
     const questionCost = bonusQuestion ? 0 : question.cost
     const totalCost = questionCost + (card?.cost ?? 0)
-    if (availablePoints(match, 'converse') < totalCost) {
+    if (!canPayAction(match.actionPoints, { action: 'converse', amount: totalCost })) {
       throw new Error('PA insuficientes para esta pergunta.')
     }
     const outcome = resolveConversationOutcome(command.personId, command.questionId, match)
@@ -157,7 +162,10 @@ export class MatchService {
     const usesCalculatedPause = card?.definitionId === 'calculated-pause'
     const updated: SoloMatch = {
       ...match,
-      actionPoints: spendPoints(match, 'converse', totalCost),
+      actionPoints: spendActionPoints(match.actionPoints, {
+        action: 'converse',
+        amount: totalCost,
+      }),
       decks: card
         ? {
             ...match.decks,
@@ -219,13 +227,16 @@ export class MatchService {
       throw new Error('A carta não pode ser usada nesta ação.')
     }
     const cost = 2 + (card?.cost ?? 0)
-    if (availablePoints(match, command.action) < cost)
+    if (!canPayAction(match.actionPoints, { action: command.action, amount: cost }))
       throw new Error('PA insuficientes para esta ação.')
 
     const resolution = resolveCaseAction(match, command.action, command.locationId)
     const updated = {
       ...match,
-      actionPoints: spendPoints(match, command.action, cost),
+      actionPoints: spendActionPoints(match.actionPoints, {
+        action: command.action,
+        amount: cost,
+      }),
       decks: card
         ? {
             ...match.decks,
@@ -284,38 +295,17 @@ export class MatchService {
   }
 }
 
-function availablePoints(match: SoloMatch, action: InvestigationAction) {
-  const specialtyEligible =
-    (match.actionPoints.specialtyPoint === 'technical' && action === 'analyse') ||
-    (match.actionPoints.specialtyPoint === 'social' && action === 'converse') ||
-    (match.actionPoints.specialtyPoint === 'research' && action === 'research')
-  return match.actionPoints.general + (specialtyEligible ? match.actionPoints.specialty : 0)
-}
-
-function spendPoints(match: SoloMatch, action: InvestigationAction, amount: number) {
-  const specialtyEligible =
-    (match.actionPoints.specialtyPoint === 'technical' && action === 'analyse') ||
-    (match.actionPoints.specialtyPoint === 'social' && action === 'converse') ||
-    (match.actionPoints.specialtyPoint === 'research' && action === 'research')
-  const specialtySpent = specialtyEligible ? Math.min(match.actionPoints.specialty, amount) : 0
-  return {
-    ...match.actionPoints,
-    general: match.actionPoints.general - (amount - specialtySpent),
-    specialty: match.actionPoints.specialty - specialtySpent,
-  }
-}
-
 export function isInvestigatorId(value: unknown): value is InvestigatorId {
   return typeof value === 'string' && investigatorIds.includes(value as InvestigatorId)
 }
 
 export function isLocationId(value: unknown): value is LocationId {
-  return (
-    typeof value === 'string' && ['gallery', 'security', 'laboratory', 'office'].includes(value)
-  )
+  return typeof value === 'string' && locationIds.includes(value as LocationId)
 }
 
-export function isInvestigationAction(value: unknown): value is InvestigationAction {
+export function isInvestigationAction(
+  value: unknown,
+): value is Exclude<SharedInvestigationAction, 'move' | 'card'> {
   return typeof value === 'string' && ['examine', 'converse', 'analyse', 'research'].includes(value)
 }
 

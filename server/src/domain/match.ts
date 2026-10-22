@@ -1,18 +1,17 @@
-export const investigatorIds = ['livia', 'rafael', 'isadora', 'otavio'] as const
+import {
+  investigatorIds,
+  locationIds,
+  investigationActions,
+  type InvestigatorId,
+  type LocationId,
+  type InvestigationAction,
+} from '../../../shared/domain/identifiers.js'
+import type { ActionPointPool } from '../../../shared/domain/action-points.js'
 
-export type InvestigatorId = (typeof investigatorIds)[number]
+export { investigatorIds, locationIds, investigationActions }
+export type { InvestigatorId, LocationId, InvestigationAction }
 
-export const locationIds = ['gallery', 'security', 'laboratory', 'office'] as const
-export type LocationId = (typeof locationIds)[number]
-
-export const investigationActions = ['examine', 'converse', 'analyse', 'research'] as const
-export type InvestigationAction = (typeof investigationActions)[number]
-
-export interface ActionPoints {
-  readonly general: number
-  readonly specialty: number
-  readonly specialtyPoint: 'technical' | 'social' | 'research' | null
-}
+export type ActionPoints = ActionPointPool
 
 export interface JournalEntry {
   readonly id: string

@@ -33,6 +33,6 @@ export const investigators = [
   },
 ] as const
 
-export type InvestigatorId = (typeof investigators)[number]['id']
+export type { InvestigatorId } from '../../shared/domain/identifiers'
 
 export type Investigator = (typeof investigators)[number]

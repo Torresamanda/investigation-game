@@ -74,7 +74,7 @@ export const suspectProfiles = [
   },
 ] as const
 
-export type LocationId = (typeof locations)[number]['id']
+export type { LocationId } from '../../shared/domain/identifiers'
 export type CaseLocation = (typeof locations)[number]
 export type Suspect = (typeof suspectProfiles)[number]
 export type SuspectId = Suspect['id']
