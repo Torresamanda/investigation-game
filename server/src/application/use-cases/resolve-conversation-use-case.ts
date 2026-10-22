@@ -25,7 +25,7 @@ export class ResolveConversationUseCase {
       match,
     )
     if (blockedReason) {
-      throw new DomainError('Diálogo bloqueado: necessário evidência')
+      throw new DomainError('Diálogo bloqueado: evidência necessária')
     }
     const resolvedKey = conversationKey(command.personId, question.id)
     if (match.resolvedKeys.includes(resolvedKey)) throw new Error('Esta pergunta já foi resolvida.')

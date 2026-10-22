@@ -328,8 +328,8 @@ describe('MatchService', () => {
     expect(fingerprints).toMatchObject({
       canResolve: false,
       isEvidenceBlocked: true,
-      blockedReason: expect.any(String),
     })
+    expect(fingerprints).not.toHaveProperty('blockedReason')
     expect(() =>
       service.resolveConversation({
         matchId: match.id,
@@ -337,7 +337,7 @@ describe('MatchService', () => {
         locationId: 'laboratory',
         questionId: 'fingerprints',
       }),
-    ).toThrow('Diálogo bloqueado: necessário evidência')
+    ).toThrow('Diálogo bloqueado: evidência necessária')
     expect(service.getMatch(match.id)).toEqual(match)
   })
 
@@ -443,7 +443,7 @@ describe('MatchService', () => {
         locationId: 'laboratory',
         questionId: 'fingerprints',
       }),
-    ).toThrow('Diálogo bloqueado: necessário evidência')
+    ).toThrow('Diálogo bloqueado: evidência necessária')
 
     const corroboratedService = new MatchService(
       new InMemoryMatchRepository(),

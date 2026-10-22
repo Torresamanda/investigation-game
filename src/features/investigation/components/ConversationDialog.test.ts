@@ -75,7 +75,8 @@ describe('ConversationDialog', () => {
     })
 
     expect(view.text()).toContain('já fez uma pergunta neste turno')
-    expect(view.text()).toContain('Diálogo bloqueado: necessário evidência')
+    expect(view.text()).toContain('Diálogo bloqueado: evidência necessária')
+    expect(view.text()).not.toContain('Examine a fechadura')
     expect(view.get('.conversation-questions button').attributes('disabled')).toBeDefined()
   })
 

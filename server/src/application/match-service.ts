@@ -38,7 +38,6 @@ export interface ConversationOptions {
     readonly cost: 0 | 1 | 2
     readonly canResolve: boolean
     readonly isEvidenceBlocked: boolean
-    readonly blockedReason?: string
   })[]
 }
 
@@ -117,7 +116,6 @@ export class MatchService {
             cost: bonusQuestion ? 0 : cost,
             approach,
             isEvidenceBlocked: Boolean(blockedReason),
-            blockedReason: blockedReason ?? undefined,
             canResolve:
               (!questionLimitReached || bonusQuestion) &&
               !blockedReason &&

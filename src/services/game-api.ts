@@ -15,7 +15,6 @@ export interface ConversationQuestion {
   readonly approach: 'inquiry' | 'pressure' | 'context'
   readonly canResolve: boolean
   readonly isEvidenceBlocked: boolean
-  readonly blockedReason?: string
 }
 
 export interface ConversationOptions {

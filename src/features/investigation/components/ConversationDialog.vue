@@ -66,9 +66,7 @@ const availableConversationCards = computed(() =>
           }}</small
           >{{ question.text }}
           <small v-if="question.isEvidenceBlocked" class="conversation-blocked"
-            >Diálogo bloqueado: necessário evidência<span v-if="question.blockedReason">
-              — {{ question.blockedReason }}</span
-            ></small
+            >Diálogo bloqueado: evidência necessária</small
           ></span
         ><small>{{ question.cost }} PA</small>
       </button>
