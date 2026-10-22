@@ -9,7 +9,6 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
 Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, execute as próximas tarefas pendentes exatamente nesta sequência:
 
 1. **Fundação, Arquitetura e Anti-Desincronização (`P0` / `P1` Base):**
-   - `23B · SEC-04` → Validar schemas HTTP, erros semânticos de domínio e sanitizar parâmetros.
    - `18 · BUG-03` + `03F · ARQ-03` → Remover contingência local divergente, dividir stores e remover `abandonInvestigation` automático do router.
 
 2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
@@ -254,7 +253,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Manter as respostas limitadas ao estado já desbloqueado; não criar rotas de catálogo completo para conteúdo de casos, diálogos ou desfechos.
   - Critério de aceite: tentativas automatizadas são limitadas sem afetar uma sessão normal, e consultas diretas não retornam conteúdo futuro.
 
-- [ ] **23B · SEC-04 — Validar schemas de entrada, tratar erros de domínio e sanitizar parâmetros HTTP** `[P1] [Front] [Back]`
+- [x] **23B · SEC-04 — Validar schemas de entrada, tratar erros de domínio e sanitizar parâmetros HTTP** `[P1] [Front] [Back]`
   - Definir schemas de validação (`body`, `params`, `querystring`) e `bodyLimit` explícito em todas as rotas de `server/src/http/app.ts`, evitando `TypeError` (status `500`) quando `request.body` for nulo ou malformado.
   - Substituir a comparação de string `message === 'Partida não encontrada.'` por classes de erro semânticas (`DomainError`, `MatchNotFoundError`, `InvalidActionError`) tratadas em um `setErrorHandler` centralizado no Fastify.
   - Sanitizar todos os parâmetros dinâmicos de URL (`matchId`, `personId`, `questionId`) com `encodeURIComponent()` em `src/services/game-api.ts`.

@@ -19,6 +19,26 @@ describe('API de partidas', () => {
     expect(response.json()).toEqual({ status: 'ok' })
   })
 
+  it('rejeita corpos nulos ou incompletos com 400 estruturado', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/matches',
+      payload: 'null',
+      headers: { 'content-type': 'application/json' },
+    })
+    expect(create.statusCode).toBe(400)
+    expect(create.json()).toHaveProperty('message')
+
+    const action = await app.inject({
+      method: 'POST',
+      url: '/api/matches/missing/actions',
+      payload: 'null',
+      headers: { 'content-type': 'application/json' },
+    })
+    expect(action.statusCode).toBe(400)
+    expect(action.json()).toHaveProperty('message')
+  })
+
   it('cria uma partida solo e permite recuperá-la', async () => {
     const create = await app.inject({
       method: 'POST',

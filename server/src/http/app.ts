@@ -8,6 +8,8 @@ import {
 } from '../application/match-service.js'
 import { isPersonId } from '../content/case01-conversations.js'
 import { MatchPresenter } from './presenters/match-presenter.js'
+import { DomainError, MatchNotFoundError } from '../domain/errors.js'
+import { locationIds, investigatorIds } from '../../../shared/domain/identifiers.js'
 
 interface CreateMatchBody {
   activeInvestigatorId?: unknown
@@ -44,33 +46,100 @@ interface ResolveConversationBody {
 }
 
 export function createApp(service = new MatchService(new InMemoryMatchRepository())) {
-  const app = Fastify({ logger: false })
+  const app = Fastify({ logger: false, bodyLimit: 64 * 1024 })
+
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof DomainError) {
+      return reply.code(error.statusCode).send({ message: error.message })
+    }
+    const statusCode =
+      error instanceof Error &&
+      'statusCode' in error &&
+      typeof error.statusCode === 'number' &&
+      error.statusCode < 500
+        ? error.statusCode
+        : 500
+    return reply.code(statusCode).send({
+      message:
+        statusCode === 500
+          ? 'Não foi possível processar a requisição.'
+          : error instanceof Error
+            ? error.message
+            : 'Requisição inválida.',
+    })
+  })
 
   app.get('/health', async () => ({ status: 'ok' }))
 
-  app.post<{ Body: CreateMatchBody }>('/api/matches', async (request, reply) => {
-    const { activeInvestigatorId, supportInvestigatorId } = request.body
-    if (!isInvestigatorId(activeInvestigatorId) || !isInvestigatorId(supportInvestigatorId)) {
-      return reply.code(400).send({ message: 'Investigadores inválidos.' })
-    }
+  app.post<{ Body: CreateMatchBody }>(
+    '/api/matches',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['activeInvestigatorId', 'supportInvestigatorId'],
+          additionalProperties: false,
+          properties: {
+            activeInvestigatorId: { type: 'string', enum: [...investigatorIds] },
+            supportInvestigatorId: { type: 'string', enum: [...investigatorIds] },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { activeInvestigatorId, supportInvestigatorId } = request.body
+      if (!isInvestigatorId(activeInvestigatorId) || !isInvestigatorId(supportInvestigatorId)) {
+        return reply.code(400).send({ message: 'Investigadores inválidos.' })
+      }
 
-    try {
-      const match = service.createSoloMatch({ activeInvestigatorId, supportInvestigatorId })
-      return reply.code(201).send(MatchPresenter.toPublicDto(match))
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Não foi possível criar a partida.'
-      return reply.code(400).send({ message })
-    }
-  })
+      try {
+        const match = service.createSoloMatch({ activeInvestigatorId, supportInvestigatorId })
+        return reply.code(201).send(MatchPresenter.toPublicDto(match))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Não foi possível criar a partida.'
+        return reply.code(400).send({ message })
+      }
+    },
+  )
 
-  app.get<{ Params: MatchParams }>('/api/matches/:id', async (request, reply) => {
-    const match = service.getMatch(request.params.id)
-    if (!match) return reply.code(404).send({ message: 'Partida não encontrada.' })
-    return MatchPresenter.toPublicDto(match)
-  })
+  app.get<{ Params: MatchParams }>(
+    '/api/matches/:id',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+      },
+    },
+    async (request) => {
+      const match = service.getMatch(request.params.id)
+      if (!match) throw new MatchNotFoundError()
+      return MatchPresenter.toPublicDto(match)
+    },
+  )
 
   app.get<{ Params: ConversationParams; Querystring: ConversationQuery }>(
     '/api/matches/:id/conversations/:personId',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id', 'personId'],
+          properties: {
+            id: { type: 'string', minLength: 1 },
+            personId: { type: 'string', minLength: 1 },
+          },
+        },
+        querystring: {
+          type: 'object',
+          required: ['locationId'],
+          additionalProperties: false,
+          properties: { locationId: { type: 'string', enum: [...locationIds] } },
+        },
+      },
+    },
     async (request, reply) => {
       const { personId } = request.params
       const { locationId } = request.query
@@ -88,27 +157,67 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
   app.post<{
     Params: ConversationQuestionParams
     Body: ResolveConversationBody
-  }>('/api/matches/:id/conversations/:personId/questions/:questionId', async (request, reply) => {
-    const { personId, questionId } = request.params
-    const { locationId } = request.body
-    if (!isPersonId(personId) || !isLocationId(locationId) || !questionId) {
-      return reply.code(400).send({ message: 'Pessoa, pergunta ou local inválido.' })
-    }
-    try {
-      const match = service.resolveConversation({
-        matchId: request.params.id,
-        personId,
-        locationId,
-        questionId,
-      })
-      return MatchPresenter.toPublicDto(match)
-    } catch (error) {
-      return sendMatchError(reply, error, 'Não foi possível resolver a pergunta.')
-    }
-  })
+  }>(
+    '/api/matches/:id/conversations/:personId/questions/:questionId',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id', 'personId', 'questionId'],
+          properties: {
+            id: { type: 'string', minLength: 1 },
+            personId: { type: 'string', minLength: 1 },
+            questionId: { type: 'string', minLength: 1 },
+          },
+        },
+        body: {
+          type: 'object',
+          required: ['locationId'],
+          additionalProperties: false,
+          properties: { locationId: { type: 'string', enum: [...locationIds] } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { personId, questionId } = request.params
+      const { locationId } = request.body
+      if (!isPersonId(personId) || !isLocationId(locationId) || !questionId) {
+        return reply.code(400).send({ message: 'Pessoa, pergunta ou local inválido.' })
+      }
+      try {
+        const match = service.resolveConversation({
+          matchId: request.params.id,
+          personId,
+          locationId,
+          questionId,
+        })
+        return MatchPresenter.toPublicDto(match)
+      } catch (error) {
+        return sendMatchError(reply, error, 'Não foi possível resolver a pergunta.')
+      }
+    },
+  )
 
   app.post<{ Params: MatchParams; Body: ResolveActionBody }>(
     '/api/matches/:id/actions',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+        body: {
+          type: 'object',
+          required: ['action', 'locationId'],
+          additionalProperties: false,
+          properties: {
+            action: { type: 'string', enum: ['examine', 'converse', 'analyse', 'research'] },
+            locationId: { type: 'string', enum: [...locationIds] },
+          },
+        },
+      },
+    },
     async (request, reply) => {
       const { action, locationId } = request.body
       if (!isInvestigationAction(action) || !isLocationId(locationId)) {
@@ -123,14 +232,27 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
         })
         return MatchPresenter.toPublicDto(match)
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Não foi possível resolver a ação.'
-        return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })
+        return sendMatchError(reply, error, 'Não foi possível resolver a ação.')
       }
     },
   )
 
   app.put<{ Params: MatchParams; Body: PrepareCardBody }>(
     '/api/matches/:id/prepared-card',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: { cardInstanceId: { type: ['string', 'null'] } },
+        },
+      },
+    },
     async (request, reply) => {
       const { cardInstanceId } = request.body
       if (
@@ -144,22 +266,31 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
         const match = service.prepareCard(request.params.id, cardInstanceId ?? null)
         return MatchPresenter.toPublicDto(match)
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Não foi possível preparar a carta.'
-        return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })
+        return sendMatchError(reply, error, 'Não foi possível preparar a carta.')
       }
     },
   )
 
-  app.post<{ Params: MatchParams }>('/api/matches/:id/end-turn', async (request, reply) => {
-    try {
-      const match = service.endTurn(request.params.id)
-      return MatchPresenter.toPublicDto(match)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Não foi possível encerrar o turno.'
-      return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })
-    }
-  })
+  app.post<{ Params: MatchParams }>(
+    '/api/matches/:id/end-turn',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const match = service.endTurn(request.params.id)
+        return MatchPresenter.toPublicDto(match)
+      } catch (error) {
+        return sendMatchError(reply, error, 'Não foi possível encerrar o turno.')
+      }
+    },
+  )
 
   return app
 }
@@ -169,6 +300,8 @@ function sendMatchError(
   error: unknown,
   fallback: string,
 ) {
+  if (error instanceof DomainError)
+    return reply.code(error.statusCode).send({ message: error.message })
   const message = error instanceof Error ? error.message : fallback
-  return reply.code(message === 'Partida não encontrada.' ? 404 : 400).send({ message })
+  return reply.code(400).send({ message })
 }

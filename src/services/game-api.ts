@@ -42,6 +42,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   throw new Error(error?.message ?? 'Não foi possível comunicar com a investigação.')
 }
 
+function encodePathSegment(value: string): string {
+  return encodeURIComponent(value)
+}
+
 export const gameApi = {
   createMatch(activeInvestigatorId: InvestigatorId, supportInvestigatorId: InvestigatorId) {
     return request<RemoteMatch>('/api/matches', {
@@ -50,16 +54,18 @@ export const gameApi = {
     })
   },
   resolveAction(matchId: string, action: InvestigationAction, locationId: LocationId) {
-    return request<RemoteMatch>(`/api/matches/${matchId}/actions`, {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/actions`, {
       method: 'POST',
       body: JSON.stringify({ action, locationId }),
     })
   },
   endTurn(matchId: string) {
-    return request<RemoteMatch>(`/api/matches/${matchId}/end-turn`, { method: 'POST' })
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/end-turn`, {
+      method: 'POST',
+    })
   },
   prepareCard(matchId: string, cardInstanceId: string | null) {
-    return request<RemoteMatch>(`/api/matches/${matchId}/prepared-card`, {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/prepared-card`, {
       method: 'PUT',
       body: JSON.stringify({ cardInstanceId }),
     })
@@ -67,7 +73,7 @@ export const gameApi = {
   getConversationOptions(matchId: string, personId: string, locationId: LocationId) {
     const query = new URLSearchParams({ locationId })
     return request<ConversationOptions>(
-      `/api/matches/${matchId}/conversations/${personId}?${query}`,
+      `/api/matches/${encodePathSegment(matchId)}/conversations/${encodePathSegment(personId)}?${query}`,
     )
   },
   resolveConversation(
@@ -77,7 +83,7 @@ export const gameApi = {
     locationId: LocationId,
   ) {
     return request<RemoteMatch>(
-      `/api/matches/${matchId}/conversations/${personId}/questions/${questionId}`,
+      `/api/matches/${encodePathSegment(matchId)}/conversations/${encodePathSegment(personId)}/questions/${encodePathSegment(questionId)}`,
       {
         method: 'POST',
         body: JSON.stringify({ locationId }),

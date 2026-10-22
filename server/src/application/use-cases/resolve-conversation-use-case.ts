@@ -4,6 +4,7 @@ import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import type { MatchRepository } from '../ports/match-repository.js'
 import { addTemporaryCardToHand, discardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
+import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class ResolveConversationUseCase {
   constructor(
@@ -13,7 +14,7 @@ export class ResolveConversationUseCase {
 
   execute(command: ResolveConversationCommand): SoloMatch {
     const match = this.repository.findById(command.matchId)
-    if (!match) throw new Error('Partida não encontrada.')
+    if (!match) throw new MatchNotFoundError()
     this.assertPersonAvailability(command.personId, command.locationId)
     const conversation = this.caseContentRepository.getConversation(command.personId)
     const question = conversation.questions.find((item) => item.id === command.questionId)
@@ -32,12 +33,12 @@ export class ResolveConversationUseCase {
       ? activeDeck.hand.find((item) => item.instanceId === match.preparedCardInstanceId)
       : undefined
     if (match.preparedCardInstanceId && (!card || !card.compatibleActions.includes('converse'))) {
-      throw new Error('A carta não pode ser usada nesta conversa.')
+      throw new InvalidActionError('A carta não pode ser usada nesta conversa.')
     }
     const questionCost = bonusQuestion ? 0 : question.cost
     const totalCost = questionCost + (card?.cost ?? 0)
     if (!canPayAction(match.actionPoints, { action: 'converse', amount: totalCost })) {
-      throw new Error('PA insuficientes para esta pergunta.')
+      throw new DomainError('PA insuficientes para esta pergunta.')
     }
     const outcome = this.caseContentRepository.resolveConversationOutcome(
       command.personId,
@@ -110,7 +111,7 @@ export class ResolveConversationUseCase {
     locationId: ResolveConversationCommand['locationId'],
   ) {
     if (!this.caseContentRepository.isPersonAvailableAtLocation(personId, locationId)) {
-      throw new Error('Esta pessoa não está disponível neste local.')
+      throw new DomainError('Esta pessoa não está disponível neste local.')
     }
   }
 }

@@ -4,6 +4,7 @@ import type { MatchRepository } from '../ports/match-repository.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import { discardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
+import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class ResolveActionUseCase {
   constructor(
@@ -13,7 +14,7 @@ export class ResolveActionUseCase {
 
   execute(command: ResolveActionCommand): SoloMatch {
     const match = this.repository.findById(command.matchId)
-    if (!match) throw new Error('Partida não encontrada.')
+    if (!match) throw new MatchNotFoundError()
     const activeDeck = match.decks[match.activeInvestigatorId]
     const card = match.preparedCardInstanceId
       ? activeDeck.hand.find((item) => item.instanceId === match.preparedCardInstanceId)
@@ -22,11 +23,11 @@ export class ResolveActionUseCase {
       match.preparedCardInstanceId &&
       (!card || !card.compatibleActions.includes(command.action))
     ) {
-      throw new Error('A carta não pode ser usada nesta ação.')
+      throw new InvalidActionError('A carta não pode ser usada nesta ação.')
     }
     const cost = 2 + (card?.cost ?? 0)
     if (!canPayAction(match.actionPoints, { action: command.action, amount: cost })) {
-      throw new Error('PA insuficientes para esta ação.')
+      throw new DomainError('PA insuficientes para esta ação.')
     }
 
     const resolution = this.caseContentRepository.resolveAction(
