@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { InvestigatorId } from '../../content/investigators'
 import cityArtwork from '../../../assets/world/cidade-das-blumas.png'
+import { PhArrowRight } from '../../components/icons'
 import WorldMap from './components/WorldMap.vue'
 import InvestigatorSelection from './components/InvestigatorSelection.vue'
 import { useInvestigationStore } from '../../stores/investigation'
@@ -52,7 +53,7 @@ async function start() {
       </section>
       <footer class="mission-footer">
         <button class="button-primary full-width" @click="start">
-          Iniciar investigação <span aria-hidden="true">→</span>
+          Iniciar investigação <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
         </button>
       </footer>
     </aside>

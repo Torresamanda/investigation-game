@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { suspectProfiles } from '../../../content/case01'
 import type { MatchJournalEntry } from '../../../services/game-api'
+import { PhUserFocus, PhX } from '../../../components/icons'
 const notes = defineModel<string>('notes', { required: true })
 defineProps<{
   hypotheses: readonly { id: number; text: string }[]
@@ -35,7 +36,9 @@ const tabs = [
         <p class="eyebrow">Memória da investigação</p>
         <h2>Diário do caso</h2>
       </div>
-      <button class="journal-close" aria-label="Fechar diário" @click="emit('close')">×</button>
+      <button class="journal-close" aria-label="Fechar diário" @click="emit('close')">
+        <PhX :size="18" weight="bold" aria-hidden="true" />
+      </button>
     </header>
     <div class="journal-tabs" role="group" aria-label="Seções do diário">
       <button
@@ -73,7 +76,7 @@ const tabs = [
         ><h3>Pessoas de interesse</h3>
         <ul class="suspect-list">
           <li v-for="person in suspectProfiles" :key="person.id">
-            <span aria-hidden="true">◇</span> {{ person.name }}
+            <PhUserFocus :size="16" aria-hidden="true" /> {{ person.name }}
           </li>
         </ul></template
       ><template v-else

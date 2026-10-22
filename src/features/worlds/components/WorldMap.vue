@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import worldMap from '../../../../assets/world/word-map.png'
+import { PhDiamond, PhLockKey } from '../../../components/icons'
 </script>
 
 <template>
@@ -11,11 +12,15 @@ import worldMap from '../../../../assets/world/word-map.png'
     </div>
     <img class="map-art" :src="worldMap" alt="" />
     <div class="map-pin">
-      <span class="pin-ring" aria-hidden="true">◈</span><strong>Cidade das Brumas</strong
+      <PhDiamond class="pin-ring" :size="40" weight="bold" aria-hidden="true" /><strong
+        >Cidade das Brumas</strong
       ><small>Mundo disponível</small>
     </div>
-    <span class="locked-world locked-north">◇ Arquivo lacrado</span
-    ><span class="locked-world locked-south">◇ Em breve</span>
+    <span class="locked-world locked-north"
+      ><PhLockKey :size="14" aria-hidden="true" /> Arquivo lacrado</span
+    ><span class="locked-world locked-south"
+      ><PhLockKey :size="14" aria-hidden="true" /> Em breve</span
+    >
     <p class="map-coordinate">VESPERA / 22°14′ · ARQUIVO PATRIMONIAL</p>
   </section>
 </template>

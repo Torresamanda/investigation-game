@@ -2,6 +2,7 @@
 import AppModal from '../../../components/ui/AppModal.vue'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 import { getPortrait } from '../../../content/portraits'
+import { PhArrowRight } from '../../../components/icons'
 const emit = defineEmits<{ close: [] }>()
 </script>
 
@@ -29,7 +30,9 @@ const emit = defineEmits<{ close: [] }>()
           A imprensa chega pela manhã. Vocês têm seis rodadas antes de a ocorrência sair do nosso
           controle.”
         </p>
-        <button class="button-primary" autofocus @click="emit('close')">Entrar no museu →</button>
+        <button class="button-primary" autofocus @click="emit('close')">
+          Entrar no museu <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
+        </button>
       </section>
     </div>
   </AppModal>

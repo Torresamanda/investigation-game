@@ -2,6 +2,7 @@
 import type { Suspect } from '../../../content/case01'
 import { getPortrait } from '../../../content/portraits'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
+import { PhX } from '../../../components/icons'
 defineProps<{ person: Suspect }>()
 const emit = defineEmits<{ close: [] }>()
 </script>
@@ -26,7 +27,7 @@ const emit = defineEmits<{ close: [] }>()
       <small>Conversas e descobertas serão registradas no diário.</small>
     </div>
     <button class="profile-close" aria-label="Voltar ao cenário" @click="emit('close')">
-      <span aria-hidden="true">×</span>
+      <PhX :size="18" weight="bold" aria-hidden="true" />
     </button>
   </section>
 </template>

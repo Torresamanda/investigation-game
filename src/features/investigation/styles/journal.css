@@ -22,8 +22,9 @@
   font-size: 24px;
 }
 .journal-close {
+  display: grid;
+  place-items: center;
   padding: 2px 10px;
-  font-size: 23px;
 }
 .journal-tabs {
   display: grid;

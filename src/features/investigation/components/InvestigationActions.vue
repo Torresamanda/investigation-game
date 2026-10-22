@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { InvestigationAction } from '../../../domain/game/action-points'
+import { PhArrowRight } from '../../../components/icons'
 
 defineProps<{
   availableActions: readonly InvestigationAction[]
@@ -34,7 +35,7 @@ const actions: readonly { label: string; action: InvestigationAction }[] = [
     <p class="help-text">O custo será descontado dos PA disponíveis neste turno.</p>
     <p class="feedback" role="status">{{ feedback }}</p>
     <button class="end-turn" :disabled="!canEndTurn" @click="emit('endTurn')">
-      Encerrar turno <span aria-hidden="true">→</span>
+      Encerrar turno <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
     </button>
     <div class="accusation-control">
       <button disabled aria-describedby="accusation-help">Acusação bloqueada</button>

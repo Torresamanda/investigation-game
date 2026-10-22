@@ -50,7 +50,9 @@ function toggleCard(instanceId: string) {
       </template>
       <template v-else>
         <strong>{{ ownerLabel }}</strong>
-        <span>Clique em uma carta para prepará-la; use + para ler os detalhes.</span>
+        <span
+          >Clique em uma carta para prepará-la; use o ícone de informações para ler detalhes.</span
+        >
       </template>
     </div>
     <CardDetails

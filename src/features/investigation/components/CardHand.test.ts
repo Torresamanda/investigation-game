@@ -28,7 +28,7 @@ describe('artes por investigador', () => {
     view.unmount()
   })
 
-  it('prepara a carta pelo clique e abre informações somente pelo botão +', async () => {
+  it('prepara a carta pelo clique e abre informações somente pelo botão de detalhes', async () => {
     // jsdom does not provide the browser's native modal API.
     const showModal = vi.fn()
     Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {

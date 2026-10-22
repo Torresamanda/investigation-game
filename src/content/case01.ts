@@ -8,28 +8,24 @@ export const locations = [
     id: 'gallery',
     name: 'Galeria Principal',
     detail: 'Uma vitrine intacta. Um lugar vazio.',
-    symbol: '◇',
     artwork: galleryArtwork,
   },
   {
     id: 'security',
     name: 'Sala de Segurança',
     detail: 'Monitores silenciosos e registros à espera de leitura.',
-    symbol: '▤',
     artwork: securityArtwork,
   },
   {
     id: 'laboratory',
     name: 'Laboratório de Restauração',
     detail: 'Instrumentos delicados, vestígios e trabalho interrompido.',
-    symbol: '⌕',
     artwork: laboratoryArtwork,
   },
   {
     id: 'office',
     name: 'Escritório da Curadoria',
     detail: 'Documentos, compromissos e interesses institucionais.',
-    symbol: '▱',
     artwork: officeArtwork,
   },
 ] as const

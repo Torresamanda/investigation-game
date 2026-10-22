@@ -1,10 +1,12 @@
 <script setup lang="ts">
-defineProps<{ label: string; symbol?: string }>()
+import { PhImageSquare } from '../icons'
+
+defineProps<{ label: string }>()
 </script>
 
 <template>
   <div class="art-placeholder" role="img" :aria-label="label">
-    <span class="placeholder-symbol" aria-hidden="true">{{ symbol ?? '◇' }}</span>
+    <PhImageSquare class="placeholder-symbol" :size="64" aria-hidden="true" />
     <span class="art-caption">{{ label }}</span>
   </div>
 </template>

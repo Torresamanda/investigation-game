@@ -17,6 +17,7 @@
     "check": "npm run lint && npm run format:check && npm test && npm run server:check && npm run build"
   },
   "dependencies": {
+    "@phosphor-icons/vue": "^2.2.1",
     "fastify": "^5.12.7",
     "pinia": "^4.1.0",
     "vue": "^3.5.44",

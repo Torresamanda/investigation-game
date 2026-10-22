@@ -47,9 +47,7 @@ describe('fluxos da investigação', () => {
     await view.get('.journal-bookmark').trigger('click')
     await view.findAll('.journal-tabs button')[2]!.trigger('click')
     const names = view.findAll('.suspect-name').map((item) => item.text())
-    expect(
-      view.findAll('.suspect-list li').map((item) => item.text().replace('◇', '').trim()),
-    ).toEqual(names)
+    expect(view.findAll('.suspect-list li').map((item) => item.text().trim())).toEqual(names)
     await view.get('.journal-close').trigger('click')
     await view.get('.journal-bookmark').trigger('click')
     expect(view.findAll('.suspect-list li')).toHaveLength(4)

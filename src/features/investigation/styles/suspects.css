@@ -102,11 +102,8 @@
   padding: 0;
   line-height: 0;
 }
-.profile-close > span {
+.profile-close > svg {
   display: block;
-  transform: translateY(-1px);
-  font-size: 20px;
-  line-height: 1;
 }
 .personality-label {
   color: #a9bfcd;

@@ -4,7 +4,7 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** completa o Caso 01; **P
 
 ## P0 — Fundação visual transversal
 
-- [ ] **00 · ICON-01 — Adotar Phosphor Icons como sistema único de ícones** `[Front] [Definição]`
+- [x] **00 · ICON-01 — Adotar Phosphor Icons como sistema único de ícones** `[Front] [Definição]`
   - Adicionar a biblioteca Phosphor Icons ao projeto e criar `src/components/icons/` como ponto único de exportação dos ícones aprovados.
   - Substituir símbolos textuais, setas, sinais de fechar, marcadores e ícones de ação existentes por componentes desse catálogo.
   - Definir tamanhos, espessuras, rótulos acessíveis e estados de foco coerentes com a identidade visual do jogo.

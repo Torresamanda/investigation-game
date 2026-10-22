@@ -2,6 +2,7 @@
 import type { CardDefinition } from '../../../content/cards'
 import AppModal from '../../../components/ui/AppModal.vue'
 import CardArtwork from '../../../components/ui/CardArtwork.vue'
+import { PhX } from '../../../components/icons'
 defineProps<{ card: CardDefinition; ownerLabel: string }>()
 const emit = defineEmits<{ close: [] }>()
 </script>
@@ -17,7 +18,7 @@ const emit = defineEmits<{ close: [] }>()
           aria-label="Fechar detalhes da carta"
           @click="emit('close')"
         >
-          ×
+          <PhX :size="20" weight="bold" aria-hidden="true" />
         </button>
         <p class="eyebrow">{{ ownerLabel }} · {{ card.cost }} PA</p>
         <h2 id="card-detail-title">{{ card.name }}</h2>
