@@ -67,6 +67,9 @@ const tabs = [
           <li v-for="entry in journalEntries" :key="entry.id">
             <strong>{{ entry.title }}</strong>
             <span>{{ entry.content }}</span>
+            <small v-if="entry.recordedWith === 'pocket-recorder'" class="journal-recorded">
+              Registrada com Gravador de Bolso
+            </small>
           </li>
         </ol>
         <p v-else class="muted">

@@ -79,6 +79,17 @@ export function drawToHand(deck: MatchDeck, handSize: number): MatchDeck {
   return { drawPile, discardPile, hand }
 }
 
+export function refreshHandForTurn(deck: MatchDeck, handSize: number): MatchDeck {
+  return drawToHand(
+    {
+      drawPile: shuffle([...deck.drawPile, ...deck.hand]),
+      discardPile: deck.discardPile,
+      hand: [],
+    },
+    handSize,
+  )
+}
+
 export function discardFromHand(deck: MatchDeck, instanceId: string): MatchDeck {
   const cardIndex = deck.hand.findIndex((card) => card.instanceId === instanceId)
   if (cardIndex === -1) throw new Error('A carta precisa estar na mão do investigador.')
@@ -87,17 +98,26 @@ export function discardFromHand(deck: MatchDeck, instanceId: string): MatchDeck 
   return { drawPile: deck.drawPile, discardPile: [...deck.discardPile, discarded!], hand }
 }
 
-export function addTemporaryCardToHand(
+export function addTemporaryCardToDrawPile(
   deck: MatchDeck,
   definitionId: keyof typeof temporaryDefinitions,
   ownerId: InvestigatorId,
 ): MatchDeck {
   const definition = temporaryDefinitions[definitionId]
   const instanceId = `temporary:${definitionId}:${ownerId}`
-  if (deck.hand.some((card) => card.instanceId === instanceId)) return deck
+  if (
+    [...deck.hand, ...deck.drawPile, ...deck.discardPile].some(
+      (card) => card.instanceId === instanceId,
+    )
+  ) {
+    return deck
+  }
   return {
     ...deck,
-    hand: [...deck.hand, { instanceId, definitionId, ownerId, temporary: true, ...definition }],
+    drawPile: [
+      ...deck.drawPile,
+      { instanceId, definitionId, ownerId, temporary: true, ...definition },
+    ],
   }
 }
 

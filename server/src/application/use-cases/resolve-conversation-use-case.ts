@@ -2,7 +2,7 @@ import { canPayAction, spendActionPoints } from '../../../../shared/domain/actio
 import type { ResolveConversationCommand } from '../commands.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import type { MatchRepository } from '../ports/match-repository.js'
-import { addTemporaryCardToHand, discardFromHand } from '../../domain/match-deck.js'
+import { addTemporaryCardToDrawPile, discardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
 
@@ -29,13 +29,6 @@ export class ResolveConversationUseCase {
     }
     const resolvedKey = conversationKey(command.personId, question.id)
     if (match.resolvedKeys.includes(resolvedKey)) throw new Error('Esta pergunta já foi resolvida.')
-    const bonusQuestion = hasConversationBonus(match, command.personId)
-    if (
-      match.resolvedKeys.includes(conversationTurnKey(match, command.personId)) &&
-      !bonusQuestion
-    ) {
-      throw new Error('Você já fez uma pergunta neste turno.')
-    }
     const activeDeck = match.decks[match.activeInvestigatorId]
     const card = match.preparedCardInstanceId
       ? activeDeck.hand.find((item) => item.instanceId === match.preparedCardInstanceId)
@@ -43,7 +36,15 @@ export class ResolveConversationUseCase {
     if (match.preparedCardInstanceId && (!card || !card.compatibleActions.includes('converse'))) {
       throw new InvalidActionError('A carta não pode ser usada nesta conversa.')
     }
-    const questionCost = bonusQuestion ? 0 : question.cost
+    const questionLimitReached = match.resolvedKeys.includes(
+      conversationTurnKey(match, command.personId),
+    )
+    const bonusQuestion = hasConversationBonus(match, command.personId)
+    const usesPreparedPause = questionLimitReached && card?.definitionId === 'calculated-pause'
+    if (questionLimitReached && !bonusQuestion && !usesPreparedPause) {
+      throw new Error('Você já fez uma pergunta neste turno.')
+    }
+    const questionCost = bonusQuestion || usesPreparedPause ? 0 : question.cost
     const totalCost = questionCost + (card?.cost ?? 0)
     if (!canPayAction(match.actionPoints, { action: 'converse', amount: totalCost })) {
       throw new DomainError('PA insuficientes para esta pergunta.')
@@ -71,7 +72,7 @@ export class ResolveConversationUseCase {
         ? {
             ...match.decks,
             [match.activeInvestigatorId]: reward
-              ? addTemporaryCardToHand(
+              ? addTemporaryCardToDrawPile(
                   discardFromHand(activeDeck, card.instanceId),
                   reward,
                   match.activeInvestigatorId,
@@ -81,7 +82,7 @@ export class ResolveConversationUseCase {
         : reward
           ? {
               ...match.decks,
-              [match.activeInvestigatorId]: addTemporaryCardToHand(
+              [match.activeInvestigatorId]: addTemporaryCardToDrawPile(
                 activeDeck,
                 reward,
                 match.activeInvestigatorId,
@@ -106,8 +107,12 @@ export class ResolveConversationUseCase {
         ...match.resolvedKeys,
         resolvedKey,
         conversationTurnKey(match, command.personId),
-        ...(bonusQuestion ? [conversationBonusUsedKey(match, command.personId)] : []),
-        ...(usesCalculatedPause ? [conversationBonusKey(match, command.personId)] : []),
+        ...(bonusQuestion || usesPreparedPause
+          ? [conversationBonusUsedKey(match, command.personId)]
+          : []),
+        ...(usesCalculatedPause && !questionLimitReached
+          ? [conversationBonusKey(match, command.personId)]
+          : []),
       ],
     }
     this.repository.save(updated)

@@ -1,6 +1,6 @@
 import type { MatchRepository } from '../ports/match-repository.js'
 import { actionPointsFor, type SoloMatch } from '../../domain/match.js'
-import { drawToHand, INITIAL_HAND_SIZE } from '../../domain/match-deck.js'
+import { refreshHandForTurn, INITIAL_HAND_SIZE } from '../../domain/match-deck.js'
 import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class EndTurnUseCase {
@@ -19,7 +19,7 @@ export class EndTurnUseCase {
       decks: Object.fromEntries(
         Object.entries(match.decks).map(([investigatorId, deck]) => [
           investigatorId,
-          drawToHand(deck, INITIAL_HAND_SIZE),
+          refreshHandForTurn(deck, INITIAL_HAND_SIZE),
         ]),
       ) as SoloMatch['decks'],
     }

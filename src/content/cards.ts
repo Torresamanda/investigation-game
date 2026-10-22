@@ -210,7 +210,7 @@ const temporaryCards: readonly CardDefinition[] = [
     name: 'Lista de Convidados',
     cost: 1,
     image: archive,
-    effect: 'Cruza a presença de convidados com a linha do tempo pública.',
+    effect: 'Cruza a presença de convidados com a linha do tempo pública por 1 PA adicional.',
     context: 'Durante Pesquisar uma informação de presença.',
     compatibleActions: ['research'],
   },

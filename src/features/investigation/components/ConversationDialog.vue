@@ -1,12 +1,29 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ConversationOptions } from '../../../services/game-api'
+import type { HandCard } from '../../../stores/investigation'
 
-defineProps<{
+const props = defineProps<{
   conversation: ConversationOptions
   pointsLabel: string
+  conversationCards: readonly HandCard[]
+  preparedCardId: string | null
 }>()
 
-const emit = defineEmits<{ close: []; resolve: [questionId: string] }>()
+const emit = defineEmits<{
+  close: []
+  resolve: [questionId: string]
+  prepareCard: [instanceId: string]
+  clearPreparedCard: []
+}>()
+
+const availableConversationCards = computed(() =>
+  props.conversationCards.filter(
+    (card) =>
+      card.compatibleActions.includes('converse') &&
+      (!props.conversation.questionLimitReached || card.id === 'calculated-pause'),
+  ),
+)
 </script>
 
 <template>
@@ -55,5 +72,23 @@ const emit = defineEmits<{ close: []; resolve: [questionId: string] }>()
       </button>
     </div>
     <p v-else class="conversation-help">Todas as perguntas desta conversa já foram registradas.</p>
+    <section v-if="availableConversationCards.length" class="conversation-cards">
+      <p class="conversation-help">Cartas para esta conversa</p>
+      <div>
+        <button
+          v-for="card in availableConversationCards"
+          :key="card.instanceId"
+          type="button"
+          :aria-pressed="preparedCardId === card.instanceId"
+          @click="
+            preparedCardId === card.instanceId
+              ? emit('clearPreparedCard')
+              : emit('prepareCard', card.instanceId)
+          "
+        >
+          {{ card.name }} · {{ card.cost }} PA
+        </button>
+      </div>
+    </section>
   </section>
 </template>

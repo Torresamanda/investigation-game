@@ -113,6 +113,37 @@ async function resolveConversation(questionId: string) {
       error instanceof Error ? error.message : 'Não foi possível resolver a pergunta.'
   }
 }
+
+async function prepareConversationCard(instanceId: string) {
+  const activeConversation = conversation.value
+  if (!activeConversation) return
+  try {
+    if (!(await session.prepareCard(instanceId))) return
+    feedback.value = 'Carta preparada para esta conversa.'
+    conversation.value = await session.loadConversationOptions(
+      activeConversation.personId as SuspectId,
+      location.value.id,
+    )
+  } catch (error) {
+    feedback.value = error instanceof Error ? error.message : 'Não foi possível preparar a carta.'
+  }
+}
+
+async function clearConversationCardPreparation() {
+  const activeConversation = conversation.value
+  if (!activeConversation) return
+  try {
+    await session.clearPreparedCard()
+    feedback.value = 'Preparação removida.'
+    conversation.value = await session.loadConversationOptions(
+      activeConversation.personId as SuspectId,
+      location.value.id,
+    )
+  } catch (error) {
+    feedback.value =
+      error instanceof Error ? error.message : 'Não foi possível remover a preparação.'
+  }
+}
 </script>
 
 <template>
@@ -180,8 +211,12 @@ async function resolveConversation(questionId: string) {
       v-if="conversation"
       :conversation="conversation"
       :points-label="session.pointsLabel"
+      :conversation-cards="cards"
+      :prepared-card-id="session.preparedCard?.instanceId ?? null"
       @close="conversation = null"
       @resolve="resolveConversation"
+      @prepare-card="prepareConversationCard"
+      @clear-prepared-card="clearConversationCardPreparation"
     />
   </main>
 </template>

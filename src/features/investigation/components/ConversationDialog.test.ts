@@ -7,6 +7,8 @@ describe('ConversationDialog', () => {
     const view = mount(ConversationDialog, {
       props: {
         pointsLabel: '5 PA gerais',
+        conversationCards: [],
+        preparedCardId: null,
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
@@ -51,6 +53,8 @@ describe('ConversationDialog', () => {
     const view = mount(ConversationDialog, {
       props: {
         pointsLabel: '3 PA gerais',
+        conversationCards: [],
+        preparedCardId: null,
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
@@ -73,5 +77,48 @@ describe('ConversationDialog', () => {
     expect(view.text()).toContain('já fez uma pergunta neste turno')
     expect(view.text()).toContain('Diálogo bloqueado: necessário evidência')
     expect(view.get('.conversation-questions button').attributes('disabled')).toBeDefined()
+  })
+
+  it('oferece a Pausa Calculada depois da primeira pergunta do turno', async () => {
+    const view = mount(ConversationDialog, {
+      props: {
+        pointsLabel: '2 PA gerais',
+        preparedCardId: null,
+        conversationCards: [
+          {
+            id: 'pocket-recorder',
+            name: 'Gravador de Bolso',
+            cost: 1,
+            image: '',
+            effect: '',
+            context: '',
+            compatibleActions: ['converse'],
+            instanceId: 'isadora:pocket-recorder:1',
+          },
+          {
+            id: 'calculated-pause',
+            name: 'Pausa Calculada',
+            cost: 0,
+            image: '',
+            effect: '',
+            context: '',
+            compatibleActions: ['converse'],
+            instanceId: 'isadora:calculated-pause:1',
+          },
+        ],
+        conversation: {
+          personId: 'marta',
+          personName: 'Marta Lobo',
+          locationId: 'laboratory',
+          questionLimitReached: true,
+          questions: [],
+        },
+      },
+    })
+
+    expect(view.text()).toContain('Pausa Calculada')
+    expect(view.text()).not.toContain('Gravador de Bolso')
+    await view.get('.conversation-cards button').trigger('click')
+    expect(view.emitted('prepareCard')).toEqual([['isadora:calculated-pause:1']])
   })
 })

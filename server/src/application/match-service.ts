@@ -82,7 +82,14 @@ export class MatchService {
     this.assertPersonAvailability(personId, locationId)
     const conversation = this.caseContentRepository.getConversation(personId)
     const questionLimitReached = match.resolvedKeys.includes(conversationTurnKey(match, personId))
-    const bonusQuestion = hasConversationBonus(match, personId)
+    const preparedCard = match.preparedCardInstanceId
+      ? match.decks[match.activeInvestigatorId].hand.find(
+          (card) => card.instanceId === match.preparedCardInstanceId,
+        )
+      : undefined
+    const bonusQuestion =
+      hasConversationBonus(match, personId) ||
+      (questionLimitReached && preparedCard?.definitionId === 'calculated-pause')
     return {
       personId,
       personName: conversation.personName,

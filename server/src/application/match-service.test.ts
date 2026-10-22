@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MatchService } from './match-service.js'
 import { InMemoryMatchRepository } from '../infrastructure/persistence/in-memory-match-repository.js'
+import type { InvestigatorId } from '../domain/match.js'
 
 describe('MatchService', () => {
   it('cria uma partida solo com dupla fixa e estado inicial', () => {
@@ -69,18 +70,24 @@ describe('MatchService', () => {
     expect(third.actionPoints.general).toBe(3)
   })
 
-  it('mantém a mão no servidor ao avançar para a rodada seguinte', () => {
+  it('renova a mão com quatro cartas ao avançar para a rodada seguinte', () => {
     const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
-    const initialHand = match.decks.livia.hand.map((card) => card.instanceId)
-
     const updated = service.endTurn(match.id)
 
-    expect(updated.decks.livia.hand.map((card) => card.instanceId)).toEqual(initialHand)
     expect(updated.decks.livia.hand).toHaveLength(4)
+    expect(
+      new Set(
+        [
+          ...updated.decks.livia.hand,
+          ...updated.decks.livia.drawPile,
+          ...updated.decks.livia.discardPile,
+        ].map((card) => card.instanceId),
+      ),
+    ).toHaveLength(8)
   })
 
   it('valida a carta preparada e a move para o descarte após uma ação compatível', () => {
@@ -342,6 +349,36 @@ describe('MatchService', () => {
     expect(updated.actionPoints.general).toBe(4)
   })
 
+  it('aceita preparar Pausa Calculada após a primeira pergunta do turno', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'rafael',
+    })
+    const afterFirstQuestion = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'davi-interest',
+    })
+    const pause = putCardInHand(repository, afterFirstQuestion, 'calculated-pause')
+    service.prepareCard(match.id, pause.instanceId)
+
+    const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
+    expect(options.questionLimitReached).toBe(false)
+    expect(options.questions.map((question) => question.cost)).toEqual([0, 0])
+
+    const updated = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'technical-assessment',
+    })
+    expect(updated.actionPoints.general).toBe(4)
+    expect(updated.decks.isadora.discardPile).toContainEqual(pause)
+  })
+
   it('concede uma carta temporária após uma conversa que cumpre sua condição', () => {
     const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
     const match = service.createSoloMatch({
@@ -356,9 +393,77 @@ describe('MatchService', () => {
       questionId: 'insurance-review',
     })
 
-    expect(updated.decks.livia.hand).toContainEqual(
+    expect(updated.decks.livia.drawPile).toContainEqual(
       expect.objectContaining({ definitionId: 'curator-agenda', temporary: true }),
     )
+  })
+
+  it('concede as cartas temporárias de Davi e Raul quando suas conversas são liberadas', () => {
+    const daviService = new MatchService(
+      new InMemoryMatchRepository(),
+      undefined,
+      () => 'davi-match',
+    )
+    const daviMatch = daviService.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    daviService.endTurn(daviMatch.id)
+    const afterDavi = daviService.resolveConversation({
+      matchId: daviMatch.id,
+      personId: 'davi',
+      locationId: 'gallery',
+      questionId: 'collectors',
+    })
+    expect(afterDavi.decks.livia.drawPile).toContainEqual(
+      expect.objectContaining({ definitionId: 'guest-list', temporary: true }),
+    )
+
+    const raulService = new MatchService(
+      new InMemoryMatchRepository(),
+      undefined,
+      () => 'raul-match',
+    )
+    const raulMatch = raulService.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    raulService.endTurn(raulMatch.id)
+    const afterRaul = raulService.resolveConversation({
+      matchId: raulMatch.id,
+      personId: 'raul',
+      locationId: 'security',
+      questionId: 'security-procedure',
+    })
+    expect(afterRaul.decks.livia.drawPile).toContainEqual(
+      expect.objectContaining({ definitionId: 'patrol-map', temporary: true }),
+    )
+  })
+
+  it('cobra 1 PA adicional da Lista de Convidados durante Pesquisar', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'otavio',
+      supportInvestigatorId: 'rafael',
+    })
+    service.endTurn(match.id)
+    const afterConversation = service.resolveConversation({
+      matchId: match.id,
+      personId: 'davi',
+      locationId: 'gallery',
+      questionId: 'collectors',
+    })
+    const guestList = putCardInHand(repository, afterConversation, 'guest-list', 'otavio')
+    service.prepareCard(match.id, guestList.instanceId)
+
+    const updated = service.resolveAction({
+      matchId: match.id,
+      action: 'research',
+      locationId: 'gallery',
+    })
+    expect(updated.actionPoints).toMatchObject({ general: 0, specialty: 0 })
+    expect(updated.decks.otavio.discardPile).toContainEqual(guestList)
   })
 })
 
@@ -366,15 +471,16 @@ function putCardInHand(
   repository: InMemoryMatchRepository,
   match: ReturnType<MatchService['createSoloMatch']>,
   definitionId: string,
+  investigatorId: InvestigatorId = 'isadora',
 ) {
-  const deck = match.decks.isadora
+  const deck = match.decks[investigatorId]
   const card = [...deck.hand, ...deck.drawPile].find((item) => item.definitionId === definitionId)
   if (!card) throw new Error(`Carta ${definitionId} não foi criada.`)
   repository.save({
     ...match,
     decks: {
       ...match.decks,
-      isadora: {
+      [investigatorId]: {
         ...deck,
         drawPile: deck.drawPile.filter((item) => item.instanceId !== card.instanceId),
         hand: deck.hand.some((item) => item.instanceId === card.instanceId)

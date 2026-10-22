@@ -13,7 +13,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 
 2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
    - Concluído: `12A · CASO-08` → Perguntas dependentes de evidência e recompensas temporárias agora ficam bloqueadas até o momento correto, com presença dos suspeitos indicada por local.
-   - `13 · CASO-03` → Integrar cartas de conversa (incluindo uso pós-pergunta de `Pausa Calculada` e substituição da penalidade de imprensa da `Lista de Convidados` por regra de PA concreta).
+   - Concluído: `13 · CASO-03` → Cartas de conversa integradas, com Pausa Calculada antes ou após a primeira pergunta e regra de PA concreta para a Lista de Convidados.
    - `04C · JOGO-05` → Permitir reciclar (descartar voluntariamente) até 1 carta na preparação da rodada antes de comprar até 4.
 
 3. **Motor do Caso 01, Economia de PA e Investigadores (`P1` Core Loop):**
@@ -164,7 +164,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Manter Davi Orsini alocado na `Galeria Principal` (alinhado aos 4 locais iniciais) e sinalizar visualmente em `SuspectRoster` / `SuspectProfile` quais pessoas de interesse estão presentes no local selecionado (desabilitando ou informando o local correto quando ausentes).
   - Critério de aceite: nenhuma pergunta com pré-requisito ou carta temporária pode ser perdida permanentemente por *timing* precoce, e o jogador sabe exatamente quem está presente em cada sala antes de acionar `Conversar`.
 
-- [ ] **13 · CASO-03 — Integrar cartas de conversa** `[Front] [Back] [Definição]`
+- [x] **13 · CASO-03 — Integrar cartas de conversa** `[Front] [Back] [Definição]`
   - Permitir preparar uma carta compatível antes de escolher uma pergunta e permitir também que `Pausa Calculada` seja preparada/acionada **após** a primeira pergunta do turno para abrir imediatamente uma pergunta adicional a custo `0 PA`.
   - Aplicar cartas de Isadora em conversa e entregar cartas temporárias de suspeitos quando as condições forem atendidas.
   - Substituir no MVP a penalidade de "avançar pressão da imprensa" da `Lista de Convidados` por uma regra concreta de PA (ex.: custo normal de `1 PA` na pesquisa ou `+1 PA` fora do Escritório da Curadoria), deixando o medidor global de imprensa para evolução futura.

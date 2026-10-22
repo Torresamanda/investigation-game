@@ -190,6 +190,20 @@
   font-size: 11px;
   white-space: normal;
 }
+.conversation-cards {
+  border-top: 1px solid #c79a5355;
+  margin-top: 14px;
+  padding-top: 10px;
+}
+.conversation-cards > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.conversation-cards button[aria-pressed='true'] {
+  border-color: var(--gold);
+  background: #c79a5330;
+}
 @media (max-width: 1400px) {
   .journal-is-open .suspect-tile {
     grid-template-columns: 1fr;
