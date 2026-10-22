@@ -9,7 +9,7 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
 Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, execute as próximas tarefas pendentes exatamente nesta sequência:
 
 1. **Fundação, Arquitetura e Anti-Desincronização (`P0` / `P1` Base):**
-   - `18 · BUG-03` + `03F · ARQ-03` → Remover contingência local divergente, dividir stores e remover `abandonInvestigation` automático do router.
+   - Concluído: `18 · BUG-03` + `03F · ARQ-03` → Removida a contingência local divergente, stores divididas e removido o `abandonInvestigation` automático do router.
 
 2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
    - `12A · CASO-08` → Exibir perguntas de confronto bloqueadas como desabilitadas com requisito visível (`Diálogo bloqueado: necessário evidência`), liberar perguntas com recompensa de Davi/Raul apenas na Rodada 2+ e indicar presença do suspeito no local atual.
@@ -84,7 +84,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
   - Preservar espaçamento legível, área clicável e alinhamento em desktop e celular.
   - Critério de aceite: ícone e texto formam um conjunto visualmente centralizado sem deslocamento em nenhum breakpoint suportado.
 
-- [ ] **03F · ARQ-03 — Dividir store monolítica, extrair composables e remover efeito colateral do router** `[P2] [Front]`
+- [x] **03F · ARQ-03 — Dividir store monolítica, extrair composables e remover efeito colateral do router** `[P2] [Front]`
   - Separar `useInvestigationStore` por responsabilidade: estado autoritativo da partida (`useMatchStore`) e rascunhos/hipóteses locais (`useNotesStore`), extraindo a orquestração de UI da tela de investigação para composables focados.
   - Remover o efeito colateral `abandonInvestigation()` do hook global `router.afterEach` em `src/app/router.ts`, acionando o abandono apenas por ação explícita do jogador.
   - Critério de aceite: cada store e composable possui responsabilidade única e o roteador cuida apenas de navegação e guardas de acesso.
@@ -298,7 +298,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 - [x] **21 · BUG-02 — A API em memória perde partidas ao reiniciar** `[P1] [Back]`
   - Resolvido por JOGO-04: SQLite persiste a partida e o diário para que a missão seja retomada depois de reiniciar a API.
 
-- [ ] **18 · BUG-03 — O cliente possui modo de contingência local quando a API está indisponível** `[P1] [Front] [Back]`
+- [x] **18 · BUG-03 — O cliente possui modo de contingência local quando a API está indisponível** `[P1] [Front] [Back]`
   - Consequência: a mesma ação pode ter comportamento diferente se o servidor não estiver ativo.
   - Correção planejada: tornar a API obrigatória para ações de jogo, preservar somente uma tela de indisponibilidade e impedir alteração local do estado.
   - Critério de aceite: sem API, o jogador vê o estado de conexão e nenhuma ação, carta ou turno é resolvido no cliente.

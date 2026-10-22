@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, type RouterHistory } from 'vue-router'
-import { useInvestigationStore } from '../stores/investigation'
+import { useMatchStore } from '../stores/match'
 
 export function createAppRouter(history: RouterHistory = createWebHistory()) {
   const router = createRouter({
@@ -14,16 +14,11 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
         path: '/investigacao',
         name: 'investigation',
         component: () => import('../features/investigation/InvestigationView.vue'),
-        beforeEnter: () => (useInvestigationStore().investigatorId ? true : { name: 'worlds' }),
+        beforeEnter: () => (useMatchStore().investigatorId ? true : { name: 'worlds' }),
       },
       { path: '/:pathMatch(.*)*', redirect: '/' },
     ],
     scrollBehavior: () => ({ top: 0 }),
-  })
-  router.afterEach((to, from, failure) => {
-    if (!failure && from.name === 'investigation' && to.name !== 'investigation') {
-      useInvestigationStore().abandonInvestigation()
-    }
   })
   return router
 }

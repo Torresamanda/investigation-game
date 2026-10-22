@@ -122,6 +122,10 @@ async function resolveConversation(questionId: string) {
     :class="{ 'journal-is-open': open }"
     @keydown.esc="close"
   >
+    <div v-if="session.connectionState !== 'connected'" class="connection-state" role="alert">
+      <strong>Investigação indisponível</strong>
+      <span>{{ session.connectionError ?? 'Conecte-se à API para iniciar ações.' }}</span>
+    </div>
     <CaseToolbar
       ref="toolbar"
       :open="open"

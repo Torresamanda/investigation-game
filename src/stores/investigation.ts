@@ -1,237 +1,62 @@
+import { computed } from 'vue'
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { investigators, type InvestigatorId } from '../content/investigators'
-import { getCardDefinition, type CardDefinition } from '../content/cards'
-import {
-  canPerformBasicAction,
-  canPerformActionWithCard,
-  performBasicAction,
-  performActionWithCard,
-  prepareNextRound,
-  startSoloMission,
-  TOTAL_ROUNDS,
-  type SoloMission,
-} from '../application/game/solo-mission'
+import { storeToRefs } from 'pinia'
+import { useMatchStore } from './match'
+import { useNotesStore } from './notes'
+import type { InvestigatorId } from '../content/investigators'
 import type { InvestigationAction } from '../../shared/domain/identifiers'
-import { canPayAction } from '../../shared/domain/action-points'
-import { gameApi, type MatchJournalEntry, type RemoteMatch } from '../services/game-api'
-import type { LocationId, SuspectId } from '../content/case01'
-
-export interface HandCard extends CardDefinition {
-  readonly instanceId: string
-}
+export type { HandCard } from './match'
 
 export const useInvestigationStore = defineStore('investigation', () => {
-  const investigatorId = ref<InvestigatorId | null>(null)
-  const supportId = ref<InvestigatorId | null>(null)
-  const notes = ref('')
-  const hypotheses = ref<{ id: number; text: string }[]>([])
-  const introductionSeen = ref(false)
-  const mission = ref<SoloMission | null>(null)
-  const remoteMatch = ref<RemoteMatch | null>(null)
-  const preparedCardId = ref<string | null>(null)
-  let nextHypothesisId = 1
-  const investigator = computed(() =>
-    investigators.find((item) => item.id === investigatorId.value),
-  )
-  const support = computed(() => investigators.find((item) => item.id === supportId.value))
-  const hand = computed<readonly HandCard[]>(() => {
-    const activeId = investigatorId.value
-    if (!activeId) return []
+  const match = useMatchStore()
+  const notes = useNotesStore()
+  const matchRefs = storeToRefs(match)
+  const notesRefs = storeToRefs(notes)
+  const mission = computed(() => null)
 
-    const remoteHand = remoteMatch.value?.decks[activeId]?.hand
-    if (remoteHand) {
-      return remoteHand.flatMap((card) => {
-        const definition = getCardDefinition(card.definitionId)
-        return definition ? [{ ...definition, instanceId: card.instanceId }] : []
-      })
-    }
-    if (!mission.value) return []
-
-    return (mission.value.decks[activeId]?.hand ?? []).map((card) => ({
-      ...card.definition,
-      instanceId: card.instanceId,
-    }))
-  })
-  const round = computed(() => remoteMatch.value?.round ?? mission.value?.round ?? 1)
-  const pointsLabel = computed(() => {
-    const points = remoteMatch.value?.actionPoints ?? mission.value?.actionPoints
-    if (!points) return ''
-    if (!points.specialty) return `${points.general} PA gerais`
-
-    const specialtyLabel =
-      points.specialtyPoint === 'technical'
-        ? 'técnico'
-        : points.specialtyPoint === 'social'
-          ? 'social'
-          : 'de pesquisa'
-    return `${points.general} PA gerais + ${points.specialty} ${specialtyLabel}`
-  })
-  const canEndTurn = computed(() => round.value < TOTAL_ROUNDS)
-  const preparedCard = computed(() => {
-    const instanceId = remoteMatch.value?.preparedCardInstanceId ?? preparedCardId.value
-    return hand.value.find((card) => card.instanceId === instanceId)
-  })
-  const journalEntries = computed<readonly MatchJournalEntry[]>(
-    () => remoteMatch.value?.journalEntries ?? [],
-  )
-
-  function startInvestigation(active: InvestigatorId, support: InvestigatorId) {
-    if (active === support) throw new Error('O apoio deve ser outro investigador.')
-    abandonInvestigation()
-    investigatorId.value = active
-    supportId.value = support
-    notes.value = ''
-    preparedCardId.value = null
-    remoteMatch.value = null
-    mission.value = startSoloMission({
-      activeInvestigatorId: active,
-      supportInvestigatorId: support,
-    })
+  function startInvestigation(active: InvestigatorId, support: InvestigatorId): void {
+    match.startInvestigation(active, support)
+    notes.clearNotes()
   }
 
-  function canExecute(action: InvestigationAction) {
-    if (remoteMatch.value) {
-      const points = remoteMatch.value.actionPoints
-      const card = preparedCard.value
-      if (card && !card.compatibleActions.includes(action)) return false
-      return canPayAction(points, { action, amount: 2 + (card?.cost ?? 0) })
-    }
-    if (!mission.value) return false
-    return preparedCardId.value
-      ? canPerformActionWithCard(mission.value, action, preparedCardId.value)
-      : canPerformBasicAction(mission.value, action)
-  }
-
-  function executeBasicAction(action: InvestigationAction) {
-    if (!mission.value) return false
-    if (!canExecute(action)) return false
-    mission.value = preparedCardId.value
-      ? performActionWithCard(mission.value, action, preparedCardId.value)
-      : performBasicAction(mission.value, action)
-    preparedCardId.value = null
-    return true
-  }
-
-  async function prepareCard(instanceId: string) {
-    if (!hand.value.some((card) => card.instanceId === instanceId)) return false
-    if (remoteMatch.value) {
-      remoteMatch.value = await gameApi.prepareCard(remoteMatch.value.id, instanceId)
-    }
-    preparedCardId.value = instanceId
-    return true
-  }
-
-  async function clearPreparedCard() {
-    if (remoteMatch.value) {
-      remoteMatch.value = await gameApi.prepareCard(remoteMatch.value.id, null)
-    }
-    preparedCardId.value = null
-  }
-
-  function endTurn() {
-    if (!mission.value || !canEndTurn.value) return false
-    preparedCardId.value = null
-    mission.value = prepareNextRound(mission.value)
-    return true
-  }
-
-  async function createRemoteMatch(active: InvestigatorId, support: InvestigatorId) {
-    remoteMatch.value = await gameApi.createMatch(active, support)
-    return remoteMatch.value
-  }
-
-  async function resolveAction(action: InvestigationAction, locationId: LocationId) {
-    if (!canExecute(action)) return null
-
-    if (!remoteMatch.value) {
-      return executeBasicAction(action) ? null : null
-    }
-
-    const updated = await gameApi.resolveAction(remoteMatch.value.id, action, locationId)
-    remoteMatch.value = updated
-    preparedCardId.value = updated.preparedCardInstanceId
-    return updated.journalEntries.at(-1) ?? null
-  }
-
-  async function endRemoteTurn() {
-    if (!remoteMatch.value) return endTurn()
-    const updated = await gameApi.endTurn(remoteMatch.value.id)
-    remoteMatch.value = updated
-    preparedCardId.value = updated.preparedCardInstanceId
-    return true
-  }
-
-  async function loadConversationOptions(personId: SuspectId, locationId: LocationId) {
-    if (!remoteMatch.value) throw new Error('A conversa exige uma partida conectada à API.')
-    return gameApi.getConversationOptions(remoteMatch.value.id, personId, locationId)
-  }
-
-  async function resolveConversation(
-    personId: SuspectId,
-    questionId: string,
-    locationId: LocationId,
-  ) {
-    if (!remoteMatch.value) throw new Error('A conversa exige uma partida conectada à API.')
-    const updated = await gameApi.resolveConversation(
-      remoteMatch.value.id,
-      personId,
-      questionId,
-      locationId,
-    )
-    remoteMatch.value = updated
-    preparedCardId.value = updated.preparedCardInstanceId
-    return updated.journalEntries.at(-1) ?? null
-  }
-
-  function saveNote() {
-    const text = notes.value.trim()
-    if (!text || text.length > 4000) return false
-    hypotheses.value.push({ id: nextHypothesisId++, text })
-    notes.value = ''
-    return true
-  }
-
-  function abandonInvestigation() {
-    investigatorId.value = null
-    supportId.value = null
-    notes.value = ''
-    hypotheses.value = []
-    introductionSeen.value = false
-    mission.value = null
-    remoteMatch.value = null
-    preparedCardId.value = null
-    nextHypothesisId = 1
+  function abandonInvestigation(): void {
+    match.abandonInvestigation()
+    notes.clearNotes()
   }
 
   return {
-    investigatorId,
-    supportId,
-    investigator,
-    support,
+    investigatorId: matchRefs.investigatorId,
+    supportId: matchRefs.supportId,
+    investigator: matchRefs.investigator,
+    support: matchRefs.support,
+    introductionSeen: matchRefs.introductionSeen,
+    remoteMatch: matchRefs.remoteMatch,
+    connectionState: matchRefs.connectionState,
+    connectionError: matchRefs.connectionError,
+    hand: matchRefs.hand,
+    round: matchRefs.round,
+    pointsLabel: matchRefs.pointsLabel,
+    canEndTurn: matchRefs.canEndTurn,
+    preparedCard: matchRefs.preparedCard,
+    journalEntries: matchRefs.journalEntries,
+    canExecute: match.canExecute,
+    prepareCard: match.prepareCard,
+    clearPreparedCard: match.clearPreparedCard,
+    createRemoteMatch: match.createRemoteMatch,
+    resolveAction: match.resolveAction,
+    endRemoteTurn: match.endRemoteTurn,
+    loadConversationOptions: match.loadConversationOptions,
+    resolveConversation: match.resolveConversation,
+    notes: notesRefs.notes,
+    hypotheses: notesRefs.hypotheses,
+    saveNote: notes.saveNote,
     mission,
-    remoteMatch,
-    hand,
-    round,
-    pointsLabel,
-    canEndTurn,
-    preparedCard,
-    journalEntries,
-    canExecute,
-    executeBasicAction,
-    prepareCard,
-    clearPreparedCard,
-    endTurn,
-    createRemoteMatch,
-    resolveAction,
-    endRemoteTurn,
-    loadConversationOptions,
-    resolveConversation,
-    notes,
-    hypotheses,
-    introductionSeen,
     startInvestigation,
-    saveNote,
     abandonInvestigation,
+    executeBasicAction: (action?: InvestigationAction) => {
+      void action
+      return false
+    },
+    endTurn: () => false,
   }
 })

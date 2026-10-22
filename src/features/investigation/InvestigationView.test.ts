@@ -16,29 +16,23 @@ describe('fluxos da investigação', () => {
       global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } },
     })
 
-  it('conecta a escolha do local e desconta os PA da ação no cenário', async () => {
+  it('informa que ações exigem uma conexão ativa com a API', async () => {
     const view = createView()
     await view.findAll('.location-list button')[1]!.trigger('click')
     expect(view.get('.scene-panel h2').text()).toBe('Sala de Segurança')
     await view.findAll('.action-grid button')[3]!.trigger('click')
     await flushPromises()
-    expect(view.get('[role="status"]').text()).toBe('Pesquisar: 2 PA gastos.')
-    expect(view.get('.point-label').text()).toBe('3 PA gerais')
+    expect(view.get('.connection-state').text()).toContain('Conecte-se à API')
     view.unmount()
   })
 
-  it('prepara a rodada seguinte ao encerrar o turno', async () => {
+  it('não encerra o turno localmente quando a API está indisponível', async () => {
     const view = createView()
     await view.findAll('.action-grid button')[0]!.trigger('click')
     await flushPromises()
-    expect(view.get('.point-label').text()).toBe('3 PA gerais')
-
     await view.get('.end-turn').trigger('click')
     await flushPromises()
-
-    expect(view.get('.round-indicator').text()).toContain('02')
-    expect(view.get('.point-label').text()).toBe('5 PA gerais')
-    expect(view.get('[role="status"]').text()).toContain('Rodada 02 preparada')
+    expect(view.get('.connection-state').text()).toContain('Conecte-se à API')
     view.unmount()
   })
 
@@ -61,7 +55,7 @@ describe('fluxos da investigação', () => {
     await view.findAll('.suspect-tile')[2]!.trigger('click')
     expect(view.get('.suspect-profile').text()).toContain('Marta Lobo')
     expect(view.get('.suspect-profile').text()).toContain('Cuidadosa · Franca')
-    expect(view.findAll('.investigation-card')).toHaveLength(4)
+    expect(view.findAll('.investigation-card')).toHaveLength(0)
     await view.get('.profile-close').trigger('click')
     expect(view.find('.suspect-profile').exists()).toBe(false)
     expect(view.find('.narrator').exists()).toBe(true)

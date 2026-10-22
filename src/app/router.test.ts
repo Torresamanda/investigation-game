@@ -4,7 +4,7 @@ import { createMemoryHistory } from 'vue-router'
 import { createAppRouter } from './router'
 import { useInvestigationStore } from '../stores/investigation'
 
-it('abandonar pelo mundo apaga a sessão e impede retomada pelo histórico', async () => {
+it('sair para o mundo não apaga a sessão automaticamente', async () => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   setActivePinia(createPinia())
   const store = useInvestigationStore()
@@ -15,9 +15,9 @@ it('abandonar pelo mundo apaga a sessão e impede retomada pelo histórico', asy
   store.notes = 'Conferir horários'
   store.saveNote()
   await router.push('/')
-  expect(store.investigatorId).toBeNull()
-  expect(store.hypotheses).toEqual([])
+  expect(store.investigatorId).toBe('livia')
+  expect(store.hypotheses).toEqual([{ id: 1, text: 'Conferir horários' }])
   await router.push('/investigacao')
-  expect(router.currentRoute.value.path).toBe('/')
+  expect(router.currentRoute.value.path).toBe('/investigacao')
   vi.restoreAllMocks()
 })

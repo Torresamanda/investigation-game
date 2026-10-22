@@ -46,17 +46,12 @@ describe('seleção da prévia solo', () => {
     expect(store.hypotheses).toEqual([])
   })
 
-  it('prepara uma carta e só a descarta ao executar uma ação compatível', async () => {
+  it('não resolve ações localmente quando a API não está conectada', async () => {
     const store = useInvestigationStore()
     store.startInvestigation('livia', 'rafael')
-    const card = store.hand[0]!
-    const compatibleAction = card.compatibleActions[0]!
-
-    await expect(store.prepareCard(card.instanceId)).resolves.toBe(true)
-    expect(store.preparedCard?.instanceId).toBe(card.instanceId)
-    expect(store.canExecute(compatibleAction)).toBe(true)
-    expect(store.executeBasicAction(compatibleAction)).toBe(true)
-    expect(store.hand.some((item) => item.instanceId === card.instanceId)).toBe(false)
-    expect(store.preparedCard).toBeUndefined()
+    expect(store.hand).toEqual([])
+    expect(store.canExecute('examine')).toBe(false)
+    expect(store.executeBasicAction('examine')).toBe(false)
+    await expect(store.endRemoteTurn()).rejects.toThrow('conexão ativa')
   })
 })

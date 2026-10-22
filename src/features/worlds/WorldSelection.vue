@@ -18,7 +18,7 @@ async function start() {
   try {
     await session.createRemoteMatch(active.value, support.value)
   } catch {
-    // The local mission remains available while the development API is offline.
+    // A investigação abre apenas para exibir o estado de indisponibilidade da API.
   }
   await router.push({ name: 'investigation' })
 }
