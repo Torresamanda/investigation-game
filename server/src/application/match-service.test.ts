@@ -116,16 +116,61 @@ describe('MatchService', () => {
     })
 
     expect(options.questions).toHaveLength(3)
-    expect(options.questions[0]).toMatchObject({ cost: 2, canResolve: true })
+    expect(options.questions[0]).toMatchObject({
+      cost: 2,
+      approach: 'inquiry',
+      canResolve: true,
+    })
     expect(updated.actionPoints).toMatchObject({ general: 3, specialty: 0 })
     expect(updated.journalEntries.at(-1)).toMatchObject({
       type: 'statement',
       title: 'Declaração de Marta Lobo',
       locationId: 'laboratory',
     })
-    expect(service.getConversationOptions('match-1', 'marta', 'laboratory').questions).toHaveLength(
-      2,
-    )
+    const limitedOptions = service.getConversationOptions('match-1', 'marta', 'laboratory')
+    expect(limitedOptions.questions).toHaveLength(2)
+    expect(limitedOptions.questionLimitReached).toBe(true)
+    expect(limitedOptions.questions.every((question) => !question.canResolve)).toBe(true)
+  })
+
+  it('aceita uma pergunta por pessoa a cada turno e libera outra na rodada seguinte', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'davi-interest',
+    })
+    expect(() =>
+      service.resolveConversation({
+        matchId: match.id,
+        personId: 'marta',
+        locationId: 'laboratory',
+        questionId: 'technical-assessment',
+      }),
+    ).toThrow('Você já fez uma pergunta neste turno.')
+
+    const otherPerson = service.resolveConversation({
+      matchId: match.id,
+      personId: 'raul',
+      locationId: 'security',
+      questionId: 'museum-routine',
+    })
+    expect(otherPerson.journalEntries).toHaveLength(2)
+
+    service.endTurn(match.id)
+    const nextTurn = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'technical-assessment',
+    })
+    expect(nextTurn.journalEntries).toHaveLength(3)
   })
 
   it('rejeita conversa fora do local, pergunta inexistente ou já resolvida sem alterar a partida', () => {
@@ -161,5 +206,47 @@ describe('MatchService', () => {
       }),
     ).toThrow('Esta pergunta já foi resolvida.')
     expect(service.getMatch(match.id)).toEqual(resolved)
+  })
+
+  it('altera o resultado de pressão conforme a rodada e as evidências já registradas', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    const blocked = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'fingerprints',
+    })
+    expect(blocked.journalEntries.at(-1)).toMatchObject({
+      status: 'blocked',
+      content: expect.stringContaining('vitrine seja examinada'),
+    })
+
+    const corroboratedService = new MatchService(
+      new InMemoryMatchRepository(),
+      undefined,
+      () => 'match-2',
+    )
+    const corroboratedMatch = corroboratedService.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const afterGallery = corroboratedService.resolveAction({
+      matchId: corroboratedMatch.id,
+      action: 'examine',
+      locationId: 'gallery',
+    })
+    const recorded = corroboratedService.resolveConversation({
+      matchId: corroboratedMatch.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'technical-assessment',
+    })
+    expect(afterGallery.resolvedKeys).toContain('gallery-lock')
+    expect(recorded.journalEntries.at(-1)).toMatchObject({ status: 'recorded' })
   })
 })

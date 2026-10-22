@@ -88,7 +88,13 @@ describe('API de partidas', () => {
       url: `/api/matches/${id}/conversations/marta?locationId=laboratory`,
     })
     expect(options.statusCode).toBe(200)
-    expect(options.json<{ questions: unknown[] }>().questions).toHaveLength(3)
+    expect(options.json<{ questions: { approach: string }[] }>().questions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ approach: 'inquiry' }),
+        expect.objectContaining({ approach: 'pressure' }),
+        expect.objectContaining({ approach: 'context' }),
+      ]),
+    )
 
     const resolve = await app.inject({
       method: 'POST',
@@ -136,5 +142,35 @@ describe('API de partidas', () => {
     })
     expect(repeated.statusCode).toBe(400)
     expect(repeated.json()).toEqual({ message: 'Esta pergunta já foi resolvida.' })
+  })
+
+  it('rejeita uma segunda pergunta no mesmo turno', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/matches',
+      payload: { activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' },
+    })
+    const { id } = create.json<{ id: string }>()
+
+    await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/conversations/marta/questions/davi-interest`,
+      payload: { locationId: 'laboratory' },
+    })
+    const second = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/conversations/marta/questions/technical-assessment`,
+      payload: { locationId: 'laboratory' },
+    })
+
+    expect(second.statusCode).toBe(400)
+    expect(second.json()).toEqual({ message: 'Você já fez uma pergunta neste turno.' })
+
+    const otherPerson = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/conversations/raul/questions/museum-routine`,
+      payload: { locationId: 'security' },
+    })
+    expect(otherPerson.statusCode).toBe(200)
   })
 })

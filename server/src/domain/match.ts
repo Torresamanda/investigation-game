@@ -21,7 +21,7 @@ export interface JournalEntry {
   readonly content: string
   readonly locationId: LocationId
   readonly round: number
-  readonly status: 'unconfirmed' | 'note' | 'recorded'
+  readonly status: 'unconfirmed' | 'note' | 'recorded' | 'contestable' | 'blocked'
 }
 
 export interface SoloMatch {

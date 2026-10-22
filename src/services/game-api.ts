@@ -9,13 +9,14 @@ export interface MatchJournalEntry {
   readonly content: string
   readonly locationId: LocationId
   readonly round: number
-  readonly status: 'unconfirmed' | 'note' | 'recorded'
+  readonly status: 'unconfirmed' | 'note' | 'recorded' | 'contestable' | 'blocked'
 }
 
 export interface ConversationQuestion {
   readonly id: string
   readonly text: string
   readonly cost: 1 | 2
+  readonly approach: 'inquiry' | 'pressure' | 'context'
   readonly canResolve: boolean
 }
 
@@ -23,6 +24,7 @@ export interface ConversationOptions {
   readonly personId: string
   readonly personName: string
   readonly locationId: LocationId
+  readonly questionLimitReached: boolean
   readonly questions: readonly ConversationQuestion[]
 }
 

@@ -26,7 +26,10 @@ const emit = defineEmits<{ close: []; resolve: [questionId: string] }>()
         Fechar
       </button>
     </header>
-    <p v-if="conversation.questions.length" class="conversation-help">
+    <p v-if="conversation.questionLimitReached" class="conversation-help">
+      Você já fez uma pergunta neste turno. Encerre o turno para continuar a conversa.
+    </p>
+    <p v-else-if="conversation.questions.length" class="conversation-help">
       Escolha uma pergunta. O custo será confirmado pelo motor da investigação.
     </p>
     <div v-if="conversation.questions.length" class="conversation-questions">
@@ -36,7 +39,15 @@ const emit = defineEmits<{ close: []; resolve: [questionId: string] }>()
         :disabled="!question.canResolve"
         @click="emit('resolve', question.id)"
       >
-        <span>{{ question.text }}</span
+        <span
+          ><small class="conversation-approach">{{
+            question.approach === 'inquiry'
+              ? 'Apuração'
+              : question.approach === 'pressure'
+                ? 'Pressão'
+                : 'Contexto'
+          }}</small
+          >{{ question.text }}</span
         ><small>{{ question.cost }} PA</small>
       </button>
     </div>

@@ -13,6 +13,7 @@ import { discardFromHand, drawToHand, INITIAL_HAND_SIZE } from '../domain/match-
 import {
   getConversation,
   isPersonAvailableAtLocation,
+  resolveConversationOutcome,
   type ConversationQuestion,
   type PersonId,
 } from '../content/case01-conversations.js'
@@ -39,7 +40,8 @@ export interface ConversationOptions {
   readonly personId: PersonId
   readonly personName: string
   readonly locationId: LocationId
-  readonly questions: readonly (Pick<ConversationQuestion, 'id' | 'text' | 'cost'> & {
+  readonly questionLimitReached: boolean
+  readonly questions: readonly (Pick<ConversationQuestion, 'id' | 'text' | 'cost' | 'approach'> & {
     readonly canResolve: boolean
   })[]
 }
@@ -92,17 +94,20 @@ export class MatchService {
     if (!match) throw new Error('Partida não encontrada.')
     this.assertPersonAvailability(personId, locationId)
     const conversation = getConversation(personId)
+    const questionLimitReached = match.resolvedKeys.includes(conversationTurnKey(match, personId))
     return {
       personId,
       personName: conversation.personName,
       locationId,
+      questionLimitReached,
       questions: conversation.questions
         .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
-        .map(({ id, text, cost }) => ({
+        .map(({ id, text, cost, approach }) => ({
           id,
           text,
           cost,
-          canResolve: availablePoints(match, 'converse') >= cost,
+          approach,
+          canResolve: !questionLimitReached && availablePoints(match, 'converse') >= cost,
         })),
     }
   }
@@ -116,9 +121,14 @@ export class MatchService {
     if (!question) throw new Error('Pergunta inexistente para esta conversa.')
     const resolvedKey = conversationKey(command.personId, question.id)
     if (match.resolvedKeys.includes(resolvedKey)) throw new Error('Esta pergunta já foi resolvida.')
+    if (match.resolvedKeys.includes(conversationTurnKey(match, command.personId))) {
+      throw new Error('Você já fez uma pergunta neste turno.')
+    }
     if (availablePoints(match, 'converse') < question.cost) {
       throw new Error('PA insuficientes para esta pergunta.')
     }
+    const outcome = resolveConversationOutcome(command.personId, command.questionId, match)
+    if (!outcome) throw new Error('Não foi possível resolver esta pergunta.')
 
     const updated: SoloMatch = {
       ...match,
@@ -129,13 +139,17 @@ export class MatchService {
           id: thisEntryId(match),
           type: 'statement',
           title: `Declaração de ${conversation.personName}`,
-          content: question.result,
+          content: outcome.content,
           locationId: command.locationId,
           round: match.round,
-          status: 'recorded',
+          status: outcome.status,
         },
       ],
-      resolvedKeys: [...match.resolvedKeys, resolvedKey],
+      resolvedKeys: [
+        ...match.resolvedKeys,
+        resolvedKey,
+        conversationTurnKey(match, command.personId),
+      ],
     }
     this.repository.save(updated)
     return updated
@@ -314,4 +328,8 @@ function thisEntryId(match: SoloMatch): string {
 
 function conversationKey(personId: PersonId, questionId: string) {
   return `conversation:${personId}:${questionId}`
+}
+
+function conversationTurnKey(match: SoloMatch, personId: PersonId) {
+  return `conversation-turn:${match.round}:${match.activeInvestigatorId}:${personId}`
 }
