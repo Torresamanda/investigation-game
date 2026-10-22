@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { investigators, type InvestigatorId } from '../content/investigators'
-import type { CardDefinition } from '../content/cards'
+import { getInvestigatorCards, type CardDefinition } from '../content/cards'
 import {
   canPerformBasicAction,
   canPerformActionWithCard,
@@ -36,7 +36,17 @@ export const useInvestigationStore = defineStore('investigation', () => {
   const support = computed(() => investigators.find((item) => item.id === supportId.value))
   const hand = computed<readonly HandCard[]>(() => {
     const activeId = investigatorId.value
-    if (!mission.value || !activeId) return []
+    if (!activeId) return []
+
+    const remoteHand = remoteMatch.value?.decks[activeId]?.hand
+    if (remoteHand) {
+      const definitions = getInvestigatorCards(activeId)
+      return remoteHand.flatMap((card) => {
+        const definition = definitions.find((item) => item.id === card.definitionId)
+        return definition ? [{ ...definition, instanceId: card.instanceId }] : []
+      })
+    }
+    if (!mission.value) return []
 
     return (mission.value.decks[activeId]?.hand ?? []).map((card) => ({
       ...card.definition,
@@ -80,6 +90,10 @@ export const useInvestigationStore = defineStore('investigation', () => {
   }
 
   function canExecute(action: InvestigationAction) {
+    if (remoteMatch.value) {
+      const points = remoteMatch.value.actionPoints
+      return points.general + points.specialty >= 2
+    }
     if (!mission.value) return false
     return preparedCardId.value
       ? canPerformActionWithCard(mission.value, action, preparedCardId.value)
@@ -131,7 +145,6 @@ export const useInvestigationStore = defineStore('investigation', () => {
 
     const updated = await gameApi.resolveAction(remoteMatch.value.id, action, locationId)
     remoteMatch.value = updated
-    performBasicActionLocally(action)
     return updated.journalEntries.at(-1) ?? null
   }
 
@@ -139,12 +152,7 @@ export const useInvestigationStore = defineStore('investigation', () => {
     if (!remoteMatch.value) return endTurn()
     const updated = await gameApi.endTurn(remoteMatch.value.id)
     remoteMatch.value = updated
-    return endTurn()
-  }
-
-  function performBasicActionLocally(action: InvestigationAction) {
-    if (!mission.value) return false
-    mission.value = performBasicAction(mission.value, action)
+    preparedCardId.value = null
     return true
   }
 

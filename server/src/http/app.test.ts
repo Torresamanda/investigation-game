@@ -27,8 +27,13 @@ describe('API de partidas', () => {
     })
 
     expect(create.statusCode).toBe(201)
-    const match = create.json<{ id: string; round: number }>()
+    const match = create.json<{
+      id: string
+      round: number
+      decks: { livia: { hand: unknown[] } }
+    }>()
     expect(match.round).toBe(1)
+    expect(match.decks.livia.hand).toHaveLength(4)
 
     const retrieve = await app.inject({ method: 'GET', url: `/api/matches/${match.id}` })
     expect(retrieve.statusCode).toBe(200)

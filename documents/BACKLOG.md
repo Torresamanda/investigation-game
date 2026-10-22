@@ -44,6 +44,16 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** completa o Caso 01; **P
   - Definir componente reutilizável para futuras classificações de caso.
   - Critério de aceite: a dificuldade é entendida sem depender apenas de cor e não interfere no resumo do caso.
 
+- [ ] **03D · UI-04 — Estilizar barras de rolagem** `[Front]`
+  - Aplicar cores, largura, trilho e indicador de rolagem coerentes com a identidade visual do jogo.
+  - Cobrir navegadores baseados em WebKit e Firefox, preservando contraste e visibilidade do controle.
+  - Critério de aceite: painéis com conteúdo rolável não exibem a barra padrão do navegador e continuam utilizáveis por mouse, toque e teclado.
+
+- [ ] **03E · UI-05 — Centralizar ações com ícone e texto** `[Front]`
+  - Centralizar horizontal e verticalmente ícone e rótulo nos botões `Encerrar turno` e `Retornar ao mundo`.
+  - Preservar espaçamento legível, área clicável e alinhamento em desktop e celular.
+  - Critério de aceite: ícone e texto formam um conjunto visualmente centralizado sem deslocamento em nenhum breakpoint suportado.
+
 - [ ] **06A · BUG-04 — Corrigir separação de título e conteúdo em observações** `[Front]`
   - Inserir separação visual e textual após `Nenhuma descoberta nova`, incluindo `:` antes do conteúdo da observação.
   - Critério de aceite: título e mensagem não aparecem unidos em interface, leitor de tela ou diário.
@@ -55,7 +65,7 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** completa o Caso 01; **P
 
 ## P0 — Consolidar a partida no servidor
 
-- [ ] **01 · JOGO-01 — Unificar o motor de regras no backend** `[Front] [Back]`
+- [x] **01 · JOGO-01 — Unificar o motor de regras no backend** `[Front] [Back]`
   - Mover mão, compra, descarte, PA, rodada e cartas preparadas para o estado da partida no servidor.
   - Remover a duplicidade temporária entre o motor local do frontend e a API.
   - Critério de aceite: recarregar o cliente e buscar a partida retorna exatamente a mesma mão, PA, rodada e diário enquanto o servidor estiver em execução.

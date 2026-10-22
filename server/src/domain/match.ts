@@ -35,6 +35,7 @@ export interface SoloMatch {
   readonly actionPoints: ActionPoints
   readonly journalEntries: readonly JournalEntry[]
   readonly resolvedKeys: readonly string[]
+  readonly decks: Readonly<Record<InvestigatorId, MatchDeck>>
 }
 
 export interface CreateSoloMatchInput {
@@ -60,6 +61,10 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     actionPoints: actionPointsFor(input.activeInvestigatorId),
     journalEntries: [],
     resolvedKeys: [],
+    decks: {
+      [input.activeInvestigatorId]: createInvestigatorDeck(input.activeInvestigatorId),
+      [input.supportInvestigatorId]: createInvestigatorDeck(input.supportInvestigatorId),
+    } as Record<InvestigatorId, MatchDeck>,
   }
 }
 
@@ -72,3 +77,4 @@ export function actionPointsFor(investigatorId: InvestigatorId): ActionPoints {
   }
   return pools[investigatorId]
 }
+import { createInvestigatorDeck, type MatchDeck } from './match-deck.js'

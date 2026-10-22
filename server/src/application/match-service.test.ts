@@ -23,6 +23,8 @@ describe('MatchService', () => {
       status: 'active',
     })
     expect(service.getMatch(match.id)).toEqual(match)
+    expect(match.decks.livia.hand).toHaveLength(4)
+    expect(match.decks.rafael.hand).toHaveLength(4)
   })
 
   it('rejeita a mesma pessoa como ativa e apoio', () => {
@@ -64,5 +66,19 @@ describe('MatchService', () => {
       title: 'Nenhuma descoberta nova',
     })
     expect(third.actionPoints.general).toBe(3)
+  })
+
+  it('mantém a mão no servidor ao avançar para a rodada seguinte', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const initialHand = match.decks.livia.hand.map((card) => card.instanceId)
+
+    const updated = service.endTurn(match.id)
+
+    expect(updated.decks.livia.hand.map((card) => card.instanceId)).toEqual(initialHand)
+    expect(updated.decks.livia.hand).toHaveLength(4)
   })
 })

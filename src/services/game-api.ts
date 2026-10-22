@@ -14,6 +14,8 @@ export interface MatchJournalEntry {
 
 export interface RemoteMatch {
   readonly id: string
+  readonly activeInvestigatorId: InvestigatorId
+  readonly supportInvestigatorId: InvestigatorId
   readonly round: number
   readonly actionPoints: {
     readonly general: number
@@ -21,6 +23,14 @@ export interface RemoteMatch {
     readonly specialtyPoint: 'technical' | 'social' | 'research' | null
   }
   readonly journalEntries: readonly MatchJournalEntry[]
+  readonly decks: Readonly<
+    Partial<
+      Record<
+        InvestigatorId,
+        { readonly hand: readonly { readonly instanceId: string; readonly definitionId: string }[] }
+      >
+    >
+  >
 }
 
 interface ApiError {

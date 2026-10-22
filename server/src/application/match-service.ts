@@ -9,6 +9,7 @@ import {
   type LocationId,
   type SoloMatch,
 } from '../domain/match.js'
+import { drawToHand, INITIAL_HAND_SIZE } from '../domain/match-deck.js'
 
 export interface CreateMatchCommand {
   readonly activeInvestigatorId: InvestigatorId
@@ -87,6 +88,12 @@ export class MatchService {
       ...match,
       round: match.round + 1,
       actionPoints: actionPointsFor(match.activeInvestigatorId),
+      decks: Object.fromEntries(
+        Object.entries(match.decks).map(([investigatorId, deck]) => [
+          investigatorId,
+          drawToHand(deck, INITIAL_HAND_SIZE),
+        ]),
+      ) as SoloMatch['decks'],
     }
     this.repository.save(updated)
     return updated
