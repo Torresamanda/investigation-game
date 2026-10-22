@@ -30,6 +30,8 @@ export interface JournalEntry {
     | 'contestable'
     | 'blocked'
   readonly recordedWith?: 'pocket-recorder'
+  readonly isadoraMarkedContestable?: boolean
+  readonly relatedEntryIds?: readonly string[]
 }
 
 export interface SoloMatch {
@@ -38,6 +40,9 @@ export interface SoloMatch {
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly round: number
+  readonly examinedLocationsThisRound: readonly LocationId[]
+  readonly hasUsedPassiveThisRound: boolean
+  readonly hasReceivedSocialBonusThisRound: boolean
   readonly currentLocationId: LocationId
   readonly unlockedLocations: readonly LocationId[]
   readonly hasUsedFreeMoveThisRound: boolean
@@ -69,6 +74,9 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     activeInvestigatorId: input.activeInvestigatorId,
     supportInvestigatorId: input.supportInvestigatorId,
     round: 1,
+    examinedLocationsThisRound: [],
+    hasUsedPassiveThisRound: false,
+    hasReceivedSocialBonusThisRound: false,
     currentLocationId: 'gallery',
     unlockedLocations: ['gallery', 'security', 'laboratory', 'office'],
     hasUsedFreeMoveThisRound: false,

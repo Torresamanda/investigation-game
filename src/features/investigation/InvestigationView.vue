@@ -18,11 +18,6 @@ import './investigation.css'
 const session = useInvestigationStore()
 const feedback = ref('Escolha como deseja conduzir a investigação.')
 const cards = computed(() => session.hand)
-const availableActions = computed<readonly InvestigationAction[]>(() =>
-  (['examine', 'converse', 'analyse', 'research'] as const).filter((action) =>
-    action === 'converse' && session.remoteMatch ? true : session.canExecute(action),
-  ),
-)
 const locationId = ref<LocationId>('gallery')
 watch(
   () => session.currentLocationId,
@@ -33,6 +28,19 @@ watch(
 const location = computed(
   () => locations.find((item) => item.id === locationId.value) ?? locations[0],
 )
+const availableActions = computed<readonly InvestigationAction[]>(() =>
+  (['examine', 'converse', 'analyse', 'research'] as const).filter((action) =>
+    action === 'converse' && session.remoteMatch
+      ? true
+      : session.canExecute(action, location.value.id),
+  ),
+)
+const actionCosts = computed(() => ({
+  examine: session.actionCost('examine', location.value.id),
+  converse: session.actionCost('converse', location.value.id),
+  analyse: session.actionCost('analyse', location.value.id),
+  research: session.actionCost('research', location.value.id),
+}))
 const journalTab = ref<'timeline' | 'clues' | 'suspects' | 'notes'>('timeline')
 const scene = ref<InstanceType<typeof InvestigationScene> | null>(null)
 const conversation = ref<ConversationOptions | null>(null)
@@ -208,6 +216,7 @@ async function clearConversationCardPreparation() {
         ref="scene"
         :location="location"
         :available-actions="availableActions"
+        :action-costs="actionCosts"
         :feedback="feedback"
         :can-end-turn="session.canEndTurn"
         :round="session.round"

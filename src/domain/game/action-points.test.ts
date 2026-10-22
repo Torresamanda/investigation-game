@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { canPayAction, spendActionPoints } from './action-points'
+import {
+  canPayAction,
+  investigatorActionCost,
+  spendActionPoints,
+} from '../../../shared/domain/action-points'
 
 describe('action points', () => {
   it('reserva o ponto técnico para análise', () => {
@@ -25,5 +29,51 @@ describe('action points', () => {
     expect(() => spendActionPoints(points, { amount: 2, action: 'research' })).toThrow(
       'Pontos de ação insuficientes.',
     )
+  })
+
+  it('permite usar especialidade do investigador em uma carta compatível', () => {
+    const points = { general: 0, specialty: 1, specialtyPoint: 'technical' as const }
+
+    expect(
+      canPayAction(points, {
+        amount: 1,
+        action: 'examine',
+        specialtyEligible: true,
+      }),
+    ).toBe(true)
+    expect(
+      spendActionPoints(points, {
+        amount: 1,
+        action: 'examine',
+        specialtyEligible: true,
+      }),
+    ).toEqual({ general: 0, specialty: 0, specialtyPoint: 'technical' })
+  })
+
+  it('calcula o desconto de Lívia e o custo de conexão de Otávio', () => {
+    const sharedCost = {
+      action: 'examine' as const,
+      locationId: 'gallery' as const,
+      examinedLocationsThisRound: [] as const,
+      preparedCardCost: 0,
+      canCreateConnection: false,
+    }
+
+    expect(investigatorActionCost({ investigatorId: 'livia', ...sharedCost })).toBe(1)
+    expect(
+      investigatorActionCost({
+        investigatorId: 'livia',
+        ...sharedCost,
+        examinedLocationsThisRound: ['gallery'],
+      }),
+    ).toBe(2)
+    expect(
+      investigatorActionCost({
+        investigatorId: 'otavio',
+        ...sharedCost,
+        action: 'research',
+        canCreateConnection: true,
+      }),
+    ).toBe(3)
   })
 })

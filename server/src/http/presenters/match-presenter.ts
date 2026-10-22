@@ -1,6 +1,7 @@
 import type { PublicMatchDto } from '../../../../shared/contracts/match.js'
 import type { MatchCard } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
+import { findClueConnectionCandidate } from '../../domain/clue-connection.js'
 
 export const MatchPresenter = {
   toPublicDto(match: SoloMatch): PublicMatchDto {
@@ -14,6 +15,11 @@ export const MatchPresenter = {
       activeInvestigatorId: match.activeInvestigatorId,
       supportInvestigatorId: match.supportInvestigatorId,
       round: match.round,
+      examinedLocationsThisRound: match.examinedLocationsThisRound,
+      hasUsedPassiveThisRound: match.hasUsedPassiveThisRound,
+      hasReceivedSocialBonusThisRound: match.hasReceivedSocialBonusThisRound,
+      canCreateInvestigatorConnection:
+        match.activeInvestigatorId === 'otavio' && Boolean(findClueConnectionCandidate(match)),
       currentLocationId: match.currentLocationId,
       unlockedLocations: match.unlockedLocations,
       hasUsedFreeMoveThisRound: match.hasUsedFreeMoveThisRound,

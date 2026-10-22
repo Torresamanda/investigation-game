@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type { InvestigationAction } from '../../../domain/game/action-points'
 import { PhArrowRight } from '../../../components/icons'
+type VisibleInvestigationAction = Exclude<InvestigationAction, 'move' | 'card'>
 
 defineProps<{
   availableActions: readonly InvestigationAction[]
+  actionCosts: Readonly<Record<VisibleInvestigationAction, number>>
   feedback: string
   canEndTurn: boolean
 }>()
 const emit = defineEmits<{ execute: [action: InvestigationAction]; endTurn: [] }>()
-const actions: readonly { label: string; action: InvestigationAction }[] = [
+const actions: readonly { label: string; action: VisibleInvestigationAction }[] = [
   { label: 'Examinar', action: 'examine' },
   { label: 'Conversar', action: 'converse' },
   { label: 'Analisar', action: 'analyse' },
@@ -29,7 +31,7 @@ const actions: readonly { label: string; action: InvestigationAction }[] = [
         :disabled="!availableActions.includes(item.action)"
         @click="emit('execute', item.action)"
       >
-        {{ item.label }}<small>Base: 2 PA</small>
+        {{ item.label }}<small>{{ actionCosts[item.action] }} PA</small>
       </button>
     </div>
     <p class="help-text">O custo será descontado dos PA disponíveis neste turno.</p>

@@ -114,7 +114,7 @@ describe('MatchService', () => {
       type: 'observation',
       title: 'Sem nova descoberta: Galeria Principal',
     })
-    expect(third.actionPoints.general).toBe(3)
+    expect(third.actionPoints.general).toBe(4)
   })
 
   it('mantém descobertas disponíveis nas rodadas seguintes e libera análise com pré-requisitos', () => {
@@ -237,7 +237,7 @@ describe('MatchService', () => {
 
     expect(updated.decks.livia.hand).not.toContainEqual(card)
     expect(updated.decks.livia.discardPile).toContainEqual(card)
-    expect(updated.actionPoints.general).toBe(3 - card.cost)
+    expect(updated.actionPoints.general).toBe(5 - (action === 'examine' ? 1 : 2) - card.cost)
   })
 
   it('embaralha novamente a mão no início do turno e mantém exatamente quatro cartas', () => {
@@ -658,6 +658,159 @@ describe('MatchService', () => {
     expect(updated.actionPoints).toMatchObject({ general: 0, specialty: 0 })
     expect(updated.decks.otavio.discardPile).not.toContainEqual(guestList)
     expect(updated.decks.otavio.hand).not.toContainEqual(guestList)
+  })
+
+  it('aplica o desconto de Lívia apenas no primeiro Examinar de cada local por rodada', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'livia-cost')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    const first = service.resolveAction({
+      matchId: match.id,
+      action: 'examine',
+      locationId: 'gallery',
+    })
+    expect(first.actionPoints.general).toBe(4)
+    expect(first.examinedLocationsThisRound).toEqual(['gallery'])
+
+    const second = service.resolveAction({
+      matchId: match.id,
+      action: 'examine',
+      locationId: 'gallery',
+    })
+    expect(second.actionPoints.general).toBe(2)
+
+    const nextRound = service.endTurn(match.id)
+    expect(nextRound.examinedLocationsThisRound).toEqual([])
+    const firstNextRound = service.resolveAction({
+      matchId: match.id,
+      action: 'examine',
+      locationId: 'gallery',
+    })
+    expect(firstNextRound.actionPoints.general).toBe(4)
+  })
+
+  it('Rafael confirma uma pista física não verificada apenas uma vez por rodada', () => {
+    const service = new MatchService(
+      new InMemoryMatchRepository(),
+      undefined,
+      () => 'rafael-passive',
+    )
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'rafael',
+      supportInvestigatorId: 'livia',
+    })
+
+    const first = service.resolveAction({
+      matchId: match.id,
+      action: 'analyse',
+      locationId: 'laboratory',
+    })
+    expect(first.journalEntries.at(-1)).toMatchObject({
+      title: 'Marcas nas ferramentas',
+      status: 'confirmed',
+    })
+    expect(first.journalEntries.at(-1)?.content).toContain('análise pericial')
+    expect(first.hasUsedPassiveThisRound).toBe(true)
+
+    const second = service.resolveAction({
+      matchId: match.id,
+      action: 'analyse',
+      locationId: 'laboratory',
+    })
+    expect(second.journalEntries.at(-1)).toMatchObject({ type: 'observation' })
+    expect(second.hasUsedPassiveThisRound).toBe(true)
+  })
+
+  it('Isadora marca uma declaração e recebe PA social ao refutá-la com evidência', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'isadora-passive')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'livia',
+    })
+    repository.save({
+      ...match,
+      resolvedKeys: ['gallery-lock', 'marta-tools'],
+      journalEntries: [
+        {
+          id: 'journal-statement',
+          type: 'statement',
+          title: 'Declaração de Marta',
+          content: 'Versão registrada.',
+          locationId: 'laboratory',
+          round: 1,
+          status: 'recorded',
+        },
+      ],
+    })
+
+    const statement = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'technical-assessment',
+    })
+    expect(statement.journalEntries.at(-1)).toMatchObject({
+      status: 'contestable',
+      isadoraMarkedContestable: true,
+    })
+    expect(statement.hasUsedPassiveThisRound).toBe(true)
+
+    const contradiction = service.resolveAction({
+      matchId: match.id,
+      action: 'analyse',
+      locationId: 'laboratory',
+    })
+    expect(contradiction.journalEntries.at(-1)).toMatchObject({ status: 'refuted' })
+    expect(contradiction.actionPoints).toMatchObject({ general: 1, specialty: 1 })
+    expect(contradiction.hasReceivedSocialBonusThisRound).toBe(true)
+  })
+
+  it('Otávio gasta os PA de pesquisa e registra uma conexão entre pistas', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'otavio-connection')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'otavio',
+      supportInvestigatorId: 'livia',
+    })
+    repository.save({
+      ...match,
+      journalEntries: [
+        {
+          id: 'clue-confirmed',
+          type: 'clue',
+          title: 'Pista confirmada',
+          content: 'Registro confirmado.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+        },
+        {
+          id: 'clue-pending',
+          type: 'clue',
+          title: 'Pista pendente',
+          content: 'Indício a verificar.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'unconfirmed',
+        },
+      ],
+    })
+
+    const connected = service.resolveAction({
+      matchId: match.id,
+      action: 'research',
+      locationId: 'gallery',
+    })
+    expect(connected.actionPoints).toMatchObject({ general: 2, specialty: 0 })
+    expect(connected.journalEntries.at(-1)).toMatchObject({
+      title: 'Conexão de Otávio',
+      relatedEntryIds: ['clue-confirmed', 'clue-pending'],
+    })
+    expect(connected.resolvedKeys).toContain('investigator-connection:clue-confirmed:clue-pending')
   })
 })
 

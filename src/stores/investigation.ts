@@ -44,6 +44,7 @@ export const useInvestigationStore = defineStore('investigation', () => {
     preparedCard: matchRefs.preparedCard,
     journalEntries: matchRefs.journalEntries,
     canExecute: match.canExecute,
+    actionCost: match.actionCost,
     prepareCard: match.prepareCard,
     clearPreparedCard: match.clearPreparedCard,
     createRemoteMatch: match.createRemoteMatch,

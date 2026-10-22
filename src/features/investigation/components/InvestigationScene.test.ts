@@ -9,6 +9,7 @@ describe('InvestigationScene', () => {
       props: {
         location: locations[0],
         availableActions: ['converse'],
+        actionCosts: { examine: 2, converse: 2, analyse: 2, research: 2 },
         feedback: '',
         canEndTurn: true,
         round: 1,

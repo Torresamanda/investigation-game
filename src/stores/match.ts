@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { investigators, type InvestigatorId } from '../content/investigators'
 import { getCardDefinition, type CardDefinition } from '../content/cards'
 import type { InvestigationAction, LocationId, PersonId } from '../../shared/domain/identifiers'
-import { canPayAction } from '../../shared/domain/action-points'
+import { canPayAction, investigatorActionCost } from '../../shared/domain/action-points'
 import { gameApi, type MatchJournalEntry, type RemoteMatch } from '../services/game-api'
 
 export interface HandCard extends CardDefinition {
@@ -79,11 +79,35 @@ export const useMatchStore = defineStore('match', () => {
     connectionError.value = null
   }
 
-  function canExecute(action: InvestigationAction): boolean {
+  function actionCost(
+    action: InvestigationAction,
+    locationId: LocationId = currentLocationId.value,
+  ): number {
+    if (!remoteMatch.value || !investigatorId.value) return 2
+    const card = preparedCard.value
+    return investigatorActionCost({
+      investigatorId: investigatorId.value,
+      action,
+      locationId,
+      examinedLocationsThisRound: remoteMatch.value.examinedLocationsThisRound,
+      preparedCardCost: card?.cost ?? 0,
+      canCreateConnection:
+        action === 'research' && remoteMatch.value.canCreateInvestigatorConnection,
+    })
+  }
+
+  function canExecute(
+    action: InvestigationAction,
+    locationId: LocationId = currentLocationId.value,
+  ): boolean {
     if (!remoteMatch.value) return false
     const card = preparedCard.value
     if (card && !card.compatibleActions.includes(action)) return false
-    return canPayAction(remoteMatch.value.actionPoints, { action, amount: 2 + (card?.cost ?? 0) })
+    return canPayAction(remoteMatch.value.actionPoints, {
+      action,
+      amount: actionCost(action, locationId),
+      specialtyEligible: Boolean(card && investigatorId.value),
+    })
   }
 
   async function createRemoteMatch(active: InvestigatorId, support: InvestigatorId) {
@@ -118,7 +142,7 @@ export const useMatchStore = defineStore('match', () => {
 
   async function resolveAction(action: InvestigationAction, locationId: LocationId) {
     if (!remoteMatch.value) throw new Error('A partida exige uma conexão ativa com a API.')
-    if (!canExecute(action)) throw new Error('Ação indisponível para os PA atuais.')
+    if (!canExecute(action, locationId)) throw new Error('Ação indisponível para os PA atuais.')
     const updated = await gameApi.resolveAction(remoteMatch.value.id, action, locationId)
     remoteMatch.value = updated
     preparedCardId.value = updated.preparedCardInstanceId
@@ -202,6 +226,7 @@ export const useMatchStore = defineStore('match', () => {
     preparedCard,
     journalEntries,
     canExecute,
+    actionCost,
     prepareCard,
     clearPreparedCard,
     createRemoteMatch,

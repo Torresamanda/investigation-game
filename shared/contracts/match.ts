@@ -18,6 +18,8 @@ export interface MatchJournalEntry {
     | 'contestable'
     | 'blocked'
   readonly recordedWith?: 'pocket-recorder'
+  readonly isadoraMarkedContestable?: boolean
+  readonly relatedEntryIds?: readonly string[]
 }
 
 export interface PublicMatchDto {
@@ -28,6 +30,10 @@ export interface PublicMatchDto {
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly round: number
+  readonly examinedLocationsThisRound: readonly LocationId[]
+  readonly hasUsedPassiveThisRound: boolean
+  readonly hasReceivedSocialBonusThisRound: boolean
+  readonly canCreateInvestigatorConnection: boolean
   readonly currentLocationId: LocationId
   readonly unlockedLocations: readonly LocationId[]
   readonly hasUsedFreeMoveThisRound: boolean

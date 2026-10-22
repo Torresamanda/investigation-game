@@ -8,12 +8,14 @@ import {
   type SuspectId,
 } from '../../../content/case01'
 import type { InvestigationAction } from '../../../domain/game/action-points'
+type VisibleInvestigationAction = Exclude<InvestigationAction, 'move' | 'card'>
 import SuspectProfile from './SuspectProfile.vue'
 import SuspectRoster from './SuspectRoster.vue'
 import InvestigationActions from './InvestigationActions.vue'
 const props = defineProps<{
   location: CaseLocation
   availableActions: readonly InvestigationAction[]
+  actionCosts: Readonly<Record<VisibleInvestigationAction, number>>
   feedback: string
   canEndTurn: boolean
   round: number
@@ -81,6 +83,7 @@ const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpeni
     </div>
     <InvestigationActions
       :available-actions="sceneActions"
+      :action-costs="actionCosts"
       :feedback="feedback"
       :can-end-turn="canEndTurn"
       @execute="

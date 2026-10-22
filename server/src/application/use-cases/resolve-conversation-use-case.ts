@@ -46,7 +46,14 @@ export class ResolveConversationUseCase {
     }
     const questionCost = bonusQuestion || usesPreparedPause ? 0 : question.cost
     const totalCost = questionCost + (card?.cost ?? 0)
-    if (!canPayAction(match.actionPoints, { action: 'converse', amount: totalCost })) {
+    const specialtyEligible = card?.ownerId === match.activeInvestigatorId
+    if (
+      !canPayAction(match.actionPoints, {
+        action: 'converse',
+        amount: totalCost,
+        specialtyEligible,
+      })
+    ) {
       throw new DomainError('PA insuficientes para esta pergunta.')
     }
     const outcome = this.caseContentRepository.resolveConversationOutcome(
@@ -62,11 +69,17 @@ export class ResolveConversationUseCase {
       match.round,
     )
     const usesCalculatedPause = card?.definitionId === 'calculated-pause'
+    const usesIsadoraPassive =
+      match.activeInvestigatorId === 'isadora' &&
+      !match.hasUsedPassiveThisRound &&
+      outcome.status === 'recorded'
+    const statementStatus = usesIsadoraPassive ? 'contestable' : outcome.status
     const updated: SoloMatch = {
       ...match,
       actionPoints: spendActionPoints(match.actionPoints, {
         action: 'converse',
         amount: totalCost,
+        specialtyEligible,
       }),
       decks: resolveConversationDecks(match, activeDeck, card, reward),
       preparedCardInstanceId: null,
@@ -76,13 +89,17 @@ export class ResolveConversationUseCase {
           id: `journal-${match.journalEntries.length + 1}`,
           type: 'statement',
           title: `Declaração de ${conversation.personName}`,
-          content: outcome.content,
+          content: usesIsadoraPassive
+            ? `${outcome.content} Isadora anotou a declaração para confronto com evidências.`
+            : outcome.content,
           locationId: command.locationId,
           round: match.round,
-          status: outcome.status,
+          status: statementStatus,
           recordedWith: card?.definitionId === 'pocket-recorder' ? 'pocket-recorder' : undefined,
+          isadoraMarkedContestable: usesIsadoraPassive || undefined,
         },
       ],
+      hasUsedPassiveThisRound: match.hasUsedPassiveThisRound || usesIsadoraPassive,
       resolvedKeys: [
         ...match.resolvedKeys,
         resolvedKey,

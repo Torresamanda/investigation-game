@@ -1,10 +1,16 @@
-import { canPayAction, spendActionPoints } from '../../../../shared/domain/action-points.js'
+import {
+  addSpecialtyPoints,
+  canPayAction,
+  investigatorActionCost,
+  spendActionPoints,
+} from '../../../../shared/domain/action-points.js'
 import type { ResolveActionCommand } from '../commands.js'
 import type { MatchRepository } from '../ports/match-repository.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import { recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import type { InvestigatorId } from '../../domain/match.js'
+import { findClueConnectionCandidate } from '../../domain/clue-connection.js'
 import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class ResolveActionUseCase {
@@ -26,8 +32,26 @@ export class ResolveActionUseCase {
     ) {
       throw new InvalidActionError('A carta não pode ser usada nesta ação.')
     }
-    const cost = 2 + (card?.cost ?? 0)
-    if (!canPayAction(match.actionPoints, { action: command.action, amount: cost })) {
+    const connectionCandidate =
+      match.activeInvestigatorId === 'otavio' && command.action === 'research'
+        ? findClueConnectionCandidate(match)
+        : undefined
+    const cost = investigatorActionCost({
+      investigatorId: match.activeInvestigatorId,
+      action: command.action,
+      locationId: command.locationId,
+      examinedLocationsThisRound: match.examinedLocationsThisRound,
+      preparedCardCost: card?.cost ?? 0,
+      canCreateConnection: Boolean(connectionCandidate),
+    })
+    const specialtyEligible = card?.ownerId === match.activeInvestigatorId
+    if (
+      !canPayAction(match.actionPoints, {
+        action: command.action,
+        amount: cost,
+        specialtyEligible,
+      })
+    ) {
       throw new DomainError('PA insuficientes para esta ação.')
     }
 
@@ -36,20 +60,77 @@ export class ResolveActionUseCase {
       command.action,
       command.locationId,
     )
-    const updated = {
+    const actionPoints = spendActionPoints(match.actionPoints, {
+      action: command.action,
+      amount: cost,
+      specialtyEligible,
+    })
+    const usesRafaelPassive =
+      match.activeInvestigatorId === 'rafael' &&
+      command.action === 'analyse' &&
+      !match.hasUsedPassiveThisRound &&
+      resolution.entry.type === 'clue' &&
+      (resolution.entry.status === 'unconfirmed' || resolution.entry.status === 'indicio') &&
+      isPhysicalEvidenceLocation(command.locationId)
+    const resolvedEntry = usesRafaelPassive
+      ? {
+          ...resolution.entry,
+          status: 'confirmed' as const,
+          content: `${resolution.entry.content} Rafael confirmou o vestígio na análise pericial.`,
+        }
+      : resolution.entry
+    const journalEntries = [...match.journalEntries, resolvedEntry]
+    const resolvedKeys = [...match.resolvedKeys]
+    if (resolution.resolvedKey) resolvedKeys.push(resolution.resolvedKey)
+    if (usesRafaelPassive && resolution.resolvedKey === 'gallery-lock') {
+      resolvedKeys.push('e1-confirmed')
+    }
+
+    let updatedActionPoints = actionPoints
+    let receivedSocialBonus = false
+    if (
+      match.activeInvestigatorId === 'isadora' &&
+      !match.hasReceivedSocialBonusThisRound &&
+      resolvedEntry.status === 'refuted' &&
+      match.journalEntries.some((entry) => entry.isadoraMarkedContestable)
+    ) {
+      updatedActionPoints = addSpecialtyPoints(updatedActionPoints, 'social', 1)
+      receivedSocialBonus = true
+    }
+
+    if (connectionCandidate) {
+      journalEntries.push({
+        id: `journal-${journalEntries.length + 1}`,
+        type: 'observation',
+        title: 'Conexão de Otávio',
+        content: `“${connectionCandidate.confirmedEntry.title}” se relaciona a “${connectionCandidate.pendingEntry.title}”. Reavalie ${connectionCandidate.pendingEntry.locationId} para verificar essa ligação.`,
+        locationId: command.locationId,
+        round: match.round,
+        status: 'note',
+        relatedEntryIds: [
+          connectionCandidate.confirmedEntry.id,
+          connectionCandidate.pendingEntry.id,
+        ],
+      })
+      resolvedKeys.push(connectionCandidate.key)
+    }
+
+    const updated: SoloMatch = {
       ...match,
-      actionPoints: spendActionPoints(match.actionPoints, {
-        action: command.action,
-        amount: cost,
-      }),
+      actionPoints: updatedActionPoints,
       decks: card
         ? recyclePreparedCard(match, activeDeck, card.instanceId, card.ownerId)
         : match.decks,
       preparedCardInstanceId: null,
-      journalEntries: [...match.journalEntries, resolution.entry],
-      resolvedKeys: resolution.resolvedKey
-        ? [...match.resolvedKeys, resolution.resolvedKey]
-        : match.resolvedKeys,
+      journalEntries,
+      resolvedKeys,
+      examinedLocationsThisRound:
+        command.action === 'examine' &&
+        !match.examinedLocationsThisRound.includes(command.locationId)
+          ? [...match.examinedLocationsThisRound, command.locationId]
+          : match.examinedLocationsThisRound,
+      hasUsedPassiveThisRound: match.hasUsedPassiveThisRound || usesRafaelPassive,
+      hasReceivedSocialBonusThisRound: match.hasReceivedSocialBonusThisRound || receivedSocialBonus,
       unlockedLocations:
         resolution.resolvedKey === 'gallery-service-door' &&
         !match.unlockedLocations.includes('service-corridor')
@@ -59,6 +140,12 @@ export class ResolveActionUseCase {
     this.repository.save(updated)
     return updated
   }
+}
+
+function isPhysicalEvidenceLocation(locationId: ResolveActionCommand['locationId']): boolean {
+  return (
+    locationId === 'gallery' || locationId === 'laboratory' || locationId === 'service-corridor'
+  )
 }
 
 function recyclePreparedCard(

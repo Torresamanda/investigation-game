@@ -14,6 +14,9 @@ export class EndTurnUseCase {
     const updated: SoloMatch = {
       ...match,
       round: match.round + 1,
+      examinedLocationsThisRound: [],
+      hasUsedPassiveThisRound: false,
+      hasReceivedSocialBonusThisRound: false,
       hasUsedFreeMoveThisRound: false,
       hasDiscardedCardThisRound: false,
       actionPoints: actionPointsFor(match.activeInvestigatorId),
