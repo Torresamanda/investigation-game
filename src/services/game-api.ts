@@ -63,6 +63,13 @@ export const gameApi = {
     })
   },
 
+  moveInvestigator(matchId: string, locationId: LocationId) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ locationId }),
+    })
+  },
+
   endTurn(matchId: string) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/end-turn`, {
       method: 'POST',

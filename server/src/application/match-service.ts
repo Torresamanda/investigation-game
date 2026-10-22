@@ -25,6 +25,7 @@ import { GetMatchUseCase } from './use-cases/get-match-use-case.js'
 import { PrepareCardUseCase } from './use-cases/prepare-card-use-case.js'
 import { ResolveActionUseCase } from './use-cases/resolve-action-use-case.js'
 import { ResolveConversationUseCase } from './use-cases/resolve-conversation-use-case.js'
+import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.js'
 
 export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
 
@@ -49,6 +50,7 @@ export class MatchService {
   private readonly prepareCardUseCase: PrepareCardUseCase
   private readonly resolveActionUseCase: ResolveActionUseCase
   private readonly resolveConversationUseCase: ResolveConversationUseCase
+  private readonly moveInvestigatorUseCase: MoveInvestigatorUseCase
 
   constructor(
     private readonly repository: MatchRepository,
@@ -66,6 +68,7 @@ export class MatchService {
       repository,
       caseContentRepository,
     )
+    this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -145,6 +148,10 @@ export class MatchService {
 
   prepareCard(matchId: string, instanceId: string | null): SoloMatch {
     return this.prepareCardUseCase.execute(matchId, instanceId)
+  }
+
+  moveInvestigator(matchId: string, locationId: LocationId): SoloMatch {
+    return this.moveInvestigatorUseCase.execute(matchId, locationId)
   }
 
   private assertPersonAvailability(personId: PersonId, locationId: LocationId) {

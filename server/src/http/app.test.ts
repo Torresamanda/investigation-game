@@ -88,6 +88,34 @@ describe('API de partidas', () => {
     })
   })
 
+  it('move o investigador pelo endpoint validado e rejeita o corredor bloqueado', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/matches',
+      payload: { activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' },
+    })
+    const match = create.json<{ id: string }>()
+
+    const move = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/move`,
+      payload: { locationId: 'security' },
+    })
+    expect(move.statusCode).toBe(200)
+    expect(move.json()).toMatchObject({
+      currentLocationId: 'security',
+      hasUsedFreeMoveThisRound: true,
+      actionPoints: { general: 5 },
+    })
+
+    const lockedMove = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/move`,
+      payload: { locationId: 'service-corridor' },
+    })
+    expect(lockedMove.statusCode).toBe(400)
+  })
+
   it('rejeita conversar como uma ação de cenário', async () => {
     const create = await app.inject({
       method: 'POST',

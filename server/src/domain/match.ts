@@ -38,6 +38,9 @@ export interface SoloMatch {
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly round: number
+  readonly currentLocationId: LocationId
+  readonly unlockedLocations: readonly LocationId[]
+  readonly hasUsedFreeMoveThisRound: boolean
   readonly hasDiscardedCardThisRound: boolean
   readonly status: 'active'
   readonly createdAt: string
@@ -66,6 +69,9 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     activeInvestigatorId: input.activeInvestigatorId,
     supportInvestigatorId: input.supportInvestigatorId,
     round: 1,
+    currentLocationId: 'gallery',
+    unlockedLocations: ['gallery', 'security', 'laboratory', 'office'],
+    hasUsedFreeMoveThisRound: false,
     hasDiscardedCardThisRound: false,
     status: 'active',
     createdAt: input.createdAt,

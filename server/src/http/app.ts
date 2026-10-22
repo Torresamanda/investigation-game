@@ -25,6 +25,10 @@ interface ResolveActionBody {
   locationId?: unknown
 }
 
+interface MoveBody {
+  locationId?: unknown
+}
+
 interface PrepareCardBody {
   cardInstanceId?: unknown
 }
@@ -121,6 +125,34 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
       const match = service.getMatch(request.params.id)
       if (!match) throw new MatchNotFoundError()
       return MatchPresenter.toPublicDto(match)
+    },
+  )
+
+  app.post<{ Params: MatchParams; Body: MoveBody }>(
+    '/api/matches/:id/move',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+        body: {
+          type: 'object',
+          required: ['locationId'],
+          additionalProperties: false,
+          properties: { locationId: { type: 'string', enum: [...locationIds] } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { locationId } = request.body
+      if (!isLocationId(locationId)) return reply.code(400).send({ message: 'Local inválido.' })
+      try {
+        return MatchPresenter.toPublicDto(service.moveInvestigator(request.params.id, locationId))
+      } catch (error) {
+        return sendMatchError(reply, error, 'Não foi possível se deslocar.')
+      }
     },
   )
 

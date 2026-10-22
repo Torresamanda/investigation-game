@@ -2,6 +2,7 @@ import galleryArtwork from '../../assets/locations/galeria-principal.png'
 import securityArtwork from '../../assets/locations/sala-de-seguranca.png'
 import laboratoryArtwork from '../../assets/locations/laboratorio-de-restauracao.png'
 import officeArtwork from '../../assets/locations/escritorio-de-curadoria.png'
+import serviceCorridorArtwork from '../../assets/locations/corredor-de-servico.png'
 
 export const locations = [
   {
@@ -27,6 +28,12 @@ export const locations = [
     name: 'Escritório da Curadoria',
     detail: 'Documentos, compromissos e interesses institucionais.',
     artwork: officeArtwork,
+  },
+  {
+    id: 'service-corridor',
+    name: 'Corredor de Serviço',
+    detail: 'Uma passagem técnica marcada por poeira e óleo.',
+    artwork: serviceCorridorArtwork,
   },
 ] as const
 

@@ -4,7 +4,13 @@ import type { Investigator } from '../../../content/investigators'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 import { getPortrait } from '../../../content/portraits'
 const emit = defineEmits<{ select: [] }>()
-defineProps<{ investigator?: Investigator; support?: Investigator; pointsLabel: string }>()
+const props = defineProps<{
+  investigator?: Investigator
+  support?: Investigator
+  pointsLabel: string
+  unlockedLocations: readonly LocationId[]
+  moveCostLabel: string
+}>()
 const locationId = defineModel<LocationId>({ required: true })
 function selectLocation(id: LocationId) {
   locationId.value = id
@@ -34,10 +40,12 @@ function selectLocation(id: LocationId) {
           v-for="item in locations"
           :key="item.id"
           :aria-pressed="locationId === item.id"
+          :disabled="!props.unlockedLocations.includes(item.id)"
           @click="selectLocation(item.id)"
         >
-          {{ item.name }}</button
-        ><button disabled>Área não descoberta</button>
+          {{ item.name }}
+          <small v-if="locationId !== item.id">{{ moveCostLabel }}</small>
+        </button>
       </nav>
     </div>
     <p class="rail-note">Observe. Relacione.<br />Sustente sua hipótese.</p>

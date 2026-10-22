@@ -35,6 +35,13 @@ export const useMatchStore = defineStore('match', () => {
     })
   })
   const round = computed(() => remoteMatch.value?.round ?? 1)
+  const currentLocationId = computed(() => remoteMatch.value?.currentLocationId ?? 'gallery')
+  const unlockedLocations = computed<readonly LocationId[]>(
+    () => remoteMatch.value?.unlockedLocations ?? ['gallery', 'security', 'laboratory', 'office'],
+  )
+  const moveCostLabel = computed(() =>
+    remoteMatch.value?.hasUsedFreeMoveThisRound ? '1 PA' : 'Grátis (1º da rodada)',
+  )
   const pointsLabel = computed(() => {
     const points = remoteMatch.value?.actionPoints
     if (!points) return ''
@@ -118,6 +125,12 @@ export const useMatchStore = defineStore('match', () => {
     return updated.journalEntries.at(-1) ?? null
   }
 
+  async function moveInvestigator(locationId: LocationId): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A partida exige uma conexão ativa com a API.')
+    remoteMatch.value = await gameApi.moveInvestigator(remoteMatch.value.id, locationId)
+    preparedCardId.value = remoteMatch.value.preparedCardInstanceId
+  }
+
   async function endRemoteTurn(): Promise<boolean> {
     if (!remoteMatch.value) throw new Error('A partida exige uma conexão ativa com a API.')
     if (!canEndTurn.value) return false
@@ -180,6 +193,9 @@ export const useMatchStore = defineStore('match', () => {
     connectionError,
     hand,
     round,
+    currentLocationId,
+    unlockedLocations,
+    moveCostLabel,
     pointsLabel,
     canEndTurn,
     canDiscardPreparedCard,
@@ -190,6 +206,7 @@ export const useMatchStore = defineStore('match', () => {
     clearPreparedCard,
     createRemoteMatch,
     resolveAction,
+    moveInvestigator,
     endRemoteTurn,
     discardPreparedCard,
     loadConversationOptions,

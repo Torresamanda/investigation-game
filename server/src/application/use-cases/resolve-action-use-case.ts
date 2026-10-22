@@ -50,6 +50,11 @@ export class ResolveActionUseCase {
       resolvedKeys: resolution.resolvedKey
         ? [...match.resolvedKeys, resolution.resolvedKey]
         : match.resolvedKeys,
+      unlockedLocations:
+        resolution.resolvedKey === 'gallery-service-door' &&
+        !match.unlockedLocations.includes('service-corridor')
+          ? [...match.unlockedLocations, 'service-corridor' as const]
+          : match.unlockedLocations,
     }
     this.repository.save(updated)
     return updated

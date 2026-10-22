@@ -37,6 +37,53 @@ describe('MatchService', () => {
     ).toThrow('O investigador ativo e o apoio precisam ser diferentes.')
   })
 
+  it('cobra PA apenas após o primeiro deslocamento da rodada e bloqueia locais não liberados', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'move-match')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    const firstMove = service.moveInvestigator(match.id, 'security')
+    expect(firstMove.actionPoints.general).toBe(5)
+    expect(firstMove.hasUsedFreeMoveThisRound).toBe(true)
+
+    const secondMove = service.moveInvestigator(match.id, 'office')
+    expect(secondMove.actionPoints.general).toBe(4)
+    expect(() => service.moveInvestigator(match.id, 'service-corridor')).toThrow(
+      'Este local ainda não foi liberado.',
+    )
+
+    const nextRound = service.endTurn(match.id)
+    expect(nextRound.hasUsedFreeMoveThisRound).toBe(false)
+    expect(service.moveInvestigator(match.id, 'gallery').actionPoints.general).toBe(5)
+  })
+
+  it('libera o Corredor de Serviço após examinar a porta na Rodada 3', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'corridor-match')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({
+      ...match,
+      round: 3,
+      resolvedKeys: ['gallery-lock', 'gallery-pedestal'],
+    })
+
+    const opened = service.resolveAction({
+      matchId: match.id,
+      locationId: 'gallery',
+      action: 'examine',
+    })
+    expect(opened.unlockedLocations).toContain('service-corridor')
+    expect(service.moveInvestigator(match.id, 'service-corridor').currentLocationId).toBe(
+      'service-corridor',
+    )
+  })
+
   it('resolve descobertas da galeria e registra uma observação quando não há novidade', () => {
     const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
     service.createSoloMatch({ activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' })

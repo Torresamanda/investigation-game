@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { locations, type LocationId } from '../../content/case01'
 import { useInvestigationStore } from '../../stores/investigation'
 import type { InvestigationAction } from '../../domain/game/action-points'
@@ -24,6 +24,12 @@ const availableActions = computed<readonly InvestigationAction[]>(() =>
   ),
 )
 const locationId = ref<LocationId>('gallery')
+watch(
+  () => session.currentLocationId,
+  (currentLocationId) => {
+    locationId.value = currentLocationId
+  },
+)
 const location = computed(
   () => locations.find((item) => item.id === locationId.value) ?? locations[0],
 )
@@ -54,6 +60,19 @@ async function executeAction(action: InvestigationAction) {
         : `${labels[action]}: 2 PA gastos.`
   } catch (error) {
     feedback.value = error instanceof Error ? error.message : `${labels[action]}: PA insuficientes.`
+  }
+}
+
+async function moveToLocation() {
+  scene.value?.clearSuspect()
+  if (session.connectionState !== 'connected') return
+  const moveWasFree = session.moveCostLabel !== '1 PA'
+  try {
+    await session.moveInvestigator(locationId.value)
+    feedback.value = `Você se deslocou para ${location.value.name}. ${moveWasFree ? 'Deslocamento gratuito da rodada.' : '1 PA gasto.'}`
+  } catch (error) {
+    locationId.value = session.currentLocationId
+    feedback.value = error instanceof Error ? error.message : 'Não foi possível se deslocar.'
   }
 }
 
@@ -181,7 +200,9 @@ async function clearConversationCardPreparation() {
         :investigator="session.investigator"
         :support="session.support"
         :points-label="session.pointsLabel"
-        @select="scene?.clearSuspect()"
+        :unlocked-locations="session.unlockedLocations"
+        :move-cost-label="session.moveCostLabel"
+        @select="moveToLocation"
       />
       <InvestigationScene
         ref="scene"

@@ -28,6 +28,9 @@ export interface PublicMatchDto {
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly round: number
+  readonly currentLocationId: LocationId
+  readonly unlockedLocations: readonly LocationId[]
+  readonly hasUsedFreeMoveThisRound: boolean
   readonly hasDiscardedCardThisRound: boolean
   readonly actionPoints: ActionPointPool
   readonly journalEntries: readonly MatchJournalEntry[]

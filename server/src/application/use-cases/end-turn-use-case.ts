@@ -14,6 +14,7 @@ export class EndTurnUseCase {
     const updated: SoloMatch = {
       ...match,
       round: match.round + 1,
+      hasUsedFreeMoveThisRound: false,
       hasDiscardedCardThisRound: false,
       actionPoints: actionPointsFor(match.activeInvestigatorId),
       preparedCardInstanceId: null,
