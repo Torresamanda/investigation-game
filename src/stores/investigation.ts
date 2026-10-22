@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { investigators, type InvestigatorId } from '../content/investigators'
-import { getInvestigatorCards, type CardDefinition } from '../content/cards'
+import { getCardDefinition, type CardDefinition } from '../content/cards'
 import {
   canPerformBasicAction,
   canPerformActionWithCard,
@@ -40,9 +40,8 @@ export const useInvestigationStore = defineStore('investigation', () => {
 
     const remoteHand = remoteMatch.value?.decks[activeId]?.hand
     if (remoteHand) {
-      const definitions = getInvestigatorCards(activeId)
       return remoteHand.flatMap((card) => {
-        const definition = definitions.find((item) => item.id === card.definitionId)
+        const definition = getCardDefinition(card.definitionId)
         return definition ? [{ ...definition, instanceId: card.instanceId }] : []
       })
     }

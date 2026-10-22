@@ -8,7 +8,15 @@ export interface MatchCard {
   readonly ownerId: InvestigatorId
   readonly cost: 0 | 1 | 2
   readonly compatibleActions: readonly ('examine' | 'converse' | 'analyse' | 'research')[]
+  readonly temporary?: boolean
 }
+
+const temporaryDefinitions = {
+  'curator-agenda': { cost: 0, compatibleActions: ['research'] },
+  'treatment-sheet': { cost: 1, compatibleActions: ['analyse'] },
+  'guest-list': { cost: 1, compatibleActions: ['research'] },
+  'patrol-map': { cost: 0, compatibleActions: ['research'] },
+} as const satisfies Record<string, Omit<MatchCard, 'instanceId' | 'definitionId' | 'ownerId'>>
 
 export interface MatchDeck {
   readonly drawPile: readonly MatchCard[]
@@ -77,6 +85,20 @@ export function discardFromHand(deck: MatchDeck, instanceId: string): MatchDeck 
   const hand = [...deck.hand]
   const [discarded] = hand.splice(cardIndex, 1)
   return { drawPile: deck.drawPile, discardPile: [...deck.discardPile, discarded!], hand }
+}
+
+export function addTemporaryCardToHand(
+  deck: MatchDeck,
+  definitionId: keyof typeof temporaryDefinitions,
+  ownerId: InvestigatorId,
+): MatchDeck {
+  const definition = temporaryDefinitions[definitionId]
+  const instanceId = `temporary:${definitionId}:${ownerId}`
+  if (deck.hand.some((card) => card.instanceId === instanceId)) return deck
+  return {
+    ...deck,
+    hand: [...deck.hand, { instanceId, definitionId, ownerId, temporary: true, ...definition }],
+  }
 }
 
 function shuffle<T>(items: readonly T[]): T[] {

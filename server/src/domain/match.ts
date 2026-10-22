@@ -22,6 +22,7 @@ export interface JournalEntry {
   readonly locationId: LocationId
   readonly round: number
   readonly status: 'unconfirmed' | 'note' | 'recorded' | 'contestable' | 'blocked'
+  readonly recordedWith?: 'pocket-recorder'
 }
 
 export interface SoloMatch {

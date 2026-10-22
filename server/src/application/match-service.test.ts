@@ -249,4 +249,98 @@ describe('MatchService', () => {
     expect(afterGallery.resolvedKeys).toContain('gallery-lock')
     expect(recorded.journalEntries.at(-1)).toMatchObject({ status: 'recorded' })
   })
+
+  it('aplica Gravador de Bolso à declaração e descarta a carta preparada', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'rafael',
+    })
+    const recorder = putCardInHand(repository, match, 'pocket-recorder')
+    service.prepareCard(match.id, recorder.instanceId)
+
+    const updated = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'davi-interest',
+    })
+
+    expect(updated.journalEntries.at(-1)).toMatchObject({ recordedWith: 'pocket-recorder' })
+    expect(updated.decks.isadora.discardPile).toContainEqual(recorder)
+    expect(updated.preparedCardInstanceId).toBeNull()
+  })
+
+  it('usa Pausa Calculada para liberar uma pergunta adicional gratuita', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'rafael',
+    })
+    const pause = putCardInHand(repository, match, 'calculated-pause')
+    service.prepareCard(match.id, pause.instanceId)
+
+    service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'davi-interest',
+    })
+    const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
+    expect(options.questionLimitReached).toBe(false)
+    expect(options.questions.map((question) => question.cost)).toEqual([0, 0])
+
+    const updated = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'technical-assessment',
+    })
+    expect(updated.actionPoints.general).toBe(4)
+  })
+
+  it('concede uma carta temporária após uma conversa que cumpre sua condição', () => {
+    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    const updated = service.resolveConversation({
+      matchId: match.id,
+      personId: 'helena',
+      locationId: 'office',
+      questionId: 'insurance-review',
+    })
+
+    expect(updated.decks.livia.hand).toContainEqual(
+      expect.objectContaining({ definitionId: 'curator-agenda', temporary: true }),
+    )
+  })
 })
+
+function putCardInHand(
+  repository: InMemoryMatchRepository,
+  match: ReturnType<MatchService['createSoloMatch']>,
+  definitionId: string,
+) {
+  const deck = match.decks.isadora
+  const card = [...deck.hand, ...deck.drawPile].find((item) => item.definitionId === definitionId)
+  if (!card) throw new Error(`Carta ${definitionId} não foi criada.`)
+  repository.save({
+    ...match,
+    decks: {
+      ...match.decks,
+      isadora: {
+        ...deck,
+        drawPile: deck.drawPile.filter((item) => item.instanceId !== card.instanceId),
+        hand: deck.hand.some((item) => item.instanceId === card.instanceId)
+          ? deck.hand
+          : [...deck.hand, card],
+      },
+    },
+  })
+  return card
+}

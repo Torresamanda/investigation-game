@@ -186,8 +186,53 @@ const investigatorCards = {
   ],
 } as const satisfies Record<InvestigatorId, readonly CardDefinition[]>
 
+const temporaryCards: readonly CardDefinition[] = [
+  {
+    id: 'curator-agenda',
+    name: 'Agenda da Curadoria',
+    cost: 0,
+    image: seal,
+    effect: 'Organiza compromissos e confirma a ordem de registros institucionais.',
+    context: 'Durante Pesquisar documentos da curadoria.',
+    compatibleActions: ['research'],
+  },
+  {
+    id: 'treatment-sheet',
+    name: 'Ficha de Tratamento',
+    cost: 1,
+    image: envelope,
+    effect: 'Compara uma marca com o histórico técnico da peça.',
+    context: 'Durante Analisar uma marca ou resíduo.',
+    compatibleActions: ['analyse'],
+  },
+  {
+    id: 'guest-list',
+    name: 'Lista de Convidados',
+    cost: 1,
+    image: archive,
+    effect: 'Cruza a presença de convidados com a linha do tempo pública.',
+    context: 'Durante Pesquisar uma informação de presença.',
+    compatibleActions: ['research'],
+  },
+  {
+    id: 'patrol-map',
+    name: 'Mapa de Rondas',
+    cost: 0,
+    image: map,
+    effect: 'Registra a rota declarada pela segurança para comparação posterior.',
+    context: 'Durante Pesquisar registros de segurança.',
+    compatibleActions: ['research'],
+  },
+]
+
 export function getInvestigatorCards(investigator: InvestigatorId): readonly CardDefinition[] {
   return investigatorCards[investigator]
+}
+
+export function getCardDefinition(cardId: string): CardDefinition | undefined {
+  return [...Object.values(investigatorCards).flat(), ...temporaryCards].find(
+    (card) => card.id === cardId,
+  )
 }
 
 export const COPIES_PER_CARD = 2

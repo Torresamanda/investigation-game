@@ -56,6 +56,17 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Preservar espaçamento legível, área clicável e alinhamento em desktop e celular.
   - Critério de aceite: ícone e texto formam um conjunto visualmente centralizado sem deslocamento em nenhum breakpoint suportado.
 
+- [ ] **03F · ARQ-03 — Dividir store monolítica, extrair composables e remover efeito colateral do router** `[P2] [Front]`
+  - Separar `useInvestigationStore` por responsabilidade: estado autoritativo da partida (`useMatchStore`) e rascunhos/hipóteses locais (`useNotesStore`), extraindo a orquestração de UI da tela de investigação para composables focados.
+  - Remover o efeito colateral `abandonInvestigation()` do hook global `router.afterEach` em `src/app/router.ts`, acionando o abandono apenas por ação explícita do jogador.
+  - Critério de aceite: cada store e composable possui responsabilidade única e o roteador cuida apenas de navegação e guardas de acesso.
+
+- [ ] **03G · UI-06 — Componentizar elementos repetidos e externalizar classes CSS compartilhadas** `[P3] [Front]`
+  - Extrair padrões visuais recorrentes (cabeçalhos de seção com `eyebrow` e título, botões com ícone, badges de PA e itens de lista do diário) para componentes apresentacionais puros (`props`/`emit`) em `src/components/ui/`.
+  - Externalizar e centralizar classes CSS repetidas (painéis, botões, badges, tipografia auxiliar e cabeçalhos) e tokens (`:root`) em `src/styles/`, deixando em `src/features/<feature>/styles/` apenas o layout específico da tela.
+  - Garantir espaçamento claro entre classes, funções e blocos lógicos, nomenclatura alinhada ao domínio e importação de ícones exclusivamente via `src/components/icons/`.
+  - Critério de aceite: não há duplicação de estilos base entre features, componentes genéricos não acessam stores diretamente e nenhum ícone é importado fora de `src/components/icons/`.
+
 - [ ] **06A · BUG-04 — Corrigir separação de título e conteúdo em observações** `[P3] [Front]`
   - Inserir separação visual e textual após `Nenhuma descoberta nova`, incluindo `:` antes do conteúdo da observação.
   - Critério de aceite: título e mensagem não aparecem unidos em interface, leitor de tela ou diário.
@@ -72,6 +83,11 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Remover a duplicidade temporária entre o motor local do frontend e a API.
   - Critério de aceite: recarregar o cliente e buscar a partida retorna exatamente a mesma mão, PA, rodada e diário enquanto o servidor estiver em execução.
 
+- [ ] **01A · ARQ-01 — Unificar tipos, contratos e regras puras de PA em `shared/`** `[P0] [Front] [Back]`
+  - Extrair identificadores primitivos (`InvestigatorId`, `LocationId`, `PersonId`, `InvestigationAction`), DTOs públicos da partida e a função pura `canPayAction` para `shared/`.
+  - Corrigir a lógica de `canExecute` em `src/stores/investigation.ts` (que somava pontos de especialidade mesmo em ações incompatíveis) e remover a exigência de `mission.value` local quando `remoteMatch` estiver ativo.
+  - Critério de aceite: frontend e backend importam a mesma função `canPayAction` de `shared/`; botões de ação só são habilitados quando os PA gerais e de especialidade compatíveis cobrem o custo real.
+
 - [x] **03 · JOGO-02 — Resolver cartas no servidor** `[Front] [Back] [Definição]`
   - Enviar o identificador da carta e a ação escolhida para a API.
   - Validar dono, contexto, compatibilidade, custo e descarte exclusivamente no backend.
@@ -80,6 +96,17 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
 - [x] **04 · JOGO-03 — Corrigir o estado de preparação de carta** `[Front] [Back]`
   - Registrar no servidor qual carta está preparada e limpar essa escolha ao usá-la, removê-la ou encerrar o turno.
   - Critério de aceite: dois clientes que consultam a mesma partida veem a mesma carta preparada.
+
+- [ ] **04A · SEC-03 — Ocultar baralho de compra e chaves internas nas respostas da API (`MatchPresenter`)** `[P0] [Front] [Back]`
+  - Criar `MatchPresenter` em `server/src/http/presenters/` para transformar a entidade de domínio em DTO público antes de enviá-la nas respostas HTTP.
+  - Expor apenas `hand` do investigador ativo e contadores numéricos (`drawPileCount` e `discardPileCount`), removendo `drawPile` ordenado, baralho completo do apoio e `resolvedKeys` do payload público.
+  - Critério de aceite: inspecionar qualquer resposta de `/api/matches/*` no navegador não revela a sequência de próximas cartas a comprar nem chaves internas de controle.
+
+- [ ] **04B · ARQ-02 — Refatorar backend em camadas estritas de Clean Architecture e Domínio Rico** `[P1] [Back]`
+  - Dividir `MatchService` em Casos de Uso independentes por responsabilidade (`CreateSoloMatchUseCase`, `ResolveActionUseCase`, `ResolveConversationUseCase`, `PrepareCardUseCase`, `EndTurnUseCase`) e mover `InMemoryMatchRepository` para `server/src/infrastructure/`.
+  - Modelar `Match`, `InvestigatorDeck` e `TurnState` como entidades/Value Objects ricos que protegem suas invariantes, substituindo o array de strings mágicas `resolvedKeys` por estruturas tipadas e eliminando a dependência circular entre `match.ts` e `match-deck.ts`.
+  - Extrair a resolução narrativa hardcoded do Caso 01 (`resolveCaseAction` e diálogos) para uma porta `CaseContentRepository` implementada na infraestrutura.
+  - Critério de aceite: cada classe, entidade, caso de uso e repositório reside em seu próprio arquivo com responsabilidade única, e `domain/` não possui dependências externas.
 
 - [x] **20 · JOGO-04 — Persistir partidas e diário** `[Back]`
   - Substituir o repositório em memória por SQLite local durante o MVP.
@@ -182,6 +209,17 @@ Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica 
   - Aplicar limite de requisições por sessão e endereço de origem às rotas de partida, com respostas seguras para excesso de tentativas.
   - Manter as respostas limitadas ao estado já desbloqueado; não criar rotas de catálogo completo para conteúdo de casos, diálogos ou desfechos.
   - Critério de aceite: tentativas automatizadas são limitadas sem afetar uma sessão normal, e consultas diretas não retornam conteúdo futuro.
+
+- [ ] **23B · SEC-04 — Validar schemas de entrada, tratar erros de domínio e sanitizar parâmetros HTTP** `[P1] [Front] [Back]`
+  - Definir schemas de validação (`body`, `params`, `querystring`) e `bodyLimit` explícito em todas as rotas de `server/src/http/app.ts`, evitando `TypeError` (status `500`) quando `request.body` for nulo ou malformado.
+  - Substituir a comparação de string `message === 'Partida não encontrada.'` por classes de erro semânticas (`DomainError`, `MatchNotFoundError`, `InvalidActionError`) tratadas em um `setErrorHandler` centralizado no Fastify.
+  - Sanitizar todos os parâmetros dinâmicos de URL (`matchId`, `personId`, `questionId`) com `encodeURIComponent()` em `src/services/game-api.ts`.
+  - Critério de aceite: payloads nulos ou malformados retornam `400` estruturado sem lançar `500`, e o status HTTP de erro é determinado pela classe de domínio, nunca por comparação de texto.
+
+- [ ] **23C · SEC-05 — Adotar CSPRNG no embaralhamento e controle de concorrência no SQLite** `[P2] [Back]`
+  - Substituir `Math.random()` em `server/src/domain/match-deck.ts` por uma porta `RandomGenerator` implementada com `crypto.randomInt()` (`node:crypto`).
+  - Configurar `PRAGMA journal_mode = WAL;` e `PRAGMA busy_timeout` no `SqliteMatchRepository`, adicionando controle de concorrência otimista (`version`) para impedir condições de corrida (*lost updates*) em requisições simultâneas.
+  - Critério de aceite: o embaralhamento no servidor usa CSPRNG injetável em testes e requisições concorrentes para a mesma partida não sobrescrevem silenciosamente o estado uma da outra.
 
 - [ ] **26 · OPS-01 — Preparar deploy gratuito** `[Front] [Back] [Definição]`
   - Publicar frontend estático e API Node com variáveis de ambiente separadas.

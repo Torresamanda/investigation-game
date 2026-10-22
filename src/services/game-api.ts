@@ -10,12 +10,13 @@ export interface MatchJournalEntry {
   readonly locationId: LocationId
   readonly round: number
   readonly status: 'unconfirmed' | 'note' | 'recorded' | 'contestable' | 'blocked'
+  readonly recordedWith?: 'pocket-recorder'
 }
 
 export interface ConversationQuestion {
   readonly id: string
   readonly text: string
-  readonly cost: 1 | 2
+  readonly cost: 0 | 1 | 2
   readonly approach: 'inquiry' | 'pressure' | 'context'
   readonly canResolve: boolean
 }

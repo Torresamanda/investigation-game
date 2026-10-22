@@ -4,6 +4,7 @@ export const personIds = ['helena', 'raul', 'marta', 'davi'] as const
 export type PersonId = (typeof personIds)[number]
 export type ConversationApproach = 'inquiry' | 'pressure' | 'context'
 export type ConversationOutcomeStatus = 'recorded' | 'contestable' | 'blocked'
+export type ConversationReward = 'curator-agenda' | 'treatment-sheet' | 'guest-list' | 'patrol-map'
 
 export interface ConversationQuestion {
   readonly id: string
@@ -221,4 +222,16 @@ export function resolveConversationOutcome(
   }
 
   return { status: 'recorded', content: question.result }
+}
+
+export function getConversationReward(
+  personId: PersonId,
+  questionId: string,
+  round: number,
+): ConversationReward | undefined {
+  if (personId === 'helena' && questionId === 'insurance-review') return 'curator-agenda'
+  if (personId === 'marta' && questionId === 'technical-assessment') return 'treatment-sheet'
+  if (personId === 'davi' && questionId === 'collectors' && round >= 2) return 'guest-list'
+  if (personId === 'raul' && questionId === 'security-procedure' && round >= 2) return 'patrol-map'
+  return undefined
 }

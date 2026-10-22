@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { investigators } from './investigators'
-import { createInvestigatorDeck, getInvestigatorCards } from './cards'
+import { createInvestigatorDeck, getCardDefinition, getInvestigatorCards } from './cards'
 
 describe.each(investigators)('baralho de $name', (investigator) => {
   it('contém oito instâncias únicas, com duas cópias de quatro tipos e somente do dono', () => {
@@ -12,5 +12,18 @@ describe.each(investigators)('baralho de $name', (investigator) => {
     for (const definition of getInvestigatorCards(investigator.id)) {
       expect(deck.filter((card) => card.definition.id === definition.id)).toHaveLength(2)
     }
+  })
+})
+
+describe('cartas temporárias de conversa', () => {
+  it('possui definições visíveis apenas quando a mão do servidor as concede', () => {
+    expect(getCardDefinition('curator-agenda')).toMatchObject({
+      name: 'Agenda da Curadoria',
+      compatibleActions: ['research'],
+    })
+    expect(getCardDefinition('patrol-map')).toMatchObject({
+      name: 'Mapa de Rondas',
+      cost: 0,
+    })
   })
 })

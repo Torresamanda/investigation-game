@@ -9,10 +9,16 @@ import {
   type LocationId,
   type SoloMatch,
 } from '../domain/match.js'
-import { discardFromHand, drawToHand, INITIAL_HAND_SIZE } from '../domain/match-deck.js'
+import {
+  addTemporaryCardToHand,
+  discardFromHand,
+  drawToHand,
+  INITIAL_HAND_SIZE,
+} from '../domain/match-deck.js'
 import {
   getConversation,
   isPersonAvailableAtLocation,
+  getConversationReward,
   resolveConversationOutcome,
   type ConversationQuestion,
   type PersonId,
@@ -41,7 +47,8 @@ export interface ConversationOptions {
   readonly personName: string
   readonly locationId: LocationId
   readonly questionLimitReached: boolean
-  readonly questions: readonly (Pick<ConversationQuestion, 'id' | 'text' | 'cost' | 'approach'> & {
+  readonly questions: readonly (Omit<ConversationQuestion, 'cost' | 'result'> & {
+    readonly cost: 0 | 1 | 2
     readonly canResolve: boolean
   })[]
 }
@@ -95,19 +102,22 @@ export class MatchService {
     this.assertPersonAvailability(personId, locationId)
     const conversation = getConversation(personId)
     const questionLimitReached = match.resolvedKeys.includes(conversationTurnKey(match, personId))
+    const bonusQuestion = hasConversationBonus(match, personId)
     return {
       personId,
       personName: conversation.personName,
       locationId,
-      questionLimitReached,
+      questionLimitReached: questionLimitReached && !bonusQuestion,
       questions: conversation.questions
         .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
         .map(({ id, text, cost, approach }) => ({
           id,
           text,
-          cost,
+          cost: bonusQuestion ? 0 : cost,
           approach,
-          canResolve: !questionLimitReached && availablePoints(match, 'converse') >= cost,
+          canResolve:
+            (!questionLimitReached || bonusQuestion) &&
+            availablePoints(match, 'converse') >= (bonusQuestion ? 0 : cost),
         })),
     }
   }
@@ -121,18 +131,55 @@ export class MatchService {
     if (!question) throw new Error('Pergunta inexistente para esta conversa.')
     const resolvedKey = conversationKey(command.personId, question.id)
     if (match.resolvedKeys.includes(resolvedKey)) throw new Error('Esta pergunta já foi resolvida.')
-    if (match.resolvedKeys.includes(conversationTurnKey(match, command.personId))) {
+    const bonusQuestion = hasConversationBonus(match, command.personId)
+    if (
+      match.resolvedKeys.includes(conversationTurnKey(match, command.personId)) &&
+      !bonusQuestion
+    ) {
       throw new Error('Você já fez uma pergunta neste turno.')
     }
-    if (availablePoints(match, 'converse') < question.cost) {
+    const activeDeck = match.decks[match.activeInvestigatorId]
+    const card = match.preparedCardInstanceId
+      ? activeDeck.hand.find((item) => item.instanceId === match.preparedCardInstanceId)
+      : undefined
+    if (match.preparedCardInstanceId && (!card || !card.compatibleActions.includes('converse'))) {
+      throw new Error('A carta não pode ser usada nesta conversa.')
+    }
+    const questionCost = bonusQuestion ? 0 : question.cost
+    const totalCost = questionCost + (card?.cost ?? 0)
+    if (availablePoints(match, 'converse') < totalCost) {
       throw new Error('PA insuficientes para esta pergunta.')
     }
     const outcome = resolveConversationOutcome(command.personId, command.questionId, match)
     if (!outcome) throw new Error('Não foi possível resolver esta pergunta.')
 
+    const reward = getConversationReward(command.personId, command.questionId, match.round)
+    const usesCalculatedPause = card?.definitionId === 'calculated-pause'
     const updated: SoloMatch = {
       ...match,
-      actionPoints: spendPoints(match, 'converse', question.cost),
+      actionPoints: spendPoints(match, 'converse', totalCost),
+      decks: card
+        ? {
+            ...match.decks,
+            [match.activeInvestigatorId]: reward
+              ? addTemporaryCardToHand(
+                  discardFromHand(activeDeck, card.instanceId),
+                  reward,
+                  match.activeInvestigatorId,
+                )
+              : discardFromHand(activeDeck, card.instanceId),
+          }
+        : reward
+          ? {
+              ...match.decks,
+              [match.activeInvestigatorId]: addTemporaryCardToHand(
+                activeDeck,
+                reward,
+                match.activeInvestigatorId,
+              ),
+            }
+          : match.decks,
+      preparedCardInstanceId: null,
       journalEntries: [
         ...match.journalEntries,
         {
@@ -143,12 +190,15 @@ export class MatchService {
           locationId: command.locationId,
           round: match.round,
           status: outcome.status,
+          recordedWith: card?.definitionId === 'pocket-recorder' ? 'pocket-recorder' : undefined,
         },
       ],
       resolvedKeys: [
         ...match.resolvedKeys,
         resolvedKey,
         conversationTurnKey(match, command.personId),
+        ...(bonusQuestion ? [conversationBonusUsedKey(match, command.personId)] : []),
+        ...(usesCalculatedPause ? [conversationBonusKey(match, command.personId)] : []),
       ],
     }
     this.repository.save(updated)
@@ -332,4 +382,19 @@ function conversationKey(personId: PersonId, questionId: string) {
 
 function conversationTurnKey(match: SoloMatch, personId: PersonId) {
   return `conversation-turn:${match.round}:${match.activeInvestigatorId}:${personId}`
+}
+
+function conversationBonusKey(match: SoloMatch, personId: PersonId) {
+  return `conversation-bonus:${match.round}:${match.activeInvestigatorId}:${personId}`
+}
+
+function conversationBonusUsedKey(match: SoloMatch, personId: PersonId) {
+  return `conversation-bonus-used:${match.round}:${match.activeInvestigatorId}:${personId}`
+}
+
+function hasConversationBonus(match: SoloMatch, personId: PersonId) {
+  return (
+    match.resolvedKeys.includes(conversationBonusKey(match, personId)) &&
+    !match.resolvedKeys.includes(conversationBonusUsedKey(match, personId))
+  )
 }
