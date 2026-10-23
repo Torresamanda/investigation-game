@@ -22,6 +22,7 @@ type CardId =
   | 'institutional-seal'
 
 const physicalLocations: readonly LocationId[] = ['gallery', 'laboratory', 'service-corridor']
+type ResearchCardId = 'access-credential' | 'archive-box' | 'institutional-seal' | 'contact-card'
 
 export function resolveCase01CardEffect(
   match: SoloMatch,
@@ -34,78 +35,117 @@ export function resolveCase01CardEffect(
 
   switch (cardId) {
     case 'ultraviolet-flashlight':
-      if (action === 'examine' && locationId === 'gallery') {
+      if (action === 'examine' && (locationId === 'gallery' || locationId === 'service-corridor')) {
         return addObservation(
           resolution,
           match,
           locationId,
           'Leitura ultravioleta',
-          'A luz revela um rastro fluorescente de óleo e poeira que segue do pedestal até a passagem de serviço.',
+          locationId === 'gallery'
+            ? 'A luz revela um rastro fluorescente de óleo e poeira junto à área da exposição.'
+            : 'A luz revela um rastro fluorescente de óleo e poeira no piso da passagem de serviço.',
         )
       }
-      return cardContextUnavailable(
-        resolution,
-        'A Lanterna Ultravioleta exige Examinar a Galeria Principal.',
-      )
-
-    case 'trace-marker':
-      if (action === 'analyse' && physicalLocations.includes(locationId)) {
-        if (
-          resolution.entry.type !== 'clue' &&
-          !latestUnconfirmedClue(match.journalEntries, locationId)
-        ) {
-          return cardContextUnavailable(
-            resolution,
-            'O Marcador de Vestígio exige uma pista física não verificada.',
-          )
+      if (action === 'examine') {
+        const contextByLocation: Partial<Record<LocationId, string>> = {
+          laboratory:
+            'A varredura destaca resíduos antigos de verniz e solvente na bancada de restauração.',
+          security:
+            'A varredura não encontra resíduos recentes fora dos materiais de limpeza habituais.',
+          office: 'A varredura não encontra resíduos anômalos na área administrativa.',
         }
-        return {
-          ...resolution,
-          entry: { ...resolution.entry, markedForFollowUp: true },
-        }
+        return addObservation(
+          resolution,
+          match,
+          locationId,
+          'Varredura ultravioleta',
+          contextByLocation[locationId] ??
+            'A varredura registra as condições de luminosidade e resíduos deste ambiente.',
+        )
       }
-      return cardContextUnavailable(
-        resolution,
-        'O Marcador de Vestígio exige Analisar uma pista física.',
-      )
+      return cardContextUnavailable(resolution, 'A lanterna não pode ser aplicada a esta ação.')
 
     case 'route-map':
-      if (action === 'research' && locationId === 'gallery' && match.round >= 3) {
+      if (action !== 'research')
+        return cardContextUnavailable(resolution, 'O mapa não pode ser aplicado a esta ação.')
+      if (locationId === 'gallery' || locationId === 'security') {
         return {
           ...addObservation(
             resolution,
             match,
             locationId,
             'Trajeto indicado no mapa',
-            'O mapa de rotas aponta uma passagem técnica entre a galeria e o corredor de serviço.',
+            locationId === 'gallery'
+              ? 'O mapa relaciona a circulação da galeria a uma passagem técnica do museu.'
+              : 'O mapa relaciona os acessos da segurança às passagens técnicas do museu.',
           ),
           resolvedKeys: ['gallery-service-door'],
           unlockedLocationIds: ['service-corridor'],
+          ...connectionForMap(match, resolution.entry),
+        }
+      }
+      return addObservation(
+        resolution,
+        match,
+        locationId,
+        'Referência cartográfica',
+        `O mapa relaciona este setor (${locationId}) às rotas internas do museu.`,
+      )
+
+    case 'trace-marker':
+      if (action === 'analyse') {
+        const target =
+          resolution.entry.type === 'clue' &&
+          physicalLocations.includes(resolution.entry.locationId) &&
+          (resolution.entry.status === 'unconfirmed' || resolution.entry.status === 'indicio')
+            ? resolution.entry
+            : latestUnconfirmedPhysicalClue(match.journalEntries)
+        if (!target) {
+          return cardContextUnavailable(
+            resolution,
+            'É necessário ter uma pista física não confirmada no diário.',
+          )
+        }
+        return {
+          ...resolution,
+          entry:
+            target.id === resolution.entry.id
+              ? { ...resolution.entry, markedForFollowUp: true }
+              : resolution.entry,
+          journalEntryUpdates:
+            target.id === resolution.entry.id
+              ? resolution.journalEntryUpdates
+              : [...(resolution.journalEntryUpdates ?? []), { ...target, markedForFollowUp: true }],
         }
       }
       return cardContextUnavailable(
         resolution,
-        'O Mapa de Rotas exige Pesquisar a Galeria a partir da Rodada 3.',
+        'O marcador precisa ser aplicado durante uma análise.',
       )
 
     case 'access-credential':
-      if (action === 'research' && locationId === 'security' && match.round >= 3) {
+      if (action === 'research' && locationId === 'security') {
+        const hasLogGap = match.resolvedKeys.includes('security-log-gap')
+        const key = hasLogGap ? 'e3-confirmed' : 'security-log-gap'
         return {
-          ...addObservation(
-            resolution,
-            match,
-            locationId,
-            'Acesso de segurança',
-            'A credencial libera o arquivo de manutenção e o acesso à passagem técnica.',
-          ),
+          ...resolution,
+          entry: {
+            ...resolution.entry,
+            type: 'clue',
+            title: hasLogGap
+              ? 'Exclusão de registros confirmada'
+              : 'Lacuna no terminal de segurança',
+            content: hasLogGap
+              ? 'A credencial permite confirmar que a lacuna foi criada no terminal de segurança.'
+              : 'A credencial dá acesso ao arquivo preservado e revela um bloco removido do terminal.',
+            status: hasLogGap ? 'confirmed' : 'unconfirmed',
+          },
+          resolvedKey: key,
           resolvedKeys: ['gallery-service-door'],
           unlockedLocationIds: ['service-corridor'],
         }
       }
-      return cardContextUnavailable(
-        resolution,
-        'A Credencial de Acesso exige Pesquisar os arquivos de segurança a partir da Rodada 3.',
-      )
+      return researchContextEffect(match, resolution, action, locationId, 'access-credential')
 
     case 'comparative-magnifier':
     case 'cross-reference': {
@@ -114,7 +154,7 @@ export function resolveCase01CardEffect(
       if (!pair)
         return cardContextUnavailable(
           resolution,
-          'A comparação exige duas pistas físicas registradas, sendo uma confirmada e outra em verificação.',
+          'O diário ainda não contém duas pistas físicas adequadas para comparação.',
         )
       const note =
         cardId === 'comparative-magnifier'
@@ -136,13 +176,11 @@ export function resolveCase01CardEffect(
     case 'forensic-camera': {
       if (action !== 'examine') return resolution
       const target =
-        resolution.entry.type === 'clue'
-          ? resolution.entry
-          : latestClue(match.journalEntries, locationId)
+        resolution.entry.type === 'clue' ? resolution.entry : latestClue(match.journalEntries)
       if (!target)
         return cardContextUnavailable(
           resolution,
-          'A Câmera Forense exige uma pista registrada no local examinado.',
+          'O diário ainda não contém uma pista disponível para registro fotográfico.',
         )
       return {
         ...resolution,
@@ -174,7 +212,7 @@ export function resolveCase01CardEffect(
       if (!target)
         return cardContextUnavailable(
           resolution,
-          'O Envelope de Custódia exige uma pista física confirmada.',
+          'O diário ainda não contém uma pista física confirmada para proteger.',
         )
       return {
         ...resolution,
@@ -190,15 +228,17 @@ export function resolveCase01CardEffect(
     }
 
     case 'trace-reagent': {
-      if (action !== 'analyse' || !physicalLocations.includes(locationId)) return resolution
+      if (action !== 'analyse') return resolution
       const currentClue =
-        resolution.entry.type === 'clue' && resolution.entry.status !== 'confirmed'
+        resolution.entry.type === 'clue' &&
+        resolution.entry.status !== 'confirmed' &&
+        physicalLocations.includes(resolution.entry.locationId)
           ? resolution.entry
-          : latestUnconfirmedClue(match.journalEntries, locationId)
+          : latestUnconfirmedPhysicalClue(match.journalEntries)
       if (!currentClue)
         return cardContextUnavailable(
           resolution,
-          'O Reagente de Traços exige uma pista física não verificada no local.',
+          'O diário ainda não contém uma pista física não confirmada para análise.',
         )
       const isFalseLead = /Marcas nas ferramentas|Avaliação do seguro/.test(currentClue.title)
       const key = resolvedKeyForClue(currentClue)
@@ -230,7 +270,7 @@ export function resolveCase01CardEffect(
       if (!statement || !clue)
         return cardContextUnavailable(
           resolution,
-          'A Transcrição Marcada exige uma declaração e uma pista confirmada no diário.',
+          'O diário precisa conter uma declaração e uma pista confirmada.',
         )
       return addObservation(
         resolution,
@@ -245,7 +285,6 @@ export function resolveCase01CardEffect(
       if (
         action === 'research' &&
         locationId === 'security' &&
-        match.round >= 2 &&
         !match.resolvedKeys.includes('e2-confirmed')
       ) {
         return {
@@ -261,16 +300,12 @@ export function resolveCase01CardEffect(
           resolvedKey: 'e2-confirmed',
         }
       }
-      return cardContextUnavailable(
-        resolution,
-        'O Cartão de Contato exige Pesquisar a Sala de Segurança a partir da Rodada 2.',
-      )
+      return researchContextEffect(match, resolution, action, locationId, 'contact-card')
 
     case 'archive-box':
       if (
         action === 'research' &&
         locationId === 'security' &&
-        match.round >= 2 &&
         !match.resolvedKeys.includes('security-log-gap')
       ) {
         return {
@@ -289,7 +324,6 @@ export function resolveCase01CardEffect(
       if (
         action === 'research' &&
         locationId === 'security' &&
-        match.round >= 3 &&
         match.resolvedKeys.includes('security-log-gap') &&
         !match.resolvedKeys.includes('e3-confirmed')
       ) {
@@ -306,10 +340,7 @@ export function resolveCase01CardEffect(
           resolvedKey: 'e3-confirmed',
         }
       }
-      return cardContextUnavailable(
-        resolution,
-        'A Caixa de Arquivo exige Pesquisar os registros da Sala de Segurança a partir da Rodada 2.',
-      )
+      return researchContextEffect(match, resolution, action, locationId, 'archive-box')
 
     case 'chronological-thread': {
       if (action !== 'research') return resolution
@@ -322,7 +353,7 @@ export function resolveCase01CardEffect(
       if (timedClues.length < 2)
         return cardContextUnavailable(
           resolution,
-          'O Fio Cronológico exige ao menos duas pistas com horário no diário.',
+          'O diário ainda não contém duas pistas com horário para organizar.',
         )
       return addObservation(
         resolution,
@@ -334,7 +365,7 @@ export function resolveCase01CardEffect(
     }
 
     case 'institutional-seal':
-      if (action === 'research' && locationId === 'security' && match.round >= 2) {
+      if (action === 'research' && locationId === 'security') {
         if (!match.resolvedKeys.includes('security-log-gap')) {
           return {
             ...resolution,
@@ -364,10 +395,7 @@ export function resolveCase01CardEffect(
           }
         }
       }
-      return cardContextUnavailable(
-        resolution,
-        'O Selo Institucional exige Pesquisar os arquivos oficiais da Sala de Segurança a partir da Rodada 2.',
-      )
+      return researchContextEffect(match, resolution, action, locationId, 'institutional-seal')
   }
 }
 
@@ -387,6 +415,146 @@ function addObservation(
     status: 'note',
   }
   return { ...resolution, additionalEntries: [...(resolution.additionalEntries ?? []), entry] }
+}
+
+function researchContextEffect(
+  match: SoloMatch,
+  resolution: CaseActionResolution,
+  action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
+  locationId: LocationId,
+  cardId: ResearchCardId,
+): CaseActionResolution {
+  if (action !== 'research')
+    return cardContextUnavailable(resolution, 'O recurso não pode ser aplicado a esta ação.')
+
+  if (locationId === 'office') {
+    const hasInsuranceRecord = match.resolvedKeys.includes('helena-insurance')
+    const key = hasInsuranceRecord ? 'helena-insurance-refuted' : 'helena-insurance'
+    if (!match.resolvedKeys.includes(key)) {
+      return {
+        ...resolution,
+        entry: {
+          ...resolution.entry,
+          type: 'clue',
+          title: hasInsuranceRecord ? 'Avaliação do seguro refutada' : 'Avaliação do seguro',
+          content: hasInsuranceRecord
+            ? 'Os registros institucionais confirmam que a avaliação foi solicitada antes da exposição.'
+            : 'Os registros institucionais revelam uma avaliação recente que precisa ser verificada.',
+          status: hasInsuranceRecord ? 'refuted' : 'unconfirmed',
+        },
+        resolvedKey: key,
+      }
+    }
+  }
+
+  if (locationId === 'laboratory') {
+    const hasToolRecord = match.resolvedKeys.includes('marta-tools')
+    const key = hasToolRecord ? 'marta-tools-refuted' : 'marta-tools'
+    if (!match.resolvedKeys.includes(key)) {
+      return {
+        ...resolution,
+        entry: {
+          ...resolution.entry,
+          type: 'clue',
+          title: hasToolRecord ? 'Marcas de restauração refutadas' : 'Marcas nas ferramentas',
+          content: hasToolRecord
+            ? 'O histórico técnico data as marcas das ferramentas de restauração de antes da ocorrência.'
+            : 'O histórico de conservação registra marcas recentes nas ferramentas de restauração.',
+          status: hasToolRecord ? 'refuted' : 'unconfirmed',
+        },
+        resolvedKey: key,
+      }
+    }
+  }
+
+  if (locationId === 'security') {
+    if (cardId === 'contact-card' && !match.resolvedKeys.includes('e2-confirmed')) {
+      return confirmedClue(
+        resolution,
+        'Acionamento manual confirmado por fonte externa',
+        'e2-confirmed',
+      )
+    }
+    if (
+      (cardId === 'archive-box' || cardId === 'institutional-seal') &&
+      match.resolvedKeys.includes('security-log-gap') &&
+      !match.resolvedKeys.includes('e3-confirmed')
+    ) {
+      return confirmedClue(
+        resolution,
+        'Exclusão de registros confirmada no arquivo',
+        'e3-confirmed',
+      )
+    }
+  }
+
+  if (locationId === 'gallery' || locationId === 'service-corridor') {
+    if (
+      locationId === 'service-corridor' &&
+      !match.resolvedKeys.includes('corridor-camera-report')
+    ) {
+      return {
+        ...resolution,
+        entry: {
+          ...resolution.entry,
+          type: 'clue',
+          title: 'Relatório de manutenção do corredor',
+          content:
+            'O registro técnico aponta uma falha antiga na câmera da passagem e um reparo adiado.',
+          status: 'unconfirmed',
+        },
+        resolvedKey: 'corridor-camera-report',
+      }
+    }
+    return addObservation(
+      resolution,
+      match,
+      locationId,
+      'Registros de manutenção',
+      'Os registros consultados relacionam a manutenção deste setor às rotinas de circulação da exposição.',
+    )
+  }
+
+  return addObservation(
+    resolution,
+    match,
+    locationId,
+    'Consulta contextual',
+    `O recurso foi aplicado aos registros disponíveis neste setor (${locationId}).`,
+  )
+}
+
+function confirmedClue(
+  resolution: CaseActionResolution,
+  title: string,
+  key: string,
+): CaseActionResolution {
+  return {
+    ...resolution,
+    entry: {
+      ...resolution.entry,
+      type: 'clue',
+      title,
+      content: 'O registro consultado confirma a informação.',
+      status: 'confirmed',
+    },
+    resolvedKey: key,
+  }
+}
+
+function connectionForMap(
+  match: SoloMatch,
+  currentEntry: JournalEntry,
+): Pick<CaseActionResolution, 'journalConnection'> {
+  const pair = findCluePair(match, currentEntry, currentEntry.locationId)
+  if (!pair) return {}
+  return {
+    journalConnection: {
+      id: `journal-connection:${[pair[0].id, pair[1].id].sort().join(':')}`,
+      fromClueId: pair[0].id,
+      toClueId: pair[1].id,
+    },
+  }
 }
 
 function findCluePair(
@@ -435,25 +603,17 @@ function cardContextUnavailable(
   return { ...resolution, errorMessage }
 }
 
-function latestClue(
-  entries: readonly JournalEntry[],
-  locationId: LocationId,
-): JournalEntry | undefined {
-  return [...entries]
-    .reverse()
-    .find((entry) => entry.type === 'clue' && entry.locationId === locationId)
+function latestClue(entries: readonly JournalEntry[]): JournalEntry | undefined {
+  return [...entries].reverse().find((entry) => entry.type === 'clue')
 }
 
-function latestUnconfirmedClue(
-  entries: readonly JournalEntry[],
-  locationId: LocationId,
-): JournalEntry | undefined {
+function latestUnconfirmedPhysicalClue(entries: readonly JournalEntry[]): JournalEntry | undefined {
   return [...entries]
     .reverse()
     .find(
       (entry) =>
         entry.type === 'clue' &&
-        entry.locationId === locationId &&
+        physicalLocations.includes(entry.locationId) &&
         (entry.status === 'unconfirmed' || entry.status === 'indicio'),
     )
 }

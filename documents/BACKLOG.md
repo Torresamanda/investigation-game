@@ -23,14 +23,14 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 
    - **Pendente (`P0`/`P1` Correções do Playtest End-to-End):**
      - `14A · JOGO-07` → Liberdade de uso de cartas em qualquer local e remoção de spoilers de local/rodada (permitir usar as cartas em qualquer cenário com sua ação compatível, gerando descobertas/observações contextuais daquele local sem travas de `locationId === '...'` ou `round >= X`, e proibir mensagens de erro que revelem locais ou rodadas futuras).
-     - `15 · INV-03` → Implementar de fato o Apoio de Plantão no modo solo (`RequestSupportCardUseCase`, endpoint `POST /api/matches/:id/support-card`, `hasUsedSupportThisRound`, desconto de 1 PA na carta puxada do apoio e botão na UI; apenas a devolução ao `card.ownerId` no descarte havia sido feita).
      - `16A · BUG-07` → Corrigir os bugs de fluxo encontrados no playtest das Rodadas 1–6 (manter cartas `temporary: true` fixas na mão mesmo além do limite de 4 cartas base — ex.: 5+ cartas na mão — até o jogador decidir usá-las ou descartá-las; validação de `currentLocationId` e clique redundante no local atual; unificação das conexões de Otávio/cartas com `journalConnections` sem cobrar +1 PA compulsório quando Otávio quiser apenas pesquisar; desconto correto de `trace-marker` na próxima análise; `ownerDeck` no `CreateJournalConnectionUseCase`).
+     - `15 · INV-03` → Implementar de fato o Apoio de Plantão no modo solo (`RequestSupportCardUseCase`, endpoint `POST /api/matches/:id/support-card`, `hasUsedSupportThisRound`, desconto de 1 PA na carta puxada do apoio e botão na UI; apenas a devolução ao `card.ownerId` no descarte havia sido feita).
 
 4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
    - Concluído: `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
    - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA).
    - Concluído: `19 · CASO-07` → Acusação e desfechos nas Rodadas 5 e 6 (dossiê validado pelo servidor; 3 PA gerais no modo solo; Rodada 6 encerra a partida sem vitória).
-   - Próxima após concluir `14A · JOGO-07`, `15 · INV-03` e `16A · BUG-07`: `17 · UX-01` → Refinar início de partida e estado de conexão.
+   - Próxima após concluir `14A · JOGO-07`, `16A · BUG-07` e `15 · INV-03`: `17 · UX-01` → Refinar início de partida e estado de conexão.
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
    - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
@@ -255,7 +255,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
     - Garantir que tanto a **rota técnica** (`E1 + E2 + E3`) quanto a **rota exploratória/documental** (`E4 + E5 + E6`) permitam vencer com qualquer dupla de investigadores.
   - Critério de aceite: nenhuma carta gasta PA em vão sem produzir seu efeito descrito, e a missão pode ser vencida por múltiplas combinações de investigadores.
 
-- [ ] **14A · JOGO-07 — Garantir liberdade de uso de cartas por cenário e eliminar spoilers de local/rodada** `[P0] [Front] [Back] [Definição]`
+- [x] **14A · JOGO-07 — Garantir liberdade de uso de cartas por cenário e eliminar spoilers de local/rodada** `[P0] [Front] [Back] [Definição]`
   - **Problema detectado:** Em `server/src/infrastructure/content/case01-card-effects.ts`, várias cartas bloqueiam a ação do jogador exigindo um único local e uma rodada mínima fixa, além de exibir mensagens de erro com spoilers diretos que apontam para a Sala de Segurança (Raul) e revelam gatilhos de rodadas futuras (ex.: `"O Cartão de Contato exige Pesquisar a Sala de Segurança a partir da Rodada 2"`, `"A Credencial de Acesso exige Pesquisar os arquivos de segurança a partir da Rodada 3"`, `"A Lanterna Ultravioleta exige Examinar a Galeria Principal"`).
   - **Escopo técnico (`server/src/infrastructure/content/case01-card-effects.ts` e `server/src/infrastructure/content/case01-card-effects.test.ts`):**
     1. **Liberdade de cenário (`locationId`):** Permitir que o jogador use suas cartas de `examine`, `research` e `analyse` em **qualquer local investigável** compatível com a ação, sem restringir a carta a uma única sala:

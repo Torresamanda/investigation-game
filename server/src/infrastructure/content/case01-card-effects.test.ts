@@ -74,6 +74,7 @@ describe('efeitos das cartas iniciais do Caso 01', () => {
   it('reduz o custo da análise com o Marcador de Vestígio', () => {
     const { service, match } = prepareCard('livia', 'trace-marker', {
       resolvedKeys: ['gallery-lock'],
+      journalEntries: [clue('marked-target', 'Vestígio registrado', 'gallery', 'unconfirmed')],
     })
 
     const updated = service.resolveAction({
@@ -83,7 +84,9 @@ describe('efeitos das cartas iniciais do Caso 01', () => {
     })
 
     expect(updated.actionPoints.general).toBe(4)
-    expect(updated.journalEntries.at(-1)).toMatchObject({ markedForFollowUp: true })
+    expect(updated.journalEntries.find((entry) => entry.id === 'marked-target')).toMatchObject({
+      markedForFollowUp: true,
+    })
   })
 
   it('libera a rota do corredor com o Mapa de Rotas ou a Credencial de Acesso', () => {
@@ -230,13 +233,40 @@ describe('efeitos das cartas iniciais do Caso 01', () => {
     expect(updated.journalEntries.at(-1)).toMatchObject({ title: 'Sequência temporal organizada' })
   })
 
-  it('rejeita o uso de uma carta fora do contexto sem gastar PA ou descartá-la', () => {
-    const { service, match, card } = prepareCard('livia', 'ultraviolet-flashlight')
+  it('aplica a Lanterna Ultravioleta contextualmente fora da galeria', () => {
+    const { service, match } = prepareCard('livia', 'ultraviolet-flashlight')
+
+    const updated = service.resolveAction({
+      matchId: match.id,
+      action: 'examine',
+      locationId: 'office',
+    })
+
+    expect(updated.journalEntries.at(-1)).toMatchObject({
+      title: 'Varredura ultravioleta',
+      type: 'observation',
+      locationId: 'office',
+    })
+  })
+
+  it('permite usar recursos documentais antes das rodadas tradicionalmente exigidas', () => {
+    const { service, match } = prepareCard('isadora', 'contact-card', { round: 1 })
+
+    const updated = service.resolveAction({
+      matchId: match.id,
+      action: 'research',
+      locationId: 'security',
+    })
+
+    expect(updated.resolvedKeys).toContain('e2-confirmed')
+    expect(updated.journalEntries.at(-1)?.status).toBe('confirmed')
+  })
+
+  it('não inclui local ou rodada em mensagens de validação de cartas', () => {
+    const { service, match } = prepareCard('isadora', 'contact-card')
 
     expect(() =>
-      service.resolveAction({ matchId: match.id, action: 'examine', locationId: 'office' }),
-    ).toThrow('A Lanterna Ultravioleta exige Examinar a Galeria Principal.')
-    expect(service.getMatch(match.id)?.actionPoints.general).toBe(5)
-    expect(service.getMatch(match.id)?.decks.livia.hand).toContainEqual(card)
+      service.resolveAction({ matchId: match.id, action: 'research', locationId: 'office' }),
+    ).not.toThrow(/Rodada|exige Pesquisar a Sala/)
   })
 })
