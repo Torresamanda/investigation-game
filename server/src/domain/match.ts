@@ -69,6 +69,7 @@ export interface SoloMatch {
   readonly unlockedLocations: readonly LocationId[]
   readonly hasUsedFreeMoveThisRound: boolean
   readonly hasDiscardedCardThisRound: boolean
+  readonly hasUsedSupportThisRound: boolean
   readonly status: 'active' | 'won' | 'lost'
   readonly createdAt: string
   readonly actionPoints: ActionPoints
@@ -108,6 +109,7 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     unlockedLocations: ['gallery', 'security', 'laboratory', 'office'],
     hasUsedFreeMoveThisRound: false,
     hasDiscardedCardThisRound: false,
+    hasUsedSupportThisRound: false,
     status: 'active',
     createdAt: input.createdAt,
     actionPoints: actionPointsFor(input.activeInvestigatorId),

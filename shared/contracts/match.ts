@@ -52,6 +52,7 @@ export interface PublicMatchDto {
   readonly unlockedLocations: readonly LocationId[]
   readonly hasUsedFreeMoveThisRound: boolean
   readonly hasDiscardedCardThisRound: boolean
+  readonly hasUsedSupportThisRound: boolean
   readonly actionPoints: ActionPointPool
   readonly journalEntries: readonly MatchJournalEntry[]
   readonly journalConnections: readonly MatchJournalConnection[]

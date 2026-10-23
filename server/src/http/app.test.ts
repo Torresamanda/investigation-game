@@ -397,6 +397,41 @@ describe('API de partidas', () => {
     expect(resolve.json()).toEqual({ message: 'Ação ou local inválido.' })
   })
 
+  it('aciona o apoio uma vez por rodada e restaura a disponibilidade ao encerrar o turno', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/matches',
+      payload: { activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' },
+    })
+    const { id } = create.json<{ id: string }>()
+
+    const support = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/support-card`,
+    })
+    expect(support.statusCode).toBe(200)
+    expect(support.json()).toMatchObject({
+      hasUsedSupportThisRound: true,
+      decks: { livia: { hand: expect.any(Array) } },
+    })
+    expect(support.json<{ decks: { livia: { hand: unknown[] } } }>().decks.livia.hand).toHaveLength(
+      5,
+    )
+    expect(support.json().decks).not.toHaveProperty('rafael')
+
+    const repeated = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/support-card`,
+    })
+    expect(repeated.statusCode).toBe(400)
+
+    const endTurn = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/end-turn`,
+    })
+    expect(endTurn.json()).toMatchObject({ hasUsedSupportThisRound: false, round: 2 })
+  })
+
   it('permite descartar uma carta e recompõe a mão imediatamente uma vez por rodada', async () => {
     const create = await app.inject({
       method: 'POST',

@@ -425,6 +425,27 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
     },
   )
 
+  app.post<{ Params: MatchParams }>(
+    '/api/matches/:id/support-card',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const match = service.requestSupportCard(request.params.id)
+        return MatchPresenter.toPublicDto(match)
+      } catch (error) {
+        return sendMatchError(reply, error, 'Não foi possível acionar o apoio.')
+      }
+    },
+  )
+
   app.post<{ Params: MatchParams; Body: DiscardCardBody }>(
     '/api/matches/:id/discard-card',
     {

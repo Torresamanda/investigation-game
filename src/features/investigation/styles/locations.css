@@ -39,6 +39,21 @@
   font-size: 11px;
   margin: 0;
 }
+.support-action {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  color: var(--paper);
+  background: #264b5d;
+  border: 1px solid #c79a5388;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.support-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 .museum-navigation {
   display: flex;
   flex: 1 1 auto;

@@ -7,6 +7,7 @@ export interface MatchCard {
   readonly definitionId: string
   readonly ownerId: InvestigatorId
   readonly cost: 0 | 1 | 2
+  readonly originalCost?: 0 | 1 | 2
   readonly compatibleActions: readonly ('examine' | 'converse' | 'analyse' | 'research')[]
   readonly temporary?: boolean
 }
@@ -79,6 +80,34 @@ export function drawToHand(deck: MatchDeck, handSize: number): MatchDeck {
   return { drawPile, discardPile, hand }
 }
 
+export function drawCardFromDeck(deck: MatchDeck): {
+  readonly deck: MatchDeck
+  readonly card?: MatchCard
+} {
+  let drawPile = [...deck.drawPile]
+  let discardPile = [...deck.discardPile]
+  const hand = [...deck.hand]
+
+  if (!drawPile.length && hand.length) {
+    const [card, ...remainingHand] = hand
+    return {
+      deck: { ...deck, hand: remainingHand },
+      ...(card ? { card } : {}),
+    }
+  }
+
+  if (!drawPile.length && discardPile.length) {
+    drawPile = shuffle(discardPile)
+    discardPile = []
+  }
+
+  const [card, ...remainingDrawPile] = drawPile
+  return {
+    deck: { ...deck, drawPile: remainingDrawPile, discardPile },
+    ...(card ? { card } : {}),
+  }
+}
+
 export function refreshHandForTurn(
   deck: MatchDeck,
   handSize: number,
@@ -116,6 +145,7 @@ export function recycleCardFromHand(
   const holderHand = [...holderDeck.hand]
   const [recycledCard] = holderHand.splice(cardIndex, 1)
   if (!recycledCard) throw new Error('A carta precisa estar na mão do investigador.')
+  const cardToDiscard = restoreOriginalCardCost(recycledCard)
 
   const updatedHolderDeck = { ...holderDeck, hand: holderHand }
   if (recycledCard.temporary) {
@@ -127,14 +157,14 @@ export function recycleCardFromHand(
   if (holderDeck === ownerDeck) {
     const updatedDeck = {
       ...updatedHolderDeck,
-      discardPile: [...ownerDeck.discardPile, recycledCard],
+      discardPile: [...ownerDeck.discardPile, cardToDiscard],
     }
     return { holderDeck: updatedDeck, ownerDeck: updatedDeck }
   }
 
   return {
     holderDeck: updatedHolderDeck,
-    ownerDeck: { ...ownerDeck, discardPile: [...ownerDeck.discardPile, recycledCard] },
+    ownerDeck: { ...ownerDeck, discardPile: [...ownerDeck.discardPile, cardToDiscard] },
   }
 }
 
@@ -165,4 +195,10 @@ function shuffle<T>(items: readonly T[], random: () => number = Math.random): T[
     ;[result[index], result[target]] = [result[target]!, result[index]!]
   }
   return result
+}
+
+export function restoreOriginalCardCost(card: MatchCard): MatchCard {
+  if (card.originalCost === undefined) return card
+  const { originalCost, ...cardWithoutDiscount } = card
+  return { ...cardWithoutDiscount, cost: originalCost }
 }

@@ -29,6 +29,7 @@ export const MatchPresenter = {
       unlockedLocations: match.unlockedLocations,
       hasUsedFreeMoveThisRound: match.hasUsedFreeMoveThisRound,
       hasDiscardedCardThisRound: match.hasDiscardedCardThisRound,
+      hasUsedSupportThisRound: match.hasUsedSupportThisRound,
       actionPoints: match.actionPoints,
       journalEntries: match.journalEntries.map(toPublicJournalEntry),
       journalConnections: match.journalConnections,

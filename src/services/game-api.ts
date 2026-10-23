@@ -97,6 +97,12 @@ export const gameApi = {
     })
   },
 
+  requestSupportCard(matchId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/support-card`, {
+      method: 'POST',
+    })
+  },
+
   discardCard(matchId: string, cardInstanceId: string) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/discard-card`, {
       method: 'POST',

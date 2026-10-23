@@ -3,13 +3,16 @@ import { locations, type LocationId } from '../../../content/case01'
 import type { Investigator } from '../../../content/investigators'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 import { getPortrait } from '../../../content/portraits'
-const emit = defineEmits<{ select: [] }>()
+const emit = defineEmits<{ select: []; requestSupport: [] }>()
 const props = defineProps<{
   investigator?: Investigator
   support?: Investigator
   pointsLabel: string
   unlockedLocations: readonly LocationId[]
   moveCostLabel: string
+  hasUsedSupportThisRound: boolean
+  isSupportRequestPending: boolean
+  isConnected: boolean
 }>()
 const locationId = defineModel<LocationId>({ required: true })
 function selectLocation(id: LocationId) {
@@ -35,6 +38,16 @@ function selectLocation(id: LocationId) {
         <strong>{{ pointsLabel }}</strong>
       </div>
       <p class="help-text">Apoio: {{ support?.name }}</p>
+      <button
+        class="support-action"
+        type="button"
+        :disabled="
+          props.hasUsedSupportThisRound || props.isSupportRequestPending || !props.isConnected
+        "
+        @click="emit('requestSupport')"
+      >
+        {{ `Acionar apoio (${support?.name ?? 'indisponível'}) · 1x por rodada` }}
+      </button>
     </div>
     <div class="museum-navigation">
       <h3>Locais do museu</h3>

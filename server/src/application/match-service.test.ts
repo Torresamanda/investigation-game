@@ -194,6 +194,106 @@ describe('MatchService', () => {
     expect(connected.decks.rafael.discardPile).toContainEqual(heldSupportCard)
   })
 
+  it('aciona o apoio uma vez por rodada e devolve cartas sem uso ao baralho de origem', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const supportDeck = match.decks.rafael
+    const supportCard = [...supportDeck.hand, ...supportDeck.drawPile].find(
+      (card) => card.definitionId === 'comparative-magnifier',
+    )
+    if (!supportCard) throw new Error('O baralho do apoio precisa conter a Lupa Comparativa.')
+    repository.save({
+      ...match,
+      decks: {
+        ...match.decks,
+        rafael: { drawPile: [supportCard], discardPile: [], hand: [] },
+      },
+    })
+
+    const requested = service.requestSupportCard(match.id)
+    const receivedCard = requested.decks.livia.hand.find(
+      (card) => card.instanceId === supportCard.instanceId,
+    )
+    expect(requested.hasUsedSupportThisRound).toBe(true)
+    expect(receivedCard).toMatchObject({ cost: 0, originalCost: 1, ownerId: 'rafael' })
+    expect(() => service.requestSupportCard(match.id)).toThrow(
+      'O apoio já foi acionado nesta rodada.',
+    )
+
+    const nextRound = service.endTurn(match.id)
+    expect(nextRound.hasUsedSupportThisRound).toBe(false)
+    expect(nextRound.decks.livia.hand.filter((card) => !card.temporary)).toHaveLength(4)
+    expect(nextRound.decks.rafael.drawPile).toContainEqual(
+      expect.objectContaining({ instanceId: supportCard.instanceId, cost: 1 }),
+    )
+    expect(
+      nextRound.decks.rafael.drawPile.find((card) => card.instanceId === supportCard.instanceId),
+    ).not.toHaveProperty('originalCost')
+  })
+
+  it('restaura o custo original de uma carta do apoio ao usá-la no Diário', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const supportCard = [...match.decks.rafael.hand, ...match.decks.rafael.drawPile].find(
+      (card) => card.definitionId === 'comparative-magnifier',
+    )
+    if (!supportCard) throw new Error('O baralho do apoio precisa conter a Lupa Comparativa.')
+    repository.save({
+      ...match,
+      journalEntries: [
+        {
+          id: 'support-clue-confirmed',
+          type: 'clue',
+          title: 'Pista confirmada',
+          content: 'Registro confirmado.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'confirmed',
+        },
+        {
+          id: 'support-clue-pending',
+          type: 'clue',
+          title: 'Pista pendente',
+          content: 'Registro pendente.',
+          locationId: 'laboratory',
+          round: 1,
+          status: 'unconfirmed',
+        },
+      ],
+      decks: {
+        ...match.decks,
+        rafael: { drawPile: [supportCard], discardPile: [], hand: [] },
+      },
+    })
+
+    const requested = service.requestSupportCard(match.id)
+    const receivedCard = requested.decks.livia.hand.find(
+      (card) => card.instanceId === supportCard.instanceId,
+    )
+    if (!receivedCard) throw new Error('A carta solicitada precisa estar na mão ativa.')
+    service.prepareCard(match.id, receivedCard.instanceId)
+
+    const connected = service.createJournalConnection({
+      matchId: match.id,
+      fromClueId: 'support-clue-confirmed',
+      toClueId: 'support-clue-pending',
+    })
+    const recycled = connected.decks.rafael.discardPile.find(
+      (card) => card.instanceId === supportCard.instanceId,
+    )
+
+    expect(recycled).toMatchObject({ cost: 1, ownerId: 'rafael' })
+    expect(recycled).not.toHaveProperty('originalCost')
+  })
+
   it('cobra PA apenas após o primeiro deslocamento da rodada e bloqueia locais não liberados', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository, undefined, () => 'move-match')

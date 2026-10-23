@@ -22,15 +22,13 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
    - Concluído: `14 · INV-02` (rotas investigativas alternativas e efeitos de cartas).
    - Concluído: `14A · JOGO-07` (efeitos contextuais das cartas por local e validações sem spoilers).
 
-   - **Pendente (`P0`/`P1` Correções do Playtest End-to-End):**
-     - `16A · BUG-07` → Corrigir os bugs de fluxo encontrados no playtest das Rodadas 1–6 (manter cartas `temporary: true` fixas na mão mesmo além do limite de 4 cartas base — ex.: 5+ cartas na mão — até o jogador decidir usá-las ou descartá-las; validação de `currentLocationId` e clique redundante no local atual; unificação das conexões de Otávio/cartas com `journalConnections` sem cobrar +1 PA compulsório quando Otávio quiser apenas pesquisar; desconto correto de `trace-marker` na próxima análise; `ownerDeck` no `CreateJournalConnectionUseCase`).
-     - `15 · INV-03` → Implementar de fato o Apoio de Plantão no modo solo (`RequestSupportCardUseCase`, endpoint `POST /api/matches/:id/support-card`, `hasUsedSupportThisRound`, desconto de 1 PA na carta puxada do apoio e botão na UI; apenas a devolução ao `card.ownerId` no descarte havia sido feita).
+   - Concluído: `16A · BUG-07` (correções do playtest end-to-end) e `15 · INV-03` (Apoio de Plantão no modo solo).
 
 4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
    - Concluído: `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
    - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA).
    - Concluído: `19 · CASO-07` → Acusação e desfechos nas Rodadas 5 e 6 (dossiê validado pelo servidor; 3 PA gerais no modo solo; Rodada 6 encerra a partida sem vitória).
-   - Próxima após concluir `14A · JOGO-07`, `16A · BUG-07` e `15 · INV-03`: `17 · UX-01` → Refinar início de partida e estado de conexão.
+   - Próxima: `17 · UX-01` → Refinar início de partida e estado de conexão.
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
    - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
@@ -271,8 +269,8 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
        - Cartas que operam sobre registros já coletados pelo jogador (`marked-transcript`, `chronological-thread`, `comparative-magnifier`, `cross-reference`, `custody-envelope`, `trace-reagent`, `trace-marker`) devem validar apenas se o **Diário do jogador** possui os elementos necessários (ex.: *"É necessário ter ao menos uma declaração e uma pista confirmada no diário"*, *"É necessário ter uma pista não verificada neste local"*), sem indicar onde ou quando encontrar pistas.
   - Critério de aceite: o jogador tem liberdade de usar qualquer carta em qualquer local compatível com sua ação sem receber erros de "local errado" ou spoilers de rodada/culpado.
 
-- [ ] **15 · INV-03 — Implementar apoio de plantão no modo solo** `[Front] [Back] [Definição]`
-  - **Estado atual:** Apenas a devolução ao `decks[card.ownerId].discardPile` em `recycleCardFromHand` está pronta; falta toda a mecânica de acionar o apoio na partida.
+- [x] **15 · INV-03 — Implementar apoio de plantão no modo solo** `[Front] [Back] [Definição]`
+  - O Apoio de Plantão pode ser acionado uma vez por rodada pela interface e API; a carta recebida tem desconto de 1 PA e retorna ao baralho do dono com o custo original.
   - **Escopo técnico (`RequestSupportCardUseCase`, `POST /api/matches/:id/support-card` e UI de Apoio):**
     - Adicionar `hasUsedSupportThisRound: boolean` em `SoloMatch` e `PublicMatchDto` (iniciando em `false` e resetado para `false` em `EndTurnUseCase`).
     - Uma vez por rodada (`hasUsedSupportThisRound === false`), permitir que o jogador solo acione o Apoio de Plantão (`POST /api/matches/:id/support-card`) para puxar 1 carta do baralho do apoio (`decks[supportInvestigatorId]`) para a mão do investigador ativo **com desconto de `1 PA` no seu custo de uso** (`cost: Math.max(0, card.cost - 1)`), compensando a metade de turnos do modo solo em relação ao cooperativo.

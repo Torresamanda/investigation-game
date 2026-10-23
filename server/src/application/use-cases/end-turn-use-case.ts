@@ -1,6 +1,10 @@
 import type { MatchRepository } from '../ports/match-repository.js'
 import { actionPointsFor, type SoloMatch } from '../../domain/match.js'
-import { INITIAL_HAND_SIZE, refreshHandForTurn } from '../../domain/match-deck.js'
+import {
+  INITIAL_HAND_SIZE,
+  refreshHandForTurn,
+  restoreOriginalCardCost,
+} from '../../domain/match-deck.js'
 import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class EndTurnUseCase {
@@ -16,12 +20,33 @@ export class EndTurnUseCase {
         status: 'lost',
         canAccuse: false,
         preparedCardInstanceId: null,
+        hasUsedSupportThisRound: false,
       }
       this.repository.save(finished)
       return finished
     }
 
     const nextRound = match.round + 1
+    const activeDeck = match.decks[match.activeInvestigatorId]
+    const unplayedSupportCards = activeDeck.hand.filter(
+      (card) => card.ownerId === match.supportInvestigatorId && !card.temporary,
+    )
+    const decksToRefresh = {
+      ...match.decks,
+      [match.activeInvestigatorId]: {
+        ...activeDeck,
+        hand: activeDeck.hand.filter(
+          (card) => card.ownerId !== match.supportInvestigatorId || card.temporary,
+        ),
+      },
+      [match.supportInvestigatorId]: {
+        ...match.decks[match.supportInvestigatorId],
+        drawPile: [
+          ...match.decks[match.supportInvestigatorId].drawPile,
+          ...unplayedSupportCards.map(restoreOriginalCardCost),
+        ],
+      },
+    }
     const nextJournalEntries =
       nextRound === 3
         ? [
@@ -50,11 +75,12 @@ export class EndTurnUseCase {
       hasUsedFreeConnectionThisRound: false,
       hasUsedFreeMoveThisRound: false,
       hasDiscardedCardThisRound: false,
+      hasUsedSupportThisRound: false,
       actionPoints: actionPointsFor(match.activeInvestigatorId),
       preparedCardInstanceId: null,
       journalEntries: nextJournalEntries,
       decks: Object.fromEntries(
-        Object.entries(match.decks).map(([investigatorId, deck]) => [
+        Object.entries(decksToRefresh).map(([investigatorId, deck]) => [
           investigatorId,
           investigatorId === match.activeInvestigatorId
             ? refreshHandForTurn(deck, INITIAL_HAND_SIZE)

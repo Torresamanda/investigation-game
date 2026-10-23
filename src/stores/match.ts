@@ -36,7 +36,7 @@ export const useMatchStore = defineStore('match', () => {
     if (!remoteHand) return []
     return remoteHand.flatMap((card) => {
       const definition = getCardDefinition(card.definitionId)
-      return definition ? [{ ...definition, instanceId: card.instanceId }] : []
+      return definition ? [{ ...definition, cost: card.cost, instanceId: card.instanceId }] : []
     })
   })
   const round = computed(() => remoteMatch.value?.round ?? 1)
@@ -63,6 +63,9 @@ export const useMatchStore = defineStore('match', () => {
     () => Boolean(preparedCard.value) && !remoteMatch.value?.hasDiscardedCardThisRound,
   )
   const canEndTurn = computed(() => remoteMatch.value?.status === 'active' && round.value <= 6)
+  const hasUsedSupportThisRound = computed(
+    () => remoteMatch.value?.hasUsedSupportThisRound ?? false,
+  )
   const canAccuse = computed(
     () =>
       remoteMatch.value?.status === 'active' &&
@@ -197,6 +200,12 @@ export const useMatchStore = defineStore('match', () => {
     return true
   }
 
+  async function requestSupportCard(): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A partida ainda não está conectada à API.')
+    remoteMatch.value = await gameApi.requestSupportCard(remoteMatch.value.id)
+    preparedCardId.value = remoteMatch.value.preparedCardInstanceId
+  }
+
   async function discardPreparedCard(): Promise<boolean> {
     if (!remoteMatch.value || !preparedCard.value || !canDiscardPreparedCard.value) return false
     remoteMatch.value = await gameApi.discardCard(
@@ -255,6 +264,7 @@ export const useMatchStore = defineStore('match', () => {
     moveCostLabel,
     pointsLabel,
     canEndTurn,
+    hasUsedSupportThisRound,
     canAccuse,
     canDiscardPreparedCard,
     preparedCard,
@@ -269,6 +279,7 @@ export const useMatchStore = defineStore('match', () => {
     accuse,
     moveInvestigator,
     endRemoteTurn,
+    requestSupportCard,
     discardPreparedCard,
     loadConversationOptions,
     resolveConversation,

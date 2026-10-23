@@ -19,6 +19,7 @@ import { feedbackFromEntry, statusFeedback } from './action-feedback'
 import './investigation.css'
 
 const session = useInvestigationStore()
+const isSupportRequestPending = ref(false)
 const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigação.'))
 const cards = computed(() => session.hand)
 const locationId = ref<LocationId>('gallery')
@@ -130,6 +131,23 @@ async function moveToLocation() {
     feedback.value = statusFeedback(
       error instanceof Error ? error.message : 'Não foi possível se deslocar.',
     )
+  }
+}
+
+async function requestSupportCard() {
+  if (isSupportRequestPending.value || session.hasUsedSupportThisRound) return
+  isSupportRequestPending.value = true
+  try {
+    await session.requestSupportCard()
+    feedback.value = statusFeedback(
+      `Apoio de ${session.support?.name} acionado. A carta recebida custa 1 PA a menos.`,
+    )
+  } catch (error) {
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível acionar o apoio.',
+    )
+  } finally {
+    isSupportRequestPending.value = false
   }
 }
 
@@ -345,7 +363,11 @@ async function clearConversationCardPreparation() {
         :points-label="session.pointsLabel"
         :unlocked-locations="session.unlockedLocations"
         :move-cost-label="session.moveCostLabel"
+        :has-used-support-this-round="session.hasUsedSupportThisRound"
+        :is-support-request-pending="isSupportRequestPending"
+        :is-connected="session.connectionState === 'connected'"
         @select="moveToLocation"
+        @request-support="requestSupportCard"
       />
       <InvestigationScene
         :location="location"

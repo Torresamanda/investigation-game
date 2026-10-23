@@ -30,6 +30,7 @@ import { ResolveConversationUseCase } from './use-cases/resolve-conversation-use
 import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.js'
 import { CreateJournalConnectionUseCase } from './use-cases/create-journal-connection-use-case.js'
 import { AccuseSuspectUseCase } from './use-cases/accuse-suspect-use-case.js'
+import { RequestSupportCardUseCase } from './use-cases/request-support-card-use-case.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 import { DomainError } from '../domain/errors.js'
 
@@ -58,6 +59,7 @@ export class MatchService {
   private readonly moveInvestigatorUseCase: MoveInvestigatorUseCase
   private readonly createJournalConnectionUseCase: CreateJournalConnectionUseCase
   private readonly accuseSuspectUseCase: AccuseSuspectUseCase
+  private readonly requestSupportCardUseCase: RequestSupportCardUseCase
 
   constructor(
     private readonly repository: MatchRepository,
@@ -78,6 +80,7 @@ export class MatchService {
     this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
     this.createJournalConnectionUseCase = new CreateJournalConnectionUseCase(repository, createId)
     this.accuseSuspectUseCase = new AccuseSuspectUseCase(repository, caseContentRepository)
+    this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -155,6 +158,10 @@ export class MatchService {
 
   endTurn(matchId: string): SoloMatch {
     return this.endTurnUseCase.execute(matchId)
+  }
+
+  requestSupportCard(matchId: string): SoloMatch {
+    return this.requestSupportCardUseCase.execute(matchId)
   }
 
   discardCard(matchId: string, instanceId: string): SoloMatch {
