@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cidade-das-brumas",
+  "main": "./worker/src/index.ts",
+  "compatibility_date": "2026-10-23",
+  "d1_databases": [
+    {
+      "binding": "MATCHES_DB",
+      "database_name": "cidade-das-brumas",
+    },
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/health"],
+    "not_found_handling": "single-page-application",
+  },
+}

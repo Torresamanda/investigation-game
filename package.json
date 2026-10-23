@@ -8,13 +8,17 @@
     "server:dev": "tsx watch server/src/main.ts",
     "server:start": "tsx server/src/main.ts",
     "server:check": "tsc --project server/tsconfig.json",
+    "worker:check": "tsc --project worker/tsconfig.json",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
+    "cloudflare:dev": "npm run build && wrangler dev",
+    "cloudflare:deploy": "npm run build && wrangler deploy",
+    "cloudflare:d1:migrate": "wrangler d1 migrations apply cidade-das-brumas --remote",
     "test": "vitest run",
-    "lint": "eslint src server vite.config.ts eslint.config.js --max-warnings=0",
-    "format": "prettier --write src server vite.config.ts eslint.config.js",
-    "format:check": "prettier --check src server vite.config.ts eslint.config.js",
-    "check": "npm run lint && npm run format:check && npm test && npm run server:check && npm run build"
+    "lint": "eslint src server worker vite.config.ts eslint.config.js --max-warnings=0",
+    "format": "prettier --write src server worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
+    "format:check": "prettier --check src server worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
+    "check": "npm run lint && npm run format:check && npm test && npm run server:check && npm run worker:check && npm run build"
   },
   "dependencies": {
     "@phosphor-icons/vue": "^2.2.1",
@@ -39,6 +43,7 @@
     "typescript-eslint": "^8.72.0",
     "vite": "^8.3.5",
     "vitest": "^5.0.5",
-    "vue-tsc": "^3.3.13"
+    "vue-tsc": "^3.3.13",
+    "wrangler": "^4.152.0"
   }
 }
