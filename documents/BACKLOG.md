@@ -18,14 +18,19 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 3. **Motor do Caso 01, Economia de PA e Investigadores (`P1` Core Loop):**
    - Concluído: `07 · CASO-04` (descobertas cumulativas por local/rodada) e `08 · CASO-05` (deslocamento e desbloqueio do Corredor de Serviço).
    - Concluído: `10 · INV-01` (passivas de Lívia, Rafael, Isadora e Otávio; custo e viabilidade refletidos na interface).
-   - Concluído: `15 · INV-03` → Apoio de plantão no modo solo com desconto no custo da carta e devolução ao descarte do dono (`card.ownerId`).
    - Concluído: `09 · CASO-06` + `09A · BUG-05` (eventos aplicados no servidor e abertura da Rodada 4 condicionada às evidências confirmadas no diário).
+   - Concluído: `14 · INV-02` (rotas investigativas alternativas e efeitos de cartas).
+
+   - **Pendente (`P0`/`P1` Correções do Playtest End-to-End):**
+     - `14A · JOGO-07` → Liberdade de uso de cartas em qualquer local e remoção de spoilers de local/rodada (permitir usar as cartas em qualquer cenário com sua ação compatível, gerando descobertas/observações contextuais daquele local sem travas de `locationId === '...'` ou `round >= X`, e proibir mensagens de erro que revelem locais ou rodadas futuras).
+     - `15 · INV-03` → Implementar de fato o Apoio de Plantão no modo solo (`RequestSupportCardUseCase`, endpoint `POST /api/matches/:id/support-card`, `hasUsedSupportThisRound`, desconto de 1 PA na carta puxada do apoio e botão na UI; apenas a devolução ao `card.ownerId` no descarte havia sido feita).
+     - `16A · BUG-07` → Corrigir os bugs de fluxo encontrados no playtest das Rodadas 1–6 (manter cartas `temporary: true` fixas na mão mesmo além do limite de 4 cartas base — ex.: 5+ cartas na mão — até o jogador decidir usá-las ou descartá-las; validação de `currentLocationId` e clique redundante no local atual; unificação das conexões de Otávio/cartas com `journalConnections` sem cobrar +1 PA compulsório quando Otávio quiser apenas pesquisar; desconto correto de `trace-marker` na próxima análise; `ownerDeck` no `CreateJournalConnectionUseCase`).
 
 4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
    - Concluído: `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
    - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA).
    - Concluído: `19 · CASO-07` → Acusação e desfechos nas Rodadas 5 e 6 (dossiê validado pelo servidor; 3 PA gerais no modo solo; Rodada 6 encerra a partida sem vitória).
-   - Próxima após validação: `17 · UX-01` → Refinar início de partida e seleção de investigadores.
+   - Próxima após concluir `14A · JOGO-07`, `15 · INV-03` e `16A · BUG-07`: `17 · UX-01` → Refinar início de partida e estado de conexão.
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
    - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
@@ -34,7 +39,10 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 
 ```text
 Leia AGENTS.md, documents/PROJECT_RULES.md, documents/COMMIT_CONVENTIONS.md e documents/BACKLOG.md.
-As tarefas `14 · INV-02`, `16 · DIARIO-02` e `19 · CASO-07` foram implementadas. Aguarde a validação do usuário da `19 · CASO-07` antes de iniciar outra tarefa.
+O core loop das Rodadas 1 a 6 e a Acusação (`19 · CASO-07`) foram revisados em playtest e há 3 tarefas prioritárias de mecânica/fluxo que DEVEM ser concluídas antes de avançar para UI/UX (`17 · UX-01`):
+1. `14A · JOGO-07` — Remover travas de cenário específico e spoilers de rodada/local nas cartas (`case01-card-effects.ts`): o jogador deve ter liberdade para usar qualquer carta em qualquer local compatível com a ação, recebendo efeitos/observações contextuais daquele ambiente sem mensagens que entreguem "exige Sala de Segurança" ou "a partir da Rodada 2/3".
+2. `16A · BUG-07` — Garantir que cartas temporárias ganhas de personagens (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`) permaneçam fixas na mão entre turnos sem serem embaralhadas no `drawPile` e somando-se às 4 cartas base do baralho (podendo ficar com 5+ cartas na mão até o jogador decidir usá-las), além de corrigir validação de local atual, passiva do Otávio, desconto do `trace-marker` e `ownerDeck` no Diário.
+3. `15 · INV-03` — Concluir o Apoio de Plantão no modo solo (`RequestSupportCardUseCase`, rota `POST /api/matches/:id/support-card`, `hasUsedSupportThisRound` e botão na UI para puxar 1 carta do apoio por rodada com desconto de 1 PA).
 Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commitar. Nunca faça git push.
 ```
 
@@ -247,11 +255,29 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
     - Garantir que tanto a **rota técnica** (`E1 + E2 + E3`) quanto a **rota exploratória/documental** (`E4 + E5 + E6`) permitam vencer com qualquer dupla de investigadores.
   - Critério de aceite: nenhuma carta gasta PA em vão sem produzir seu efeito descrito, e a missão pode ser vencida por múltiplas combinações de investigadores.
 
-- [x] **15 · INV-03 — Implementar apoio de plantão no modo solo** `[Front] [Back] [Definição]`
+- [ ] **14A · JOGO-07 — Garantir liberdade de uso de cartas por cenário e eliminar spoilers de local/rodada** `[P0] [Front] [Back] [Definição]`
+  - **Problema detectado:** Em `server/src/infrastructure/content/case01-card-effects.ts`, várias cartas bloqueiam a ação do jogador exigindo um único local e uma rodada mínima fixa, além de exibir mensagens de erro com spoilers diretos que apontam para a Sala de Segurança (Raul) e revelam gatilhos de rodadas futuras (ex.: `"O Cartão de Contato exige Pesquisar a Sala de Segurança a partir da Rodada 2"`, `"A Credencial de Acesso exige Pesquisar os arquivos de segurança a partir da Rodada 3"`, `"A Lanterna Ultravioleta exige Examinar a Galeria Principal"`).
+  - **Escopo técnico (`server/src/infrastructure/content/case01-card-effects.ts` e `server/src/infrastructure/content/case01-card-effects.test.ts`):**
+    1. **Liberdade de cenário (`locationId`):** Permitir que o jogador use suas cartas de `examine`, `research` e `analyse` em **qualquer local investigável** compatível com a ação, sem restringir a carta a uma única sala:
+       - **`ultraviolet-flashlight` (`Examinar`):** Na `gallery` ou `service-corridor`, revela o rastro fluorescente de óleo e poeira; em `laboratory`, `security` ou `office`, registra uma observação contextual da varredura UV naquele ambiente (ex.: respingos antigos de verniz e solvente na bancada de restauração; ausência de resíduos anômalos na curadoria/segurança).
+       - **`route-map` (`Pesquisar`):** Pode ser usada em qualquer local e em qualquer rodada. Relaciona o local atual às passagens do museu (se usada na `gallery` ou `security`, aponta a ligação técnica com o `service-corridor` e — se `round >= 3` ou se `'gallery-pedestal'` já foi visto — já libera `'gallery-service-door'` / `'service-corridor'`; se já houver duas pistas conectáveis no Diário, também gera `journalConnection`).
+       - **`access-credential`, `archive-box`, `institutional-seal` e `contact-card` (`Pesquisar`):** Podem ser usadas em qualquer local e em qualquer rodada sem erro:
+         - Em `security`: antecipam/revelam ou confirmam os registros de segurança (`security-log-gap`, `e2-confirmed` ou `e3-confirmed`, sem exigir `round >= 2` ou `round >= 3` quando o jogador está justamente pagando uma carta de recurso/acesso para destravar a informação!).
+         - Em `office`: acessam os registros institucionais da curadoria (revelando `'helena-insurance'` ou refutando `'helena-insurance-refuted'` caso já descoberta).
+         - Em `laboratory`: consultam o histórico de conservação e inventário técnico (revelando `'marta-tools'` ou refutando `'marta-tools-refuted'`).
+         - Em `gallery` ou `service-corridor`: consultam plantas técnicas, ordens de manutenção (`'corridor-camera-report'`) ou histórico da exposição.
+    2. **Zero spoilers de local ou rodada em mensagens de bloqueio:**
+       - Proibir qualquer string de erro que mencione *"a partir da Rodada X"* ou *"exige <Nome do Local>"*.
+       - Cartas que operam sobre registros já coletados pelo jogador (`marked-transcript`, `chronological-thread`, `comparative-magnifier`, `cross-reference`, `custody-envelope`, `trace-reagent`, `trace-marker`) devem validar apenas se o **Diário do jogador** possui os elementos necessários (ex.: *"É necessário ter ao menos uma declaração e uma pista confirmada no diário"*, *"É necessário ter uma pista não verificada neste local"*), sem indicar onde ou quando encontrar pistas.
+  - Critério de aceite: o jogador tem liberdade de usar qualquer carta em qualquer local compatível com sua ação sem receber erros de "local errado" ou spoilers de rodada/culpado.
+
+- [ ] **15 · INV-03 — Implementar apoio de plantão no modo solo** `[Front] [Back] [Definição]`
+  - **Estado atual:** Apenas a devolução ao `decks[card.ownerId].discardPile` em `recycleCardFromHand` está pronta; falta toda a mecânica de acionar o apoio na partida.
   - **Escopo técnico (`RequestSupportCardUseCase`, `POST /api/matches/:id/support-card` e UI de Apoio):**
-    - Uma vez por rodada (`hasUsedSupportThisRound: boolean`), permitir que o jogador solo acione o Apoio de Plantão para trazer 1 carta do topo do baralho do apoio (`decks[supportInvestigatorId]`) para a mão do investigador ativo **com desconto de `1 PA` no seu custo de uso** (mínimo `0 PA`), compensando a metade de turnos do modo solo em relação ao cooperativo.
-    - Exibir na interface (`LocationsPanel.vue` ou `CardHand.vue`) o botão `Acionar apoio (<Nome>) · 1x por rodada` quando disponível.
-    - Garantir que, ao usar ou descartar uma carta cujo `ownerId === supportInvestigatorId`, `recycleCardFromHand` devolva a carta para `decks[supportInvestigatorId].discardPile`.
+    - Adicionar `hasUsedSupportThisRound: boolean` em `SoloMatch` e `PublicMatchDto` (iniciando em `false` e resetado para `false` em `EndTurnUseCase`).
+    - Uma vez por rodada (`hasUsedSupportThisRound === false`), permitir que o jogador solo acione o Apoio de Plantão (`POST /api/matches/:id/support-card`) para puxar 1 carta do baralho do apoio (`decks[supportInvestigatorId]`) para a mão do investigador ativo **com desconto de `1 PA` no seu custo de uso** (`cost: Math.max(0, card.cost - 1)`), compensando a metade de turnos do modo solo em relação ao cooperativo.
+    - Exibir na interface (`LocationsPanel.vue` ou `CardHand.vue`) o botão `Acionar apoio (<Nome>) · 1x por rodada` quando disponível e desabilitá-lo após o uso na rodada.
+    - Garantir que, ao usar ou descartar uma carta cujo `ownerId === supportInvestigatorId` (inclusive em `CreateJournalConnectionUseCase`), `recycleCardFromHand` devolva a carta para `decks[supportInvestigatorId].discardPile` restaurando seu custo original.
   - Critério de aceite: o jogador solo pode puxar 1 carta do apoio por rodada com desconto de 1 PA, o apoio não recebe turno próprio e suas cartas retornam sempre ao baralho do apoio ao serem usadas ou descartadas.
 
 ## P1 — Diário e feedback de jogo
@@ -269,6 +295,29 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
     - Cobrar **1 PA** (geral ou de pesquisa) para registrar a conexão formal, sendo **gratuita (`0 PA`)** uma vez na Rodada 5 (evento _Linha do Tempo Consolidada_) ou quando gerada por cartas/habilidades (`Mapa de Rotas`, `Lupa Comparativa`, `Cruzamento de Registros`).
     - Validar pares coerentes de conexão (evitando conectar uma pista consigo mesma ou duplicar a mesma conexão).
   - Critério de aceite: as conexões formais consomem 1 PA (salvo isenções), ficam listadas no diário e são contabilizadas nos 2 vínculos exigidos por `19 · CASO-07`.
+
+- [ ] **16A · BUG-07 — Corrigir bugs de fluxo do playtest (cartas temporárias fixas na mão além de 4 cartas, validação de local, conexões de Otávio/cartas e `trace-marker`)** `[P0] [Front] [Back]`
+  - **1. Manter cartas temporárias fixas na mão entre turnos, somando-se às 4 cartas do baralho (`server/src/domain/match-deck.ts`, `discard-card-use-case.ts` e `match-service.test.ts`):**
+    - Quando o jogador obtém uma carta temporária de um personagem (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`), ela deve **permanecer na mão do jogador até que ele próprio decida usá-la ou descartá-la**, mesmo que a mão fique com **5 ou mais cartas**.
+    - Em `refreshHandForTurn(deck, handSize, random)` (`server/src/domain/match-deck.ts`):
+      1. Separar as cartas da mão atual em `temporaryCards = deck.hand.filter(card => card.temporary)` e `regularHandCards = deck.hand.filter(card => !card.temporary)`.
+      2. Embaralhar apenas `[...deck.drawPile, ...regularHandCards]` e comprar até `handSize` (4 cartas regulares do baralho do investigador).
+      3. Retornar a nova mão combinando as `4` cartas regulares compradas **mais** todas as `temporaryCards` retidas (`hand: [...refreshedRegularDeck.hand, ...temporaryCards]`). Assim, se o jogador tinha 1 carta temporária na mão ao encerrar o turno, ele iniciará o próximo turno com 4 cartas do seu baralho + 1 carta temporária (5 cartas na mão), sem que a carta temporária suma no `drawPile` nem roube o espaço de compra das 4 cartas normais!
+    - Em `DiscardCardUseCase` (`server/src/application/use-cases/discard-card-use-case.ts`): ao descartar uma carta regular tendo cartas temporárias na mão, garantir que a reposição com `drawToHand` mantenha 4 cartas regulares + as cartas temporárias restantes.
+  - **2. Validar local atual no servidor e ignorar clique redundante no local ativo (`LocationsPanel.vue`, `InvestigationView.vue`, `ResolveActionUseCase`, `ResolveConversationUseCase`):**
+    - No frontend (`LocationsPanel.vue` / `InvestigationView.vue`), se o jogador clicar no botão do local em que já se encontra (`locationId === currentLocationId`), ignorar o disparo de `moveInvestigator` para não consumir o movimento gratuito da rodada por acidente.
+    - No backend (`ResolveActionUseCase`, `ResolveConversationUseCase` e `getConversationOptions`), validar que `locationId === match.currentLocationId` e que `match.unlockedLocations.includes(locationId)`, impedindo ações em salas bloqueadas ou diferentes da posição atual do investigador.
+  - **3. Desacoplar o custo extra de conexão do Otávio da ação base `Pesquisar` e unificar conexões de cartas (`shared/domain/action-points.ts`, `resolve-action-use-case.ts`, `case01-card-effects.ts`):**
+    - Remover a cobrança automática e obrigatória de `+1 PA` em `investigatorActionCost` quando `investigatorId === 'otavio' && action === 'research' && canCreateConnection` (ou só aplicar se houver PA excedente após o `Pesquisar` de 2 PA), para que o Otávio nunca fique impedido de executar um `Pesquisar` normal de 2 PA quando tiver apenas 2 PA restantes (e lembre que ele já pode criar conexões diretamente na aba `Pistas` do Diário por 1 PA de pesquisa).
+    - Quando cartas de conexão (`route-map`, `comparative-magnifier`, `cross-reference`) ou a habilidade do Otávio gerarem uma conexão entre duas pistas durante uma ação, registrar também o vínculo formal em `match.journalConnections` (evitando duplicatas), garantindo que contem para os 2 vínculos exigidos na Acusação (`19 · CASO-07`).
+  - **4. Corrigir momento do desconto da carta `Marcador de Vestígio` (`trace-marker`) (`shared/domain/action-points.ts`, `resolve-action-use-case.ts`, `case01-card-effects.ts`):**
+    - A carta `trace-marker` tem custo `0 PA` e seu efeito é: _"Marca uma pista física; a **próxima** análise dessa pista custa 1 PA a menos"_.
+    - Ajustar `investigatorActionCost` para aplicar o desconto de `-1 PA` em `analyse` quando já existir no `journalEntries` daquele `locationId` uma pista não confirmada com `markedForFollowUp === true` (e limpar/consumir a marcação ao confirmar a pista), em vez de dar o desconto na própria jogada em que `preparedCardId === 'trace-marker'`.
+  - **5. Corrigir descarte de carta do apoio em `CreateJournalConnectionUseCase` (`server/src/application/use-cases/create-journal-connection-use-case.ts`):**
+    - Passar `match.decks[preparedCard.ownerId]` como `ownerDeck` ao chamar `recycleCardFromHand(activeDeck, ownerDeck, preparedCard.instanceId)` e atualizar `match.decks[preparedCard.ownerId]` quando uma carta de conexão vinda do Apoio de Plantão for consumida pelo Diário.
+  - **6. Limpar código morto legado de partida offline no frontend (`src/domain/game/deck.ts` e `src/application/game/solo-mission.ts`):**
+    - Remover `src/application/game/solo-mission.ts`, `src/domain/game/deck.ts` e seus testes legados caso não tenham mais uso após `01 · JOGO-01` e `18 · BUG-03`.
+  - Critério de aceite: cartas temporárias permanecem na mão ao avançar de turno; clicar no local atual não gasta o movimento gratuito; o servidor rejeita ações fora de `currentLocationId`; Otávio consegue pesquisar com 2 PA mesmo tendo pistas conectáveis; conexões de cartas entram em `journalConnections`; `trace-marker` reduz o custo da análise seguinte; `npm run check` passa sem erros.
 
 - [x] **06 · DIARIO-03 — Melhorar feedback de ação** `[Front]`
   - **Escopo técnico (`InvestigationView.vue` e `InvestigationActions.vue`):**
