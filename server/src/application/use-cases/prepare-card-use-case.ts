@@ -16,7 +16,6 @@ export class PrepareCardUseCase {
       throw new DomainError('A carta precisa estar na mão do investigador.')
     }
     const updated = { ...match, preparedCardInstanceId: instanceId }
-    this.repository.save(updated)
-    return updated
+    return this.repository.save(updated)
   }
 }

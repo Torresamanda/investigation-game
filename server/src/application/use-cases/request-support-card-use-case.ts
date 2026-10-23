@@ -1,11 +1,15 @@
 import type { MatchRepository } from '../ports/match-repository.js'
+import type { RandomGenerator } from '../ports/random-generator.js'
 import { drawCardFromDeck } from '../../domain/match-deck.js'
 import type { MatchCard } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import { assertMatchIsActive, DomainError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class RequestSupportCardUseCase {
-  constructor(private readonly repository: MatchRepository) {}
+  constructor(
+    private readonly repository: MatchRepository,
+    private readonly randomGenerator: RandomGenerator,
+  ) {}
 
   execute(matchId: string): SoloMatch {
     const match = this.repository.findById(matchId)
@@ -16,7 +20,9 @@ export class RequestSupportCardUseCase {
     }
 
     const supportDeck = match.decks[match.supportInvestigatorId]
-    const { deck: updatedSupportDeck, card } = drawCardFromDeck(supportDeck)
+    const { deck: updatedSupportDeck, card } = drawCardFromDeck(supportDeck, (maxExclusive) =>
+      this.randomGenerator.nextInt(maxExclusive),
+    )
     if (!card) throw new DomainError('O apoio não tem cartas disponíveis.')
 
     const originalCost = card.originalCost ?? card.cost
@@ -38,7 +44,6 @@ export class RequestSupportCardUseCase {
         [match.supportInvestigatorId]: updatedSupportDeck,
       },
     }
-    this.repository.save(updated)
-    return updated
+    return this.repository.save(updated)
   }
 }

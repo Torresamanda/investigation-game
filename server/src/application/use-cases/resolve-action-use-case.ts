@@ -231,8 +231,7 @@ export class ResolveActionUseCase {
         ...(resolution.unlockedLocationIds ?? []),
       ].filter((locationId, index, all) => all.indexOf(locationId) === index),
     }
-    this.repository.save(updated)
-    return updated
+    return this.repository.save(updated)
   }
 }
 

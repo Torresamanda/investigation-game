@@ -30,7 +30,6 @@ export class MoveInvestigatorUseCase {
         ? spendActionPoints(match.actionPoints, { action: 'move', amount: 1 })
         : match.actionPoints,
     }
-    this.repository.save(updated)
-    return updated
+    return this.repository.save(updated)
   }
 }

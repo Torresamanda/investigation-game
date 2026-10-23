@@ -49,8 +49,7 @@ export class AccuseSuspectUseCase {
       }),
       preparedCardInstanceId: null,
     }
-    this.repository.save(updated)
-    return updated
+    return this.repository.save(updated)
   }
 }
 

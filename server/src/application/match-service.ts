@@ -33,6 +33,8 @@ import { AccuseSuspectUseCase } from './use-cases/accuse-suspect-use-case.js'
 import { RequestSupportCardUseCase } from './use-cases/request-support-card-use-case.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 import { DomainError } from '../domain/errors.js'
+import type { RandomGenerator } from './ports/random-generator.js'
+import { NodeCryptoRandomGenerator } from '../infrastructure/crypto/node-crypto-random-generator.js'
 
 export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
 
@@ -66,10 +68,16 @@ export class MatchService {
     now: () => Date = () => new Date(),
     createId: () => string = randomUUID,
     private readonly caseContentRepository: CaseContentRepository = new Case01ContentRepository(),
+    private readonly randomGenerator: RandomGenerator = new NodeCryptoRandomGenerator(),
   ) {
-    this.createSoloMatchUseCase = new CreateSoloMatchUseCase(repository, now, createId)
-    this.discardCardUseCase = new DiscardCardUseCase(repository)
-    this.endTurnUseCase = new EndTurnUseCase(repository)
+    this.createSoloMatchUseCase = new CreateSoloMatchUseCase(
+      repository,
+      now,
+      createId,
+      randomGenerator,
+    )
+    this.discardCardUseCase = new DiscardCardUseCase(repository, randomGenerator)
+    this.endTurnUseCase = new EndTurnUseCase(repository, randomGenerator)
     this.getMatchUseCase = new GetMatchUseCase(repository)
     this.prepareCardUseCase = new PrepareCardUseCase(repository)
     this.resolveActionUseCase = new ResolveActionUseCase(repository, caseContentRepository)
@@ -80,7 +88,7 @@ export class MatchService {
     this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
     this.createJournalConnectionUseCase = new CreateJournalConnectionUseCase(repository, createId)
     this.accuseSuspectUseCase = new AccuseSuspectUseCase(repository, caseContentRepository)
-    this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository)
+    this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository, randomGenerator)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {

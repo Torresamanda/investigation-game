@@ -133,8 +133,7 @@ export class ResolveConversationUseCase {
           : []),
       ],
     }
-    this.repository.save(updated)
-    return updated
+    return this.repository.save(updated)
   }
 
   private assertPersonAvailability(

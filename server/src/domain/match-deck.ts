@@ -52,7 +52,10 @@ const definitions: Record<InvestigatorId, readonly Omit<MatchCard, 'instanceId' 
   ],
 }
 
-export function createInvestigatorDeck(investigatorId: InvestigatorId): MatchDeck {
+export function createInvestigatorDeck(
+  investigatorId: InvestigatorId,
+  nextRandomInt: (maxExclusive: number) => number,
+): MatchDeck {
   const cards = definitions[investigatorId].flatMap((definition) =>
     [1, 2].map((copy) => ({
       ...definition,
@@ -60,17 +63,25 @@ export function createInvestigatorDeck(investigatorId: InvestigatorId): MatchDec
       ownerId: investigatorId,
     })),
   )
-  return drawToHand({ drawPile: shuffle(cards), discardPile: [], hand: [] }, INITIAL_HAND_SIZE)
+  return drawToHand(
+    { drawPile: shuffle(cards, nextRandomInt), discardPile: [], hand: [] },
+    INITIAL_HAND_SIZE,
+    nextRandomInt,
+  )
 }
 
-export function drawToHand(deck: MatchDeck, handSize: number): MatchDeck {
+export function drawToHand(
+  deck: MatchDeck,
+  handSize: number,
+  nextRandomInt: (maxExclusive: number) => number,
+): MatchDeck {
   let drawPile = [...deck.drawPile]
   let discardPile = [...deck.discardPile]
   const hand = [...deck.hand]
   while (hand.length < handSize) {
     if (!drawPile.length) {
       if (!discardPile.length) break
-      drawPile = shuffle(discardPile)
+      drawPile = shuffle(discardPile, nextRandomInt)
       discardPile = []
     }
     const next = drawPile.shift()
@@ -80,7 +91,10 @@ export function drawToHand(deck: MatchDeck, handSize: number): MatchDeck {
   return { drawPile, discardPile, hand }
 }
 
-export function drawCardFromDeck(deck: MatchDeck): {
+export function drawCardFromDeck(
+  deck: MatchDeck,
+  nextRandomInt: (maxExclusive: number) => number,
+): {
   readonly deck: MatchDeck
   readonly card?: MatchCard
 } {
@@ -97,7 +111,7 @@ export function drawCardFromDeck(deck: MatchDeck): {
   }
 
   if (!drawPile.length && discardPile.length) {
-    drawPile = shuffle(discardPile)
+    drawPile = shuffle(discardPile, nextRandomInt)
     discardPile = []
   }
 
@@ -111,17 +125,18 @@ export function drawCardFromDeck(deck: MatchDeck): {
 export function refreshHandForTurn(
   deck: MatchDeck,
   handSize: number,
-  random: () => number = Math.random,
+  nextRandomInt: (maxExclusive: number) => number,
 ): MatchDeck {
   const temporaryCards = deck.hand.filter((card) => card.temporary)
   const regularHandCards = deck.hand.filter((card) => !card.temporary)
   const refreshedDeck = drawToHand(
     {
-      drawPile: shuffle([...deck.drawPile, ...regularHandCards], random),
+      drawPile: shuffle([...deck.drawPile, ...regularHandCards], nextRandomInt),
       discardPile: deck.discardPile,
       hand: [],
     },
     handSize,
+    nextRandomInt,
   )
   return { ...refreshedDeck, hand: [...refreshedDeck.hand, ...temporaryCards] }
 }
@@ -188,10 +203,10 @@ export function addTemporaryCardToHand(
   }
 }
 
-function shuffle<T>(items: readonly T[], random: () => number = Math.random): T[] {
+function shuffle<T>(items: readonly T[], nextRandomInt: (maxExclusive: number) => number): T[] {
   const result = [...items]
   for (let index = result.length - 1; index > 0; index -= 1) {
-    const target = Math.floor(random() * (index + 1))
+    const target = nextRandomInt(index + 1)
     ;[result[index], result[target]] = [result[target]!, result[index]!]
   }
   return result

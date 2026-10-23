@@ -1,4 +1,5 @@
 import type { MatchRepository } from '../ports/match-repository.js'
+import type { RandomGenerator } from '../ports/random-generator.js'
 import { actionPointsFor, type SoloMatch } from '../../domain/match.js'
 import {
   INITIAL_HAND_SIZE,
@@ -8,7 +9,10 @@ import {
 import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class EndTurnUseCase {
-  constructor(private readonly repository: MatchRepository) {}
+  constructor(
+    private readonly repository: MatchRepository,
+    private readonly randomGenerator: RandomGenerator,
+  ) {}
 
   execute(matchId: string): SoloMatch {
     const match = this.repository.findById(matchId)
@@ -22,8 +26,7 @@ export class EndTurnUseCase {
         preparedCardInstanceId: null,
         hasUsedSupportThisRound: false,
       }
-      this.repository.save(finished)
-      return finished
+      return this.repository.save(finished)
     }
 
     const nextRound = match.round + 1
@@ -83,12 +86,13 @@ export class EndTurnUseCase {
         Object.entries(decksToRefresh).map(([investigatorId, deck]) => [
           investigatorId,
           investigatorId === match.activeInvestigatorId
-            ? refreshHandForTurn(deck, INITIAL_HAND_SIZE)
+            ? refreshHandForTurn(deck, INITIAL_HAND_SIZE, (maxExclusive) =>
+                this.randomGenerator.nextInt(maxExclusive),
+              )
             : deck,
         ]),
       ) as SoloMatch['decks'],
     }
-    this.repository.save(updated)
-    return updated
+    return this.repository.save(updated)
   }
 }

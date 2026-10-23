@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createSoloMatch, type InvestigatorId, type SoloMatch } from '../../domain/match.js'
 import type { MatchRepository } from '../ports/match-repository.js'
+import type { RandomGenerator } from '../ports/random-generator.js'
 
 export interface CreateSoloMatchCommand {
   readonly activeInvestigatorId: InvestigatorId
@@ -12,6 +13,7 @@ export class CreateSoloMatchUseCase {
     private readonly repository: MatchRepository,
     private readonly now: () => Date = () => new Date(),
     private readonly createId: () => string = randomUUID,
+    private readonly randomGenerator: RandomGenerator,
   ) {}
 
   execute(command: CreateSoloMatchCommand): SoloMatch {
@@ -20,8 +22,8 @@ export class CreateSoloMatchUseCase {
       activeInvestigatorId: command.activeInvestigatorId,
       supportInvestigatorId: command.supportInvestigatorId,
       createdAt: this.now().toISOString(),
+      nextRandomInt: (maxExclusive) => this.randomGenerator.nextInt(maxExclusive),
     })
-    this.repository.save(match)
-    return match
+    return this.repository.save(match)
   }
 }

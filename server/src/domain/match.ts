@@ -54,6 +54,7 @@ export interface JournalConnection {
 
 export interface SoloMatch {
   readonly id: string
+  readonly version: number
   readonly mode: 'solo'
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
@@ -85,6 +86,7 @@ export interface CreateSoloMatchInput {
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly createdAt: string
+  readonly nextRandomInt: (maxExclusive: number) => number
 }
 
 export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
@@ -94,6 +96,7 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
 
   return {
     id: input.id,
+    version: 0,
     mode: 'solo',
     activeInvestigatorId: input.activeInvestigatorId,
     supportInvestigatorId: input.supportInvestigatorId,
@@ -117,8 +120,14 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     journalConnections: [],
     resolvedKeys: [],
     decks: {
-      [input.activeInvestigatorId]: createInvestigatorDeck(input.activeInvestigatorId),
-      [input.supportInvestigatorId]: createInvestigatorDeck(input.supportInvestigatorId),
+      [input.activeInvestigatorId]: createInvestigatorDeck(
+        input.activeInvestigatorId,
+        input.nextRandomInt,
+      ),
+      [input.supportInvestigatorId]: createInvestigatorDeck(
+        input.supportInvestigatorId,
+        input.nextRandomInt,
+      ),
     } as Record<InvestigatorId, MatchDeck>,
     preparedCardInstanceId: null,
   }

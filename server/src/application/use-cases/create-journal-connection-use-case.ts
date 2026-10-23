@@ -94,7 +94,6 @@ export class CreateJournalConnectionUseCase {
         match.hasUsedFreeConnectionThisRound || (usesRoundFreeConnection && !usesConnectionCard),
       journalConnections: [...match.journalConnections, connection],
     }
-    this.repository.save(updated)
-    return updated
+    return this.repository.save(updated)
   }
 }
