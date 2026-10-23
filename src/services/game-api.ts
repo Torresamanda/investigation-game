@@ -5,6 +5,7 @@ import type {
   LocationId,
   PersonId,
 } from '../../shared/domain/identifiers'
+import { getMatchSession, saveMatchSession } from './match-session'
 
 export type { MatchJournalEntry }
 export type RemoteMatch = PublicMatchDto
@@ -38,6 +39,7 @@ interface ApiError {
 }
 
 const apiBaseUrl = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')
+const matchTokenHeader = 'x-match-token'
 
 export class ApiRequestError extends Error {
   constructor(
@@ -50,18 +52,7 @@ export class ApiRequestError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  let response: Response
-  try {
-    response = await fetch(`${apiBaseUrl}${path}`, {
-      ...init,
-      headers: {
-        ...(init?.body ? { 'content-type': 'application/json' } : {}),
-        ...init?.headers,
-      },
-    })
-  } catch {
-    throw new Error('A API está indisponível. Verifique sua conexão e tente novamente.')
-  }
+  const response = await sendRequest(path, init)
   if (response.ok) return response.json() as Promise<T>
 
   const error = (await response.json().catch(() => null)) as ApiError | null
@@ -71,26 +62,61 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   )
 }
 
+async function sendRequest(path: string, init?: RequestInit): Promise<Response> {
+  let response: Response
+  try {
+    const headers = new Headers(init?.headers)
+    if (init?.body && !headers.has('content-type')) headers.set('content-type', 'application/json')
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      ...init,
+      headers,
+    })
+  } catch {
+    throw new Error('A API está indisponível. Verifique sua conexão e tente novamente.')
+  }
+  return response
+}
+
 function encodePathSegment(value: string): string {
   return encodeURIComponent(value)
 }
 
+function matchSessionHeaders(matchId: string): HeadersInit {
+  const token = getMatchSession(matchId)
+  return token ? { [matchTokenHeader]: token } : {}
+}
+
 export const gameApi = {
   getMatch(matchId: string) {
-    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}`)
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}`, {
+      headers: matchSessionHeaders(matchId),
+    })
   },
 
-  createMatch(activeInvestigatorId: InvestigatorId, supportInvestigatorId: InvestigatorId) {
-    return request<RemoteMatch>('/api/matches', {
+  async createMatch(activeInvestigatorId: InvestigatorId, supportInvestigatorId: InvestigatorId) {
+    const response = await sendRequest('/api/matches', {
       method: 'POST',
       body: JSON.stringify({ activeInvestigatorId, supportInvestigatorId }),
     })
+    if (!response.ok) {
+      const error = (await response.json().catch(() => null)) as ApiError | null
+      throw new ApiRequestError(
+        error?.message ?? 'Não foi possível criar a partida.',
+        response.status,
+      )
+    }
+    const token = response.headers.get(matchTokenHeader)
+    if (!token) throw new Error('A API não retornou uma sessão válida para a partida.')
+    const match = (await response.json()) as RemoteMatch
+    saveMatchSession(match.id, token)
+    return match
   },
 
   resolveAction(matchId: string, action: InvestigationAction, locationId: LocationId) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/actions`, {
       method: 'POST',
       body: JSON.stringify({ action, locationId }),
+      headers: matchSessionHeaders(matchId),
     })
   },
 
@@ -98,6 +124,7 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/connections`, {
       method: 'POST',
       body: JSON.stringify({ fromClueId, toClueId }),
+      headers: matchSessionHeaders(matchId),
     })
   },
 
@@ -105,6 +132,7 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/accuse`, {
       method: 'POST',
       body: JSON.stringify(accusation),
+      headers: matchSessionHeaders(matchId),
     })
   },
 
@@ -112,18 +140,21 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/move`, {
       method: 'POST',
       body: JSON.stringify({ locationId }),
+      headers: matchSessionHeaders(matchId),
     })
   },
 
   endTurn(matchId: string) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/end-turn`, {
       method: 'POST',
+      headers: matchSessionHeaders(matchId),
     })
   },
 
   requestSupportCard(matchId: string) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/support-card`, {
       method: 'POST',
+      headers: matchSessionHeaders(matchId),
     })
   },
 
@@ -131,6 +162,7 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/discard-card`, {
       method: 'POST',
       body: JSON.stringify({ cardInstanceId }),
+      headers: matchSessionHeaders(matchId),
     })
   },
 
@@ -138,6 +170,7 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/prepared-card`, {
       method: 'PUT',
       body: JSON.stringify({ cardInstanceId }),
+      headers: matchSessionHeaders(matchId),
     })
   },
 
@@ -145,6 +178,7 @@ export const gameApi = {
     const query = new URLSearchParams({ locationId })
     return request<ConversationOptions>(
       `/api/matches/${encodePathSegment(matchId)}/conversations/${encodePathSegment(personId)}?${query}`,
+      { headers: matchSessionHeaders(matchId) },
     )
   },
 
@@ -159,6 +193,7 @@ export const gameApi = {
       {
         method: 'POST',
         body: JSON.stringify({ locationId }),
+        headers: matchSessionHeaders(matchId),
       },
     )
   },

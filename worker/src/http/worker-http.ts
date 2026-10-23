@@ -33,6 +33,13 @@ async function checkDatabaseHealth(database: D1DatabaseConnection): Promise<Resp
   }
 }
 
-export function jsonResponse(payload: unknown, status = 200): Response {
-  return new Response(JSON.stringify(payload), { status, headers: jsonHeaders })
+export function jsonResponse(
+  payload: unknown,
+  status = 200,
+  additionalHeaders: HeadersInit = {},
+): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...jsonHeaders, ...additionalHeaders },
+  })
 }

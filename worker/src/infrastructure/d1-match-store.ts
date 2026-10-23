@@ -1,6 +1,6 @@
 import type { SoloMatch } from '../../../server/src/domain/match.js'
 
-interface D1PreparedStatement {
+export interface D1PreparedStatement {
   bind(...values: readonly unknown[]): D1PreparedStatement
   first<T>(): Promise<T | null>
   run(): Promise<{ readonly meta: { readonly changes: number } }>

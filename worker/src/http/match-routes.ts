@@ -9,6 +9,7 @@ import type { SoloMatch } from '../../../server/src/domain/match.js'
 import { isPersonId } from '../../../server/src/content/case01-conversations.js'
 import { MatchPresenter } from '../../../server/src/http/presenters/match-presenter.js'
 import { InMemoryMatchRepository } from '../../../server/src/infrastructure/persistence/in-memory-match-repository.js'
+import { D1MatchSessionStore } from '../infrastructure/d1-match-session-store.js'
 import {
   D1MatchStore,
   MatchVersionConflictError,
@@ -16,10 +17,17 @@ import {
 } from '../infrastructure/d1-match-store.js'
 import { jsonResponse } from './worker-http.js'
 
+const matchTokenHeader = 'x-match-token'
+
 export async function handleMatchRequest(request: Request, database: D1DatabaseConnection) {
   const url = new URL(request.url)
   if (request.method === 'POST' && url.pathname === '/api/matches')
     return createMatch(request, database)
+  const protectedMatchId = url.pathname.match(/^\/api\/matches\/([^/]+)(?:\/|$)/)?.[1]
+  if (protectedMatchId) {
+    const authorizationError = await authorizeMatchRequest(request, protectedMatchId, database)
+    if (authorizationError) return authorizationError
+  }
   const matchId = url.pathname.match(/^\/api\/matches\/([^/]+)$/)?.[1]
   if (request.method === 'GET' && matchId) return getMatch(matchId, database)
   const actionMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/actions$/)?.[1]
@@ -61,30 +69,57 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
 }
 
 async function createMatch(request: Request, database: D1DatabaseConnection): Promise<Response> {
+  const body = await readBody(request)
+  const activeInvestigatorId = body?.activeInvestigatorId
+  const supportInvestigatorId = body?.supportInvestigatorId
+  if (!isInvestigatorId(activeInvestigatorId) || !isInvestigatorId(supportInvestigatorId)) {
+    return jsonResponse({ message: 'Investigadores inválidos.' }, 400)
+  }
   try {
-    const body: unknown = await request.json()
-    if (!body || typeof body !== 'object')
-      return jsonResponse({ message: 'Investigadores inválidos.' }, 400)
-    const { activeInvestigatorId, supportInvestigatorId } = body as Record<string, unknown>
-    if (!isInvestigatorId(activeInvestigatorId) || !isInvestigatorId(supportInvestigatorId)) {
-      return jsonResponse({ message: 'Investigadores inválidos.' }, 400)
-    }
     const match = new MatchService(new InMemoryMatchRepository()).createSoloMatch({
       activeInvestigatorId,
       supportInvestigatorId,
     })
     await new D1MatchStore(database).save(match)
-    return jsonResponse(MatchPresenter.toPublicDto(match), 201)
+    const token = await new D1MatchSessionStore(database).issue(match.id)
+    return jsonResponse(MatchPresenter.toPublicDto(match), 201, { [matchTokenHeader]: token })
   } catch {
-    return jsonResponse({ message: 'Investigadores inválidos.' }, 400)
+    return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
   }
 }
 
 async function getMatch(id: string, database: D1DatabaseConnection): Promise<Response> {
-  const match = await new D1MatchStore(database).findById(decodeURIComponent(id))
-  return match
-    ? jsonResponse(MatchPresenter.toPublicDto(match))
-    : jsonResponse({ message: 'Partida não encontrada.' }, 404)
+  const matchId = decodePathSegment(id)
+  if (!matchId) return jsonResponse({ message: 'Partida inválida.' }, 400)
+  try {
+    const match = await new D1MatchStore(database).findById(matchId)
+    return match
+      ? jsonResponse(MatchPresenter.toPublicDto(match))
+      : jsonResponse({ message: 'Partida não encontrada.' }, 404)
+  } catch {
+    return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
+  }
+}
+
+async function authorizeMatchRequest(
+  request: Request,
+  encodedMatchId: string,
+  database: D1DatabaseConnection,
+): Promise<Response | undefined> {
+  const matchId = decodePathSegment(encodedMatchId)
+  try {
+    const isAuthorized =
+      Boolean(matchId) &&
+      (await new D1MatchSessionStore(database).authorizes(
+        matchId,
+        request.headers.get(matchTokenHeader),
+      ))
+    return isAuthorized
+      ? undefined
+      : jsonResponse({ message: 'Sessão da partida inválida ou ausente.' }, 401)
+  } catch {
+    return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
+  }
 }
 
 async function resolveAction(
