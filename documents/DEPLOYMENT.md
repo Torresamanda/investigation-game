@@ -4,8 +4,8 @@ O projeto possui dois ambientes independentes. Cada um publica interface e API p
 
 | Ambiente | Worker | Banco D1 | Disparo |
 | --- | --- | --- | --- |
-| Desenvolvimento | `cidade-das-brumas-dev` | `cidade-das-brumas-dev` | Push na branch `dev` |
-| Produção | `cidade-das-brumas` | `cidade-das-brumas` | Tag `v*` criada a partir de `main` |
+| Desenvolvimento | `dev` | `cidade-das-brumas-dev` | Push na branch `dev` |
+| Produção | `game` | `cidade-das-brumas` | Tag `v*` criada a partir de `main` |
 
 ## Primeiro preparo do ambiente de desenvolvimento
 

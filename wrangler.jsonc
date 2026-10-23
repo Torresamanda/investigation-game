@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "cidade-das-brumas",
+  "name": "game",
   "main": "./worker/src/index.ts",
   "compatibility_date": "2026-10-23",
   "d1_databases": [
@@ -30,7 +30,7 @@
   ],
   "env": {
     "development": {
-      "name": "cidade-das-brumas-dev",
+      "name": "dev",
       "d1_databases": [
         {
           "binding": "MATCHES_DB",
