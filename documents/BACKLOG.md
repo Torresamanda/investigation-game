@@ -372,6 +372,12 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Configurar segredos e dados de sessão exclusivamente no ambiente do servidor; revisar cabeçalhos, logs e erros para não expor dados internos.
   - Critério de aceite: o navegador não consegue baixar arquivos de `server/` ou `docs/private/`, e uma falha de API não revela detalhes internos.
 
+- [ ] **27 · DATA-01 — Gerenciar retenção e exclusão de partidas concluídas** `[Pós-MVP] [Front] [Back]`
+  - Oferecer ao jogador, após vitória, derrota ou abandono, uma ação explícita para excluir a partida, com confirmação antes da remoção.
+  - Remover no servidor a partida e sua sessão de autorização associada; no cliente, apagar o token e a referência local da partida.
+  - Avaliar uma política de retenção automática para partidas concluídas (por exemplo, 30 dias), sem apagar partidas ativas ou em andamento.
+  - Critério de aceite: uma partida excluída não pode mais ser retomada nem consultada pela API, e a exclusão não afeta outras partidas.
+
 ## Pós-MVP — Escala de conteúdo e redesign de UI/UX (Mesa Única)
 
 > Wireframe interativo de referência para as evoluções Pós-MVP de UI/UX: [`wireframes/tela-investigacao-mesa-unica.html`](../wireframes/tela-investigacao-mesa-unica.html)
