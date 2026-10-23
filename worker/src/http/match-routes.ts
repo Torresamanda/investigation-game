@@ -9,6 +9,7 @@ import type { SoloMatch } from '../../../server/src/domain/match.js'
 import { isPersonId } from '../../../server/src/content/case01-conversations.js'
 import { MatchPresenter } from '../../../server/src/http/presenters/match-presenter.js'
 import { InMemoryMatchRepository } from '../../../server/src/infrastructure/persistence/in-memory-match-repository.js'
+import { createWorkerMatchService } from '../application/create-worker-match-service.js'
 import { D1MatchSessionStore } from '../infrastructure/d1-match-session-store.js'
 import {
   D1MatchStore,
@@ -79,7 +80,7 @@ async function createMatch(request: Request, database: D1DatabaseConnection): Pr
     return jsonResponse({ message: 'Investigadores inválidos.' }, 400)
   }
   try {
-    const match = new MatchService(new InMemoryMatchRepository()).createSoloMatch({
+    const match = createWorkerMatchService(new InMemoryMatchRepository()).createSoloMatch({
       activeInvestigatorId,
       supportInvestigatorId,
     })
@@ -316,7 +317,7 @@ async function readMatch<T>(
     if (!match) throw new MatchNotFoundError()
     const repository = new InMemoryMatchRepository()
     repository.save(match)
-    return jsonResponse(read(new MatchService(repository), matchId))
+    return jsonResponse(read(createWorkerMatchService(repository), matchId))
   } catch (error) {
     return matchErrorResponse(error, 'Não foi possível consultar a partida.')
   }
@@ -335,7 +336,7 @@ async function mutateMatch(
     if (!match) throw new MatchNotFoundError()
     const repository = new InMemoryMatchRepository()
     repository.save(match)
-    const updated = mutate(new MatchService(repository), matchId)
+    const updated = mutate(createWorkerMatchService(repository), matchId)
     const saved = await store.save(updated)
     return jsonResponse(MatchPresenter.toPublicDto(saved))
   } catch (error) {

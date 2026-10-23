@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { canPayAction } from '../../../shared/domain/action-points.js'
 import {
   locationIds,
@@ -34,7 +33,7 @@ import { RequestSupportCardUseCase } from './use-cases/request-support-card-use-
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 import { DomainError } from '../domain/errors.js'
 import type { RandomGenerator } from './ports/random-generator.js'
-import { NodeCryptoRandomGenerator } from '../infrastructure/crypto/node-crypto-random-generator.js'
+import { WebCryptoRandomGenerator } from '../infrastructure/crypto/web-crypto-random-generator.js'
 
 export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
 
@@ -66,9 +65,9 @@ export class MatchService {
   constructor(
     private readonly repository: MatchRepository,
     now: () => Date = () => new Date(),
-    createId: () => string = randomUUID,
+    createId: () => string = () => globalThis.crypto.randomUUID(),
     private readonly caseContentRepository: CaseContentRepository = new Case01ContentRepository(),
-    private readonly randomGenerator: RandomGenerator = new NodeCryptoRandomGenerator(),
+    private readonly randomGenerator: RandomGenerator = new WebCryptoRandomGenerator(),
   ) {
     this.createSoloMatchUseCase = new CreateSoloMatchUseCase(
       repository,
