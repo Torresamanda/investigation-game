@@ -142,4 +142,33 @@ describe('D1 match routes', () => {
     expect(conversation.status).toBe(400)
     expect(connection.status).toBe(400)
   })
+
+  it('rejects extra fields and oversized JSON payloads', async () => {
+    const database = new InMemoryD1Database()
+    const match = await createMatch(database)
+
+    const extraField = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/actions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authorizedHeaders(match.token) },
+        body: JSON.stringify({ action: 'examine', locationId: 'gallery', ignored: true }),
+      }),
+      database,
+    )
+    const oversized = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/actions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authorizedHeaders(match.token) },
+        body: JSON.stringify({
+          action: 'examine',
+          locationId: 'gallery',
+          padding: 'x'.repeat(65536),
+        }),
+      }),
+      database,
+    )
+
+    expect(extraField.status).toBe(400)
+    expect(oversized.status).toBe(413)
+  })
 })

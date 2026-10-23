@@ -15,7 +15,8 @@ import {
   MatchVersionConflictError,
   type D1DatabaseConnection,
 } from '../infrastructure/d1-match-store.js'
-import { jsonResponse } from './worker-http.js'
+import { hasOnlyFields, isOversizedBody, readJsonBody } from './request-body.js'
+import { jsonResponse } from './json-response.js'
 
 const matchTokenHeader = 'x-match-token'
 
@@ -35,11 +36,10 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
   const moveMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/move$/)?.[1]
   if (request.method === 'POST' && moveMatch) return moveInvestigator(request, moveMatch, database)
   const endTurnMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/end-turn$/)?.[1]
-  if (request.method === 'POST' && endTurnMatch)
-    return mutateMatch(endTurnMatch, database, (service, id) => service.endTurn(id))
+  if (request.method === 'POST' && endTurnMatch) return endTurn(request, endTurnMatch, database)
   const supportMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/support-card$/)?.[1]
   if (request.method === 'POST' && supportMatch)
-    return mutateMatch(supportMatch, database, (service, id) => service.requestSupportCard(id))
+    return requestSupportCard(request, supportMatch, database)
   const discardMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/discard-card$/)?.[1]
   if (request.method === 'POST' && discardMatch) return discardCard(request, discardMatch, database)
   const preparedMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/prepared-card$/)?.[1]
@@ -69,7 +69,10 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
 }
 
 async function createMatch(request: Request, database: D1DatabaseConnection): Promise<Response> {
-  const body = await readBody(request)
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['activeInvestigatorId', 'supportInvestigatorId']))
+    return jsonResponse({ message: 'Investigadores inválidos.' }, 400)
   const activeInvestigatorId = body?.activeInvestigatorId
   const supportInvestigatorId = body?.supportInvestigatorId
   if (!isInvestigatorId(activeInvestigatorId) || !isInvestigatorId(supportInvestigatorId)) {
@@ -127,7 +130,10 @@ async function resolveAction(
   id: string,
   database: D1DatabaseConnection,
 ): Promise<Response> {
-  const body = await readBody(request)
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['action', 'locationId']))
+    return jsonResponse({ message: 'Ação ou local inválido.' }, 400)
   const action = body?.action
   const locationId = body?.locationId
   if (!isInvestigationAction(action) || !isLocationId(locationId))
@@ -142,7 +148,9 @@ async function moveInvestigator(
   id: string,
   database: D1DatabaseConnection,
 ): Promise<Response> {
-  const body = await readBody(request)
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['locationId'])) return jsonResponse({ message: 'Local inválido.' }, 400)
   const locationId = body?.locationId
   if (!isLocationId(locationId)) return jsonResponse({ message: 'Local inválido.' }, 400)
   return mutateMatch(id, database, (service, matchId) =>
@@ -155,7 +163,10 @@ async function discardCard(
   id: string,
   database: D1DatabaseConnection,
 ): Promise<Response> {
-  const body = await readBody(request)
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['cardInstanceId']))
+    return jsonResponse({ message: 'Carta para descarte inválida.' }, 400)
   const cardInstanceId = body?.cardInstanceId
   if (typeof cardInstanceId !== 'string' || !cardInstanceId)
     return jsonResponse({ message: 'Carta para descarte inválida.' }, 400)
@@ -169,13 +180,38 @@ async function prepareCard(
   id: string,
   database: D1DatabaseConnection,
 ): Promise<Response> {
-  const body = await readBody(request)
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['cardInstanceId']))
+    return jsonResponse({ message: 'Carta preparada inválida.' }, 400)
   const cardInstanceId = body?.cardInstanceId
   if (cardInstanceId !== null && typeof cardInstanceId !== 'string')
     return jsonResponse({ message: 'Carta preparada inválida.' }, 400)
   return mutateMatch(id, database, (service, matchId) =>
     service.prepareCard(matchId, cardInstanceId),
   )
+}
+
+async function endTurn(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (body) return jsonResponse({ message: 'Ação inválida.' }, 400)
+  return mutateMatch(id, database, (service, matchId) => service.endTurn(matchId))
+}
+
+async function requestSupportCard(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (body) return jsonResponse({ message: 'Ação inválida.' }, 400)
+  return mutateMatch(id, database, (service, matchId) => service.requestSupportCard(matchId))
 }
 
 async function getConversationOptions(
@@ -186,7 +222,11 @@ async function getConversationOptions(
 ): Promise<Response> {
   const personId = decodePathSegment(encodedPersonId)
   const locationId = url.searchParams.get('locationId')
-  if (!isPersonId(personId) || !isLocationId(locationId))
+  if (
+    !hasOnlyQueryParameter(url, 'locationId') ||
+    !isPersonId(personId) ||
+    !isLocationId(locationId)
+  )
     return jsonResponse({ message: 'Pessoa ou local inválido.' }, 400)
   return readMatch(id, database, (service, matchId) =>
     service.getConversationOptions(matchId, personId, locationId),
@@ -202,7 +242,11 @@ async function resolveConversation(
 ): Promise<Response> {
   const personId = decodePathSegment(encodedPersonId)
   const questionId = decodePathSegment(encodedQuestionId)
-  const locationId = (await readBody(request))?.locationId
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['locationId']))
+    return jsonResponse({ message: 'Pessoa, pergunta ou local inválido.' }, 400)
+  const locationId = body.locationId
   if (!isPersonId(personId) || !isLocationId(locationId) || !isNonEmptyString(questionId))
     return jsonResponse({ message: 'Pessoa, pergunta ou local inválido.' }, 400)
   return mutateMatch(id, database, (service, matchId) =>
@@ -215,7 +259,10 @@ async function createJournalConnection(
   id: string,
   database: D1DatabaseConnection,
 ): Promise<Response> {
-  const body = await readBody(request)
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['fromClueId', 'toClueId']))
+    return jsonResponse({ message: 'Selecione duas pistas válidas.' }, 400)
   const fromClueId = body?.fromClueId
   const toClueId = body?.toClueId
   if (!isNonEmptyString(fromClueId) || !isNonEmptyString(toClueId))
@@ -230,7 +277,10 @@ async function accuseSuspect(
   id: string,
   database: D1DatabaseConnection,
 ): Promise<Response> {
-  const body = await readBody(request)
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['suspectId', 'meansClueId', 'opportunityClueId', 'linkClueId']))
+    return jsonResponse({ message: 'Preencha um dossiê de acusação válido.' }, 400)
   const suspectId = body?.suspectId
   const meansClueId = body?.meansClueId
   const opportunityClueId = body?.opportunityClueId
@@ -313,11 +363,13 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value.length <= 120
 }
 
-async function readBody(request: Request): Promise<Record<string, unknown> | undefined> {
-  try {
-    const body: unknown = await request.json()
-    return body && typeof body === 'object' ? (body as Record<string, unknown>) : undefined
-  } catch {
-    return undefined
-  }
+function hasOnlyQueryParameter(url: URL, allowedParameter: string): boolean {
+  return (
+    url.searchParams.getAll(allowedParameter).length === 1 &&
+    Array.from(url.searchParams.keys()).every((parameter) => parameter === allowedParameter)
+  )
+}
+
+function payloadTooLargeResponse(): Response {
+  return jsonResponse({ message: 'A requisição excede o tamanho permitido.' }, 413)
 }

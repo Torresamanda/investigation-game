@@ -9,6 +9,24 @@
       "database_name": "cidade-das-brumas",
     },
   ],
+  "ratelimits": [
+    {
+      "name": "API_IP_RATE_LIMITER",
+      "namespace_id": "91571423",
+      "simple": {
+        "limit": 120,
+        "period": 60,
+      },
+    },
+    {
+      "name": "MATCH_SESSION_RATE_LIMITER",
+      "namespace_id": "91571424",
+      "simple": {
+        "limit": 60,
+        "period": 60,
+      },
+    },
+  ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
