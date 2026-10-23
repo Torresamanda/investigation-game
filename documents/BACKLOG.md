@@ -1,6 +1,6 @@
 # Backlog do MVP — Cidade das Brumas
 
-Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica principal do Caso 01 e correções que podem alterar seu resultado; **P2** prepara cooperação, segurança e entrega; **P3** reúne refinamentos de interface. A numeração de dois dígitos define a ordem de execução recomendada dentro de cada prioridade; sufixos em letra entram depois do número-base e antes do próximo número. Tags: `[Front]` interface e experiência, `[Back]` API e regras autoritativas, `[Definição]` conteúdo ou decisão de design necessária antes da implementação.
+Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica principal do Caso 01 e correções que podem alterar seu resultado; **P2** prepara cooperação, segurança e entrega; **P3** reúne refinamentos de interface; **`[Pós-MVP]`** identifica evoluções estruturais de UI/UX (Mesa Única), notificações e escala planejadas para depois do lançamento do MVP. A numeração de dois dígitos define a ordem de execução recomendada dentro de cada prioridade; sufixos em letra entram depois do número-base e antes do próximo número. Tags: `[Front]` interface e experiência, `[Back]` API e regras autoritativas, `[Definição]` conteúdo ou decisão de design necessária antes da implementação, `[Pós-MVP]` evolução pós-lançamento do MVP.
 
 > Regra de prioridade: uma tarefa que implementa ou protege a mecânica do jogo vem antes de qualquer refinamento visual. A interface deve comunicar regras já funcionais; refinamentos de layout, animação e apresentação ficam para depois da mecânica principal.
 
@@ -54,44 +54,44 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
 
 ## P3 — Refinamentos de fluxo e feedback
 
-- [ ] **05A · UX-06 — Confirmar encerramento de turno com PA restantes** `[P1] [Front] [Definição]`
-  - Ao encerrar o turno com PA utilizáveis, abrir modal com a quantidade disponível e as opções `Continuar investigando` e `Encerrar turno`.
-  - Não abrir confirmação se não houver PA aplicáveis ou se o turno já estiver esgotado.
+- [ ] **05A · UX-06 — Confirmar encerramento de turno com PA restantes (Confirmação Inline)** `[Pós-MVP] [Front] [Definição]`
+  - Ao encerrar o turno com PA utilizáveis, exibir confirmação *inline* no próprio botão (sem modal e sem sugerir o que investigar) com as opções `Continuar investigando` e `Encerrar turno`.
+  - Não exibir confirmação se não houver PA aplicáveis ou se o turno já estiver esgotado.
   - Critério de aceite: cancelar preserva integralmente o estado; confirmar encerra uma única vez e avança a rodada quando aplicável.
 
-- [ ] **05B · UX-07 — Sinalizar descoberta de pista nova** `[Front] [Back]`
-  - Quando a API registrar uma pista, destacar a descoberta sem exigir que o jogador procure pelo diário.
-  - Avaliar abrir o Diário diretamente na aba `Pistas` ou exibir um toast estilizado conforme a identidade visual do projeto.
-  - Critério de aceite: uma descoberta mostra título, origem e ação de consulta; uma observação sem nova pista não usa o mesmo destaque.
+- [ ] **05B · UX-07 — Sinalizar descoberta de pista nova via Toast** `[Pós-MVP] [Front] [Back]`
+  - Quando a API registrar uma pista, declaração ou carta temporária, exibir um *toast* não-bloqueante no canto superior direito (ex.: `"Uma nova pista foi encontrada e registrada no diário"`) com contador de itens não lidos na aba `Diário` e atalho `Abrir no Diário`.
+  - Manter observações sem nova descoberta (`observation`) com visual discreto, sem o destaque de pista inédita.
+  - Critério de aceite: uma descoberta mostra confirmação visual imediata e atalho para consulta na mesma página; uma observação sem nova pista não usa o mesmo destaque.
 
-- [ ] **05C · NOTIF-01 — Criar serviço geral de notificações do jogo** `[Front] [Back] [Definição]`
-  - Definir eventos de notificação para descoberta, desbloqueio, atualização de cronologia, falha de ação e eventos de rodada.
-  - Criar contrato de API e serviço no backend que gere notificações para a partida; o frontend apenas as apresenta e marca como vistas.
+- [ ] **05C · NOTIF-01 — Criar serviço geral de notificações do jogo** `[Pós-MVP] [Front] [Back] [Definição]`
+  - Definir eventos de notificação para descoberta, recebimento de carta temporária, atualização de cronologia, falha de ação e eventos de rodada.
+  - Criar contrato de API e serviço no backend que gere notificações para a partida; o frontend apenas as apresenta em *toasts* e marca como vistas.
   - Critério de aceite: uma mesma notificação pode ser exibida de modo consistente para todos os participantes da partida cooperativa.
 
 ## P3 — Ajustes de interface e conteúdo
 
-- [ ] **03A · UI-01 — Ajustar identificação do apoio de plantão** `[Front]`
+- [ ] **03A · UI-01 — Ajustar identificação do apoio de plantão** `[Pós-MVP] [Front]`
   - Posicionar o texto `Apoio de plantão` imediatamente acima do seletor de investigador.
   - Aplicar cursor `pointer` ao seletor e estados de foco consistentes com os demais controles.
   - Critério de aceite: o rótulo descreve claramente o seletor associado e o cursor comunica que o campo é interativo.
 
-- [ ] **03B · UI-02 — Reposicionar ação de retorno ao mundo** `[Front]`
+- [ ] **03B · UI-02 — Reposicionar ação de retorno ao mundo** `[Pós-MVP] [Front]`
   - Posicionar o botão `Retornar ao mundo` imediatamente acima de `Museu de História de Véspera · Caso 01`.
   - Preservar a confirmação de abandono prevista em UX-04.
   - Critério de aceite: a hierarquia visual separa a navegação de abandono do contexto do caso.
 
-- [ ] **03C · UI-03 — Exibir dificuldade do Caso 01 no mapa** `[Front] [Definição]`
+- [ ] **03C · UI-03 — Exibir dificuldade do Caso 01 no mapa** `[Pós-MVP] [Front] [Definição]`
   - Adicionar três estrelas ao resumo `Caso 01 · Introdução`, com uma estrela colorida para indicar dificuldade fácil.
   - Definir componente reutilizável para futuras classificações de caso.
   - Critério de aceite: a dificuldade é entendida sem depender apenas de cor e não interfere no resumo do caso.
 
-- [ ] **03D · UI-04 — Estilizar barras de rolagem** `[Front]`
+- [ ] **03D · UI-04 — Estilizar barras de rolagem** `[Pós-MVP] [Front]`
   - Aplicar cores, largura, trilho e indicador de rolagem coerentes com a identidade visual do jogo.
   - Cobrir navegadores baseados em WebKit e Firefox, preservando contraste e visibilidade do controle.
   - Critério de aceite: painéis com conteúdo rolável não exibem a barra padrão do navegador e continuam utilizáveis por mouse, toque e teclado.
 
-- [ ] **03E · UI-05 — Centralizar ações com ícone e texto** `[Front]`
+- [ ] **03E · UI-05 — Centralizar ações com ícone e texto** `[Pós-MVP] [Front]`
   - Centralizar horizontal e verticalmente ícone e rótulo nos botões `Encerrar turno` e `Retornar ao mundo`.
   - Preservar espaçamento legível, área clicável e alinhamento em desktop e celular.
   - Critério de aceite: ícone e texto formam um conjunto visualmente centralizado sem deslocamento em nenhum breakpoint suportado.
@@ -101,7 +101,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Remover o efeito colateral `abandonInvestigation()` do hook global `router.afterEach` em `src/app/router.ts`, acionando o abandono apenas por ação explícita do jogador.
   - Critério de aceite: cada store e composable possui responsabilidade única e o roteador cuida apenas de navegação e guardas de acesso.
 
-- [ ] **03G · UI-06 — Componentizar elementos repetidos e externalizar classes CSS compartilhadas** `[P3] [Front]`
+- [ ] **03G · UI-06 — Componentizar elementos repetidos e externalizar classes CSS compartilhadas** `[Pós-MVP] [P3] [Front]`
   - Extrair padrões visuais recorrentes (cabeçalhos de seção com `eyebrow` e título, botões com ícone, badges de PA e itens de lista do diário) para componentes apresentacionais puros (`props`/`emit`) em `src/components/ui/`.
   - Externalizar e centralizar classes CSS repetidas (painéis, botões, badges, tipografia auxiliar e cabeçalhos) e tokens (`:root`) em `src/styles/`, deixando em `src/features/<feature>/styles/` apenas o layout específico da tela.
   - Garantir espaçamento claro entre classes, funções e blocos lógicos, nomenclatura alinhada ao domínio e importação de ícones exclusivamente via `src/components/icons/`.
@@ -372,7 +372,9 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Configurar segredos e dados de sessão exclusivamente no ambiente do servidor; revisar cabeçalhos, logs e erros para não expor dados internos.
   - Critério de aceite: o navegador não consegue baixar arquivos de `server/` ou `docs/private/`, e uma falha de API não revela detalhes internos.
 
-## Pós-MVP — Escala de conteúdo
+## Pós-MVP — Escala de conteúdo e redesign de UI/UX (Mesa Única)
+
+> Wireframe interativo de referência para as evoluções Pós-MVP de UI/UX: [`wireframes/tela-investigacao-mesa-unica.html`](../wireframes/tela-investigacao-mesa-unica.html)
 
 - [ ] **31 · CONTEUDO-01 — Externalizar diálogos e resultados dos casos** `[Pós-MVP] [Back] [Definição]`
   - Substituir definições narrativas codificadas no servidor por uma camada de conteúdo versionada e validada, sem disponibilizar o catálogo completo ao cliente.
@@ -386,6 +388,22 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Implementar um medidor de pressão externa/imprensa que sobe com eventos de rodada, ações ruidosas ou cartas de risco (como `Lista de Convidados`).
   - Associar limiares de pressão a efeitos mecânicos concretos (ex.: aumento de custo social em conversas ou bloqueio de favores institucionais).
   - Critério de aceite: a pressão da imprensa é visível na interface e altera dinamicamente as decisões de risco da equipe.
+
+- [ ] **33 · UX-08 — Unificar layout em Mesa Única de 3 Zonas com Painel Contextual Multipropósito (Sem Modais ou Drawers)** `[Pós-MVP] [Front]`
+  - Substituir o grid atual de 4/5 colunas (que espreme a tela ao abrir o Diário) por 3 zonas estáveis na mesma página (`Esquerda: Equipe, PA, Apoio e Locais` | `Centro: Cena, Ações e Mão de Cartas` | `Direita: Painel Contextual Multipropósito`).
+  - Eliminar modais/drawers flutuantes para `ConversationDialog.vue`, `AccusationDialog.vue` e `CardDetails.vue`, integrando `Pessoas & Conversa`, `Diário do Caso` e `Dossiê de Acusação` como abas que alternam *in-place* na coluna direita, permitindo preparar cartas sociais diretamente na mão principal e ler a resposta da conversa no próprio painel.
+  - Garantir **zero dicas investigativas** em toda a interface (locais trancados exibem apenas `Área não descoberta` e perguntas bloqueadas não revelam qual pista ou local procurar).
+  - Critério de aceite: toda a partida ocorre em uma única tela sem sobreposições modais, sem encolhimento de colunas ao consultar o Diário e sem qualquer dica sobre onde/como investigar.
+
+- [ ] **34 · UX-09 — Separar visualmente Baralho Padrão e Múltiplas Cartas Temporárias/Apoio na bandeja da mão** `[Pós-MVP] [Front]`
+  - Dividir `CardHand.vue` em dois grupos separados por divisória vertical e legenda clara: **Baralho do Investigador** (sempre 4 cartas regulares com indicação de reciclagem no turno) e **Cartas Temporárias & Extras** (acumuláveis em 2, 3 ou mais cartas ganhas na investigação ou via Apoio de Plantão, que permanecem fixas entre turnos até o uso).
+  - Aplicar anatomia visual distinta em `InvestigationCard.vue` para cartas temporárias (borda tracejada turquesa `#70b99a`, selo `Temp` e rodapé `Fixa · Uso único`) e posicionar os controles de `Descartar` e `Cancelar` no cabeçalho da bandeja para nunca cobrir cartas quando a mão tiver 5+ cartas.
+  - Critério de aceite: o jogador distingue imediatamente suas 4 cartas do baralho base de múltiplas cartas temporárias retidas na mão.
+
+- [ ] **35 · UX-10 — Criar Tour Guiado interativo de mecânica (Spotlight sem dicas do caso)** `[Pós-MVP] [Front] [Definição]`
+  - Implementar um tour opcional de 5 passos com destaque visual (*spotlight*) sobre as zonas da Mesa Única: (1) Investigador, PA e Apoio, (2) Locais e Deslocamento, (3) Baralho Padrão vs. Cartas Temporárias, (4) Ações e Toasts do Diário, (5) Painel Contextual.
+  - Explicar exclusivamente como operar a ferramenta, sem mencionar pistas, suspeitos ou caminhos de resolução do caso.
+  - Critério de aceite: o jogador consegue iniciar, avançar, voltar e encerrar o tour a qualquer momento sem alterar o estado da partida e sem receber dicas de investigação.
 
 ## Bugs e refinamentos: estado e prioridade
 
@@ -405,21 +423,20 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Informar quando a API está indisponível ou quando uma ação está sendo processada.
   - Critério de aceite: botões não aceitam cliques repetidos durante uma requisição e erros podem ser recuperados.
 
-- [ ] **27 · UX-02 — Refinar o layout das cartas em resoluções menores** `[P3] [Front]`
-  - Confirmar legibilidade do selo de PA, botão `+`, título e moldura em notebook e celular.
-  - Critério de aceite: os controles não se sobrepõem em nenhum breakpoint suportado.
+- [ ] **27 · UX-02 — Refinar o layout das cartas em resoluções menores** `[Pós-MVP] [P3] [Front]`
+  - Confirmar legibilidade do selo de PA, botão de informação, título e moldura em notebook e celular, preservando o agrupamento entre Baralho Padrão e Cartas Temporárias.
+  - Critério de aceite: os controles não se sobrepõem em nenhum breakpoint suportado, mesmo com 5 ou mais cartas na mão.
 
-- [ ] **28 · UX-03 — Animar entrada na investigação** `[P3] [Front]`
+- [ ] **28 · UX-03 — Animar entrada na investigação** `[Pós-MVP] [P3] [Front]`
   - Criar transição entre a seleção da missão, o briefing de Sofia e a abertura do museu.
   - Respeitar preferência de redução de movimento e não bloquear a interação após a animação.
   - Critério de aceite: ao iniciar uma missão, a passagem pelo briefing comunica a entrada no caso sem causar recarregamento ou salto de layout.
 
-- [ ] **29 · UX-04 — Confirmar abandono da partida** `[P3] [Front]`
-  - Ao usar `Retornar ao mundo`, abrir um modal que explique que a partida atual será abandonada.
-  - Oferecer `Continuar investigando` e `Abandonar partida`, com foco inicial na opção segura.
+- [ ] **29 · UX-04 — Confirmar abandono da partida (Confirmação Inline)** `[Pós-MVP] [P3] [Front]`
+  - Ao acionar `Retornar ao mundo`, exibir confirmação *inline* no cabeçalho explicando que a partida atual será abandonada, oferecendo `Continuar investigando` e `Abandonar partida` (sem abrir modal).
   - Critério de aceite: cancelar mantém o estado intacto; confirmar limpa a partida e retorna ao mapa de mundos.
 
-- [ ] **30 · UX-05 — Animar descarte e embaralhamento de cartas** `[P3] [Front] [Back]`
+- [ ] **30 · UX-05 — Animar descarte e embaralhamento de cartas** `[Pós-MVP] [P3] [Front] [Back]`
   - Ao usar uma carta, animá-la da mão para a pilha de descarte somente depois da confirmação do servidor.
   - Quando o baralho se esgotar, mostrar o descarte sendo reunido, embaralhado e retornando como baralho de compra.
   - Sincronizar as animações com os eventos reais de compra, descarte e reciclagem do motor; respeitar redução de movimento.
