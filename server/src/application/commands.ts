@@ -22,3 +22,9 @@ export interface ResolveConversationCommand {
   readonly locationId: LocationId
   readonly questionId: string
 }
+
+export interface CreateJournalConnectionCommand {
+  readonly matchId: string
+  readonly fromClueId: string
+  readonly toClueId: string
+}

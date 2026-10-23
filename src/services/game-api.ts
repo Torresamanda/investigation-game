@@ -62,6 +62,13 @@ export const gameApi = {
     })
   },
 
+  createJournalConnection(matchId: string, fromClueId: string, toClueId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/connections`, {
+      method: 'POST',
+      body: JSON.stringify({ fromClueId, toClueId }),
+    })
+  },
+
   moveInvestigator(matchId: string, locationId: LocationId) {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/move`, {
       method: 'POST',

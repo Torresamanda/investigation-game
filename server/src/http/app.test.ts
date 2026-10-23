@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from './app.js'
+import { InMemoryMatchRepository } from '../infrastructure/persistence/in-memory-match-repository.js'
+import { MatchService } from '../application/match-service.js'
 
 describe('API de partidas', () => {
   let app: ReturnType<typeof createApp>
@@ -94,6 +96,170 @@ describe('API de partidas', () => {
         .json<{ journalEntries: { title: string }[] }>()
         .journalEntries.map((entry) => entry.title),
     ).toEqual(['Fechadura de emergência da vitrine', 'Detalhe do perímetro preservado'])
+  })
+
+  it('cria conexões formais por API, cobra PA e rejeita autos e duplicatas', async () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'connection-id')
+    app = createApp(service)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({
+      ...match,
+      journalEntries: [
+        {
+          id: 'clue-one',
+          type: 'clue',
+          title: 'Registro apagado',
+          content: 'Um bloco foi removido.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+        },
+        {
+          id: 'clue-two',
+          type: 'clue',
+          title: 'Retorno do cartão',
+          content: 'O cartão foi usado às 22h16.',
+          locationId: 'security',
+          round: 1,
+          status: 'unconfirmed',
+        },
+      ],
+    })
+
+    const created = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/connections`,
+      payload: { fromClueId: 'clue-one', toClueId: 'clue-two' },
+    })
+    expect(created.statusCode).toBe(200)
+    expect(created.json()).toMatchObject({
+      actionPoints: { general: 4 },
+      journalConnections: [
+        { id: 'connection-id', fromClueId: 'clue-one', toClueId: 'clue-two', round: 1 },
+      ],
+    })
+
+    const selfConnection = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/connections`,
+      payload: { fromClueId: 'clue-one', toClueId: 'clue-one' },
+    })
+    expect(selfConnection.statusCode).toBe(400)
+
+    const duplicate = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/connections`,
+      payload: { fromClueId: 'clue-two', toClueId: 'clue-one' },
+    })
+    expect(duplicate.statusCode).toBe(400)
+  })
+
+  it('permite uma conexão gratuita na Rodada 5 apenas uma vez', async () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'free-connection')
+    app = createApp(service)
+    let match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({
+      ...match,
+      journalEntries: ['one', 'two', 'three'].map((id) => ({
+        id,
+        type: 'clue' as const,
+        title: `Pista ${id}`,
+        content: 'Evidência.',
+        locationId: 'security' as const,
+        round: 1,
+        status: 'confirmed' as const,
+      })),
+    })
+    for (let round = 1; round < 5; round += 1) match = service.endTurn(match.id)
+
+    const first = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/connections`,
+      payload: { fromClueId: 'one', toClueId: 'two' },
+    })
+    expect(first.statusCode).toBe(200)
+    expect(first.json()).toMatchObject({
+      actionPoints: { general: 5 },
+      hasUsedFreeConnectionThisRound: true,
+    })
+
+    const second = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/connections`,
+      payload: { fromClueId: 'one', toClueId: 'three' },
+    })
+    expect(second.statusCode).toBe(200)
+    expect(second.json()).toMatchObject({ actionPoints: { general: 4 } })
+  })
+
+  it('concede a gratuidade de uma carta elegível somente quando ela está preparada', async () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'card-connection')
+    app = createApp(service)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const deck = match.decks.livia
+    const routeCard = [...deck.hand, ...deck.drawPile].find(
+      (card) => card.definitionId === 'route-map',
+    )
+    if (!routeCard) throw new Error('Mapa de Rotas não foi criado.')
+    repository.save({
+      ...match,
+      preparedCardInstanceId: routeCard.instanceId,
+      journalEntries: [
+        {
+          id: 'first',
+          type: 'clue',
+          title: 'Primeira pista',
+          content: 'Registro inicial.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+        },
+        {
+          id: 'second',
+          type: 'clue',
+          title: 'Segunda pista',
+          content: 'Outro registro.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'unconfirmed',
+        },
+      ],
+      decks: {
+        ...match.decks,
+        livia: {
+          ...deck,
+          hand: [
+            ...deck.hand.filter((card) => card.instanceId !== routeCard.instanceId),
+            routeCard,
+          ],
+          drawPile: deck.drawPile.filter((card) => card.instanceId !== routeCard.instanceId),
+        },
+      },
+    })
+
+    const created = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/connections`,
+      payload: { fromClueId: 'first', toClueId: 'second' },
+    })
+    expect(created.statusCode).toBe(200)
+    expect(created.json()).toMatchObject({
+      actionPoints: { general: 5 },
+      preparedCardInstanceId: null,
+      decks: { livia: { discardPileCount: 1 } },
+    })
   })
 
   it('move o investigador pelo endpoint validado e rejeita o corredor bloqueado', async () => {

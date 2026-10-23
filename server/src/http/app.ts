@@ -29,6 +29,11 @@ interface MoveBody {
   locationId?: unknown
 }
 
+interface CreateJournalConnectionBody {
+  fromClueId?: unknown
+  toClueId?: unknown
+}
+
 interface PrepareCardBody {
   cardInstanceId?: unknown
 }
@@ -125,6 +130,44 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
       const match = service.getMatch(request.params.id)
       if (!match) throw new MatchNotFoundError()
       return MatchPresenter.toPublicDto(match)
+    },
+  )
+
+  app.post<{ Params: MatchParams; Body: CreateJournalConnectionBody }>(
+    '/api/matches/:id/connections',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+        body: {
+          type: 'object',
+          required: ['fromClueId', 'toClueId'],
+          additionalProperties: false,
+          properties: {
+            fromClueId: { type: 'string', minLength: 1, maxLength: 120 },
+            toClueId: { type: 'string', minLength: 1, maxLength: 120 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { fromClueId, toClueId } = request.body
+      if (typeof fromClueId !== 'string' || typeof toClueId !== 'string') {
+        return reply.code(400).send({ message: 'Selecione duas pistas válidas.' })
+      }
+      try {
+        const match = service.createJournalConnection({
+          matchId: request.params.id,
+          fromClueId,
+          toClueId,
+        })
+        return MatchPresenter.toPublicDto(match)
+      } catch (error) {
+        return sendMatchError(reply, error, 'Não foi possível criar a conexão.')
+      }
     },
   )
 

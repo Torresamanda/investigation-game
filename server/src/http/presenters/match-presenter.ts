@@ -30,6 +30,7 @@ export const MatchPresenter = {
       hasDiscardedCardThisRound: match.hasDiscardedCardThisRound,
       actionPoints: match.actionPoints,
       journalEntries: match.journalEntries,
+      journalConnections: match.journalConnections,
       decks: {
         [match.activeInvestigatorId]: {
           hand: activeDeck.hand.map(toPublicCard),

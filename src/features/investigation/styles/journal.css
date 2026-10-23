@@ -125,6 +125,25 @@
 .journal-group {
   margin-top: 16px;
 }
+.journal-connection-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.journal-connection-form h4,
+.journal-connection-form p {
+  margin: 0;
+}
+.journal-connection-form select {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0c1b2a;
+  color: var(--paper);
+}
 .journal-group h4 {
   margin: 0;
   color: var(--gold);

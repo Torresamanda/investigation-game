@@ -34,6 +34,13 @@ export interface JournalEntry {
   readonly relatedEntryIds?: readonly string[]
 }
 
+export interface JournalConnection {
+  readonly id: string
+  readonly fromClueId: string
+  readonly toClueId: string
+  readonly round: number
+}
+
 export interface SoloMatch {
   readonly id: string
   readonly mode: 'solo'
@@ -55,6 +62,7 @@ export interface SoloMatch {
   readonly createdAt: string
   readonly actionPoints: ActionPoints
   readonly journalEntries: readonly JournalEntry[]
+  readonly journalConnections: readonly JournalConnection[]
   readonly resolvedKeys: readonly string[]
   readonly decks: Readonly<Record<InvestigatorId, MatchDeck>>
   readonly preparedCardInstanceId: string | null
@@ -93,6 +101,7 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     createdAt: input.createdAt,
     actionPoints: actionPointsFor(input.activeInvestigatorId),
     journalEntries: [],
+    journalConnections: [],
     resolvedKeys: [],
     decks: {
       [input.activeInvestigatorId]: createInvestigatorDeck(input.activeInvestigatorId),

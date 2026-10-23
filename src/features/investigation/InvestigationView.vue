@@ -66,6 +66,17 @@ const hasConfirmedRaulEvidence = computed(() =>
   ),
 )
 const journalTab = ref<'timeline' | 'clues' | 'suspects' | 'notes'>('timeline')
+const hasFreeJournalConnection = computed(() =>
+  Boolean(
+    session.remoteMatch?.hasFreeConnectionThisRound &&
+    !session.remoteMatch.hasUsedFreeConnectionThisRound,
+  ),
+)
+const hasPreparedConnectionCard = computed(() =>
+  ['route-map', 'comparative-magnifier', 'cross-reference'].includes(
+    session.preparedCard?.id ?? '',
+  ),
+)
 const conversation = ref<ConversationOptions | null>(null)
 const toolbar = ref<InstanceType<typeof CaseToolbar> | null>(null)
 const { open, pinned, enter, leave, toggle, pin, close } = useJournalDisclosure(() =>
@@ -170,6 +181,20 @@ async function discardPreparedCard() {
   } catch (error) {
     feedback.value = statusFeedback(
       error instanceof Error ? error.message : 'Não foi possível descartar a carta.',
+    )
+  }
+}
+
+async function createJournalConnection(fromClueId: string, toClueId: string) {
+  const isFree = hasFreeJournalConnection.value || hasPreparedConnectionCard.value
+  try {
+    await session.createJournalConnection(fromClueId, toClueId)
+    feedback.value = statusFeedback(
+      `Conexão formal criada · ${isFree ? 'Grátis' : '1 PA de pesquisa gasto.'}`,
+    )
+  } catch (error) {
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível criar a conexão.',
     )
   }
 }
@@ -308,7 +333,11 @@ async function clearConversationCardPreparation() {
         v-model:tab="journalTab"
         :hypotheses="session.hypotheses"
         :journal-entries="session.journalEntries"
+        :journal-connections="session.journalConnections"
+        :has-free-connection="hasFreeJournalConnection"
+        :has-prepared-connection-card="hasPreparedConnectionCard"
         @save="session.saveNote()"
+        @create-connection="createJournalConnection"
         @enter="enter"
         @leave="leave"
         @pin="pin"

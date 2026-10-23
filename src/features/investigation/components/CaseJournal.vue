@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { locations, suspectProfiles, type LocationId } from '../../../content/case01'
 import type { MatchJournalEntry } from '../../../services/game-api'
 import { PhUserFocus, PhX } from '../../../components/icons'
@@ -8,9 +8,25 @@ const notes = defineModel<string>('notes', { required: true })
 const props = defineProps<{
   hypotheses: readonly { id: number; text: string }[]
   journalEntries: readonly MatchJournalEntry[]
+  journalConnections: readonly { id: string; fromClueId: string; toClueId: string; round: number }[]
+  hasFreeConnection: boolean
+  hasPreparedConnectionCard: boolean
 }>()
 const tab = defineModel<'timeline' | 'clues' | 'suspects' | 'notes'>('tab', { required: true })
-const emit = defineEmits<{ enter: []; leave: []; pin: []; close: []; save: [] }>()
+const emit = defineEmits<{
+  enter: []
+  leave: []
+  pin: []
+  close: []
+  save: []
+  createConnection: [fromClueId: string, toClueId: string]
+}>()
+
+const fromClueId = ref('')
+const toClueId = ref('')
+const availableClues = computed(() =>
+  props.journalEntries.filter((entry) => entry.type === 'clue' && entry.status !== 'refuted'),
+)
 
 const clueEntries = computed(() => props.journalEntries.filter((entry) => entry.type === 'clue'))
 const observationEntries = computed(() =>
@@ -38,6 +54,14 @@ const journalGroups = computed(() => [
   },
   { title: 'Conexões', entries: connectionEntries.value, empty: 'Nenhuma conexão registrada.' },
 ])
+
+const formalConnections = computed(() =>
+  props.journalConnections.map((connection) => ({
+    ...connection,
+    fromTitle: props.journalEntries.find((entry) => entry.id === connection.fromClueId)?.title,
+    toTitle: props.journalEntries.find((entry) => entry.id === connection.toClueId)?.title,
+  })),
+)
 
 const locationNames = Object.fromEntries(
   locations.map((location) => [location.id, location.name]),
@@ -69,6 +93,11 @@ function save() {
   if (!notes.value.trim()) return
   emit('save')
   tab.value = 'notes'
+}
+
+function createConnection() {
+  if (!fromClueId.value || !toClueId.value || fromClueId.value === toClueId.value) return
+  emit('createConnection', fromClueId.value, toClueId.value)
 }
 const tabs = [
   { id: 'timeline', name: 'Cronologia' },
@@ -139,8 +168,71 @@ const tabs = [
               </small>
             </li>
           </ol>
-          <p v-else class="muted">{{ group.empty }}</p>
-        </section></template
+          <ol v-if="group.title === 'Conexões' && formalConnections.length" class="hypothesis-list">
+            <li v-for="connection in formalConnections" :key="connection.id" class="journal-entry">
+              <div class="journal-entry-heading">
+                <strong>{{ connection.fromTitle }} se relaciona a {{ connection.toTitle }}</strong
+                ><span class="journal-status">Formal</span>
+              </div>
+              <small class="journal-entry-meta">Rodada {{ connection.round }}</small>
+            </li>
+          </ol>
+          <p
+            v-if="
+              !group.entries.length && !(group.title === 'Conexões' && formalConnections.length)
+            "
+            class="muted"
+          >
+            {{ group.empty }}
+          </p>
+        </section>
+        <form
+          v-if="tab === 'clues'"
+          class="journal-connection-form"
+          @submit.prevent="createConnection"
+        >
+          <h4>Criar conexão formal</h4>
+          <p class="muted">
+            Relacionar pistas custa 1 PA.
+            {{
+              hasFreeConnection || hasPreparedConnectionCard
+                ? 'Você tem uma conexão gratuita disponível.'
+                : ''
+            }}
+          </p>
+          <label class="field-label" for="connection-from">Primeira pista</label>
+          <select id="connection-from" v-model="fromClueId" required>
+            <option value="" disabled>Escolha uma pista</option>
+            <option v-for="clue in availableClues" :key="clue.id" :value="clue.id">
+              {{ clue.title }}
+            </option>
+          </select>
+          <label class="field-label" for="connection-to">Segunda pista</label>
+          <select id="connection-to" v-model="toClueId" required>
+            <option value="" disabled>Escolha outra pista</option>
+            <option
+              v-for="clue in availableClues"
+              :key="clue.id"
+              :value="clue.id"
+              :disabled="clue.id === fromClueId"
+            >
+              {{ clue.title }}
+            </option>
+          </select>
+          <button
+            type="submit"
+            class="save-note"
+            :disabled="
+              availableClues.length < 2 || !fromClueId || !toClueId || fromClueId === toClueId
+            "
+          >
+            {{
+              hasFreeConnection || hasPreparedConnectionCard
+                ? 'Criar conexão grátis'
+                : 'Criar conexão · 1 PA'
+            }}
+          </button>
+        </form> </template
       ><template v-else-if="tab === 'suspects'"
         ><h3>Pessoas de interesse</h3>
         <ul class="suspect-list">

@@ -17,6 +17,7 @@ import {
   type CreateMatchCommand,
   type ResolveActionCommand,
   type ResolveConversationCommand,
+  type CreateJournalConnectionCommand,
 } from './commands.js'
 import { CreateSoloMatchUseCase } from './use-cases/create-solo-match-use-case.js'
 import { DiscardCardUseCase } from './use-cases/discard-card-use-case.js'
@@ -26,6 +27,7 @@ import { PrepareCardUseCase } from './use-cases/prepare-card-use-case.js'
 import { ResolveActionUseCase } from './use-cases/resolve-action-use-case.js'
 import { ResolveConversationUseCase } from './use-cases/resolve-conversation-use-case.js'
 import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.js'
+import { CreateJournalConnectionUseCase } from './use-cases/create-journal-connection-use-case.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 
 export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
@@ -51,6 +53,7 @@ export class MatchService {
   private readonly resolveActionUseCase: ResolveActionUseCase
   private readonly resolveConversationUseCase: ResolveConversationUseCase
   private readonly moveInvestigatorUseCase: MoveInvestigatorUseCase
+  private readonly createJournalConnectionUseCase: CreateJournalConnectionUseCase
 
   constructor(
     private readonly repository: MatchRepository,
@@ -69,6 +72,7 @@ export class MatchService {
       caseContentRepository,
     )
     this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
+    this.createJournalConnectionUseCase = new CreateJournalConnectionUseCase(repository, createId)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -158,6 +162,10 @@ export class MatchService {
 
   moveInvestigator(matchId: string, locationId: LocationId): SoloMatch {
     return this.moveInvestigatorUseCase.execute(matchId, locationId)
+  }
+
+  createJournalConnection(command: CreateJournalConnectionCommand): SoloMatch {
+    return this.createJournalConnectionUseCase.execute(command)
   }
 
   private assertPersonAvailability(personId: PersonId, locationId: LocationId) {

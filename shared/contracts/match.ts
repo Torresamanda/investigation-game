@@ -22,6 +22,13 @@ export interface MatchJournalEntry {
   readonly relatedEntryIds?: readonly string[]
 }
 
+export interface MatchJournalConnection {
+  readonly id: string
+  readonly fromClueId: string
+  readonly toClueId: string
+  readonly round: number
+}
+
 export interface PublicMatchDto {
   readonly id: string
   readonly mode: 'solo'
@@ -44,6 +51,7 @@ export interface PublicMatchDto {
   readonly hasDiscardedCardThisRound: boolean
   readonly actionPoints: ActionPointPool
   readonly journalEntries: readonly MatchJournalEntry[]
+  readonly journalConnections: readonly MatchJournalConnection[]
   readonly decks: Readonly<
     Partial<
       Record<

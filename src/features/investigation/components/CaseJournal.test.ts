@@ -58,6 +58,11 @@ function mountJournal(tab: 'timeline' | 'clues' = 'clues') {
       tab,
       hypotheses: [],
       journalEntries,
+      journalConnections: [
+        { id: 'formal-1', fromClueId: 'clue-13', toClueId: 'clue-16', round: 5 },
+      ],
+      hasFreeConnection: true,
+      hasPreparedConnectionCard: false,
       'onUpdate:notes': () => undefined,
       'onUpdate:tab': () => undefined,
     },
@@ -81,6 +86,7 @@ describe('CaseJournal', () => {
     expect(groups[1]!.text()).toContain('Sem nova descoberta')
     expect(groups[2]!.text()).toContain('Contestável')
     expect(groups[3]!.text()).toContain('Conexão formal')
+    expect(groups[3]!.text()).toContain('Exclusão de registros se relaciona a Retorno do cartão')
     expect(groups[0]!.text()).not.toContain('Conexão formal')
   })
 

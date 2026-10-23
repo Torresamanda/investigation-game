@@ -18,13 +18,13 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 3. **Motor do Caso 01, Economia de PA e Investigadores (`P1` Core Loop):**
    - Concluído: `07 · CASO-04` (descobertas cumulativas por local/rodada) e `08 · CASO-05` (deslocamento e desbloqueio do Corredor de Serviço).
    - Concluído: `10 · INV-01` (passivas de Lívia, Rafael, Isadora e Otávio; custo e viabilidade refletidos na interface).
-   - **PRÓXIMA TAREFA IMEDIATA:** `15 · INV-03` → Apoio de plantão no modo solo com compensação de PA (+1 PA de especialidade ou desconto de 1 PA na carta do apoio) e devolução correta ao descarte do dono (`card.ownerId`).
+   - Concluído: `15 · INV-03` → Apoio de plantão no modo solo com desconto no custo da carta e devolução ao descarte do dono (`card.ownerId`).
    - Concluído: `09 · CASO-06` + `09A · BUG-05` (eventos aplicados no servidor e abertura da Rodada 4 condicionada às evidências confirmadas no diário).
 
 4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
-   - `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
-   - `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas/habilidade; hipóteses livres a 0 PA).
-   - `14 · INV-02` → Rotas investigativas alternativas por investigador.
+   - Concluído: `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
+   - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA). Aguardar validação do usuário antes de avançar.
+   - Próxima após validação: `14 · INV-02` → Rotas investigativas alternativas por investigador.
    - `19 · CASO-07` → Acusação e desfechos (no modo solo, permitir acusar nas Rodadas 5 ou 6 pagando 3 PA para não inutilizar a Rodada 6).
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
@@ -241,7 +241,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
     - Garantir que tanto a **rota técnica** (`E1 + E2 + E3`) quanto a **rota exploratória/documental** (`E4 + E5 + E6`) permitam vencer com qualquer dupla de investigadores.
   - Critério de aceite: nenhuma carta gasta PA em vão sem produzir seu efeito descrito, e a missão pode ser vencida por múltiplas combinações de investigadores.
 
-- [ ] **15 · INV-03 — Implementar apoio de plantão no modo solo** `[Front] [Back] [Definição]`
+- [x] **15 · INV-03 — Implementar apoio de plantão no modo solo** `[Front] [Back] [Definição]`
   - **Escopo técnico (`RequestSupportCardUseCase`, `POST /api/matches/:id/support-card` e UI de Apoio):**
     - Uma vez por rodada (`hasUsedSupportThisRound: boolean`), permitir que o jogador solo acione o Apoio de Plantão para trazer 1 carta do topo do baralho do apoio (`decks[supportInvestigatorId]`) para a mão do investigador ativo **com desconto de `1 PA` no seu custo de uso** (mínimo `0 PA`), compensando a metade de turnos do modo solo em relação ao cooperativo.
     - Exibir na interface (`LocationsPanel.vue` ou `CardHand.vue`) o botão `Acionar apoio (<Nome>) · 1x por rodada` quando disponível.
@@ -250,21 +250,21 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 
 ## P1 — Diário e feedback de jogo
 
-- [ ] **05 · DIARIO-01 — Separar pistas, observações, declarações e conexões** `[Front] [Back]`
+- [x] **05 · DIARIO-01 — Separar pistas, observações, declarações e conexões** `[Front] [Back]`
   - **Escopo técnico (`CaseJournal.vue` e `MatchJournalEntry`):**
     - Exibir cada registro com badge visual claro de estado (`Indício`, `Não confirmada`, `Confirmada`, `Refutada`, `Declaração`, `Contestável`, `Observação`), além do local de origem e número da rodada.
     - Separar visualmente `observation` (tentativa sem descoberta nova) das pistas reais (`clue`) e declarações (`statement`), e atualizar a aba `Cronologia` dinamicamente conforme horários (`22h13`, `22h16`) são descobertos.
   - Critério de aceite: uma tentativa sem descoberta aparece claramente como observação e o jogador distingue de imediato quais pistas já estão `Confirmadas` para a acusação.
 
-- [ ] **16 · DIARIO-02 — Criar conexões no diário** `[Front] [Back] [Definição]`
+- [x] **16 · DIARIO-02 — Criar conexões no diário** `[Front] [Back] [Definição]`
   - **Escopo técnico (`CreateJournalConnectionUseCase`, `POST /api/matches/:id/connections` e `CaseJournal.vue`):**
     - Manter **Hipóteses (anotações livres)** sempre com custo `0 PA`.
     - Permitir que o jogador selecione duas pistas registradas no diário para criar uma **Conexão Formal** (`JournalConnection`: `id`, `fromClueId`, `toClueId`, `round`).
-    - Cobrar **1 PA** (geral ou de pesquisa) para registrar a conexão formal, sendo **gratuita (`0 PA`)** uma vez na Rodada 5 (evento *Linha do Tempo Consolidada*) ou quando gerada por cartas/habilidades (`Mapa de Rotas`, `Lupa Comparativa`, `Cruzamento de Registros`).
+    - Cobrar **1 PA** (geral ou de pesquisa) para registrar a conexão formal, sendo **gratuita (`0 PA`)** uma vez na Rodada 5 (evento _Linha do Tempo Consolidada_) ou quando gerada por cartas/habilidades (`Mapa de Rotas`, `Lupa Comparativa`, `Cruzamento de Registros`).
     - Validar pares coerentes de conexão (evitando conectar uma pista consigo mesma ou duplicar a mesma conexão).
   - Critério de aceite: as conexões formais consomem 1 PA (salvo isenções), ficam listadas no diário e são contabilizadas nos 2 vínculos exigidos por `19 · CASO-07`.
 
-- [ ] **06 · DIARIO-03 — Melhorar feedback de ação** `[Front]`
+- [x] **06 · DIARIO-03 — Melhorar feedback de ação** `[Front]`
   - **Escopo técnico (`InvestigationView.vue` e `InvestigationActions.vue`):**
     - Mostrar alvo da ação, custo efetivo em PA, carta aplicada e resultado narrativo em uma mensagem estruturada e acessível, destacando se gerou pista nova, confirmação, refutação ou observação.
   - Critério de aceite: após qualquer ação, o jogador entende o que aconteceu, quanto custou e qual foi o resultado sem precisar abrir o diário.

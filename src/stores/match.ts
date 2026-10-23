@@ -149,6 +149,16 @@ export const useMatchStore = defineStore('match', () => {
     return updated.journalEntries.at(-1) ?? null
   }
 
+  async function createJournalConnection(fromClueId: string, toClueId: string): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A conexão exige uma partida conectada à API.')
+    remoteMatch.value = await gameApi.createJournalConnection(
+      remoteMatch.value.id,
+      fromClueId,
+      toClueId,
+    )
+    preparedCardId.value = remoteMatch.value.preparedCardInstanceId
+  }
+
   async function moveInvestigator(locationId: LocationId): Promise<void> {
     if (!remoteMatch.value) throw new Error('A partida exige uma conexão ativa com a API.')
     remoteMatch.value = await gameApi.moveInvestigator(remoteMatch.value.id, locationId)
@@ -231,6 +241,7 @@ export const useMatchStore = defineStore('match', () => {
     clearPreparedCard,
     createRemoteMatch,
     resolveAction,
+    createJournalConnection,
     moveInvestigator,
     endRemoteTurn,
     discardPreparedCard,
