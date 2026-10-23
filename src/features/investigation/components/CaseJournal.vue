@@ -163,6 +163,12 @@ const tabs = [
               <small class="journal-entry-meta">
                 {{ locationNames[entry.locationId] }} · Rodada {{ entry.round }}
               </small>
+              <small v-if="entry.protectedUntilRound" class="journal-recorded">
+                Protegida até a Rodada {{ entry.protectedUntilRound }}
+              </small>
+              <small v-if="entry.markedForFollowUp" class="journal-recorded">
+                Vestígio marcado para análise
+              </small>
               <small v-if="entry.recordedWith === 'pocket-recorder'" class="journal-recorded">
                 Registrada com Gravador de Bolso
               </small>

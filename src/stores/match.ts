@@ -91,6 +91,7 @@ export const useMatchStore = defineStore('match', () => {
       locationId,
       examinedLocationsThisRound: remoteMatch.value.examinedLocationsThisRound,
       preparedCardCost: card?.cost ?? 0,
+      preparedCardId: card?.id,
       canCreateConnection:
         action === 'research' && remoteMatch.value.canCreateInvestigatorConnection,
     })
@@ -106,7 +107,6 @@ export const useMatchStore = defineStore('match', () => {
     return canPayAction(remoteMatch.value.actionPoints, {
       action,
       amount: actionCost(action, locationId),
-      specialtyEligible: Boolean(card && investigatorId.value),
     })
   }
 

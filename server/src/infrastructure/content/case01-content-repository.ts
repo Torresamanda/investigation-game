@@ -15,6 +15,7 @@ import type {
   PersonId,
 } from '../../../../shared/domain/identifiers.js'
 import type { SoloMatch } from '../../domain/match.js'
+import { resolveCase01CardEffect } from './case01-card-effects.js'
 
 export class Case01ContentRepository implements CaseContentRepository {
   getConversation(personId: PersonId) {
@@ -47,6 +48,18 @@ export class Case01ContentRepository implements CaseContentRepository {
   }
 
   resolveAction(
+    match: SoloMatch,
+    action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
+    locationId: LocationId,
+  ): CaseActionResolution {
+    const resolution = this.resolveCaseAction(match, action, locationId)
+    const preparedCardId = match.decks[match.activeInvestigatorId].hand.find(
+      (card) => card.instanceId === match.preparedCardInstanceId,
+    )?.definitionId
+    return resolveCase01CardEffect(match, action, locationId, preparedCardId, resolution)
+  }
+
+  private resolveCaseAction(
     match: SoloMatch,
     action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
     locationId: LocationId,

@@ -3,7 +3,9 @@ import type {
   LocationId,
   PersonId,
 } from '../../../../shared/domain/identifiers.js'
-import type { JournalEntry, SoloMatch } from '../../domain/match.js'
+import type { JournalConnection, JournalEntry, SoloMatch } from '../../domain/match.js'
+
+export type NewJournalEntry = Omit<JournalEntry, 'id'>
 
 export interface ConversationQuestionContent {
   readonly id: string
@@ -25,6 +27,12 @@ export interface ConversationOutcomeContent {
 export interface CaseActionResolution {
   readonly entry: JournalEntry
   readonly resolvedKey?: string
+  readonly additionalEntries?: readonly NewJournalEntry[]
+  readonly resolvedKeys?: readonly string[]
+  readonly unlockedLocationIds?: readonly LocationId[]
+  readonly journalEntryUpdates?: readonly JournalEntry[]
+  readonly journalConnection?: Omit<JournalConnection, 'round'>
+  readonly errorMessage?: string
 }
 
 export interface CaseContentRepository {

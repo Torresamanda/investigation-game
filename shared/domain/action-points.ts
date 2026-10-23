@@ -20,6 +20,7 @@ export interface InvestigatorActionCostInput {
   readonly locationId: LocationId
   readonly examinedLocationsThisRound: readonly LocationId[]
   readonly preparedCardCost: number
+  readonly preparedCardId?: string
   readonly canCreateConnection: boolean
 }
 
@@ -33,7 +34,13 @@ export function investigatorActionCost(input: InvestigatorActionCostInput): numb
       ? 1
       : 0
 
-  return (firstExamineInLocation ? 1 : 2) + input.preparedCardCost + connectionCost
+  const markerDiscount =
+    input.action === 'analyse' && input.preparedCardId === 'trace-marker' ? 1 : 0
+
+  return Math.max(
+    1,
+    (firstExamineInLocation ? 1 : 2) + input.preparedCardCost + connectionCost - markerDiscount,
+  )
 }
 
 export function canPayAction(pool: ActionPointPool, cost: ActionCost): boolean {

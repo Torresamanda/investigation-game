@@ -20,6 +20,8 @@ export interface MatchJournalEntry {
   readonly recordedWith?: 'pocket-recorder'
   readonly isadoraMarkedContestable?: boolean
   readonly relatedEntryIds?: readonly string[]
+  readonly protectedUntilRound?: number
+  readonly markedForFollowUp?: boolean
 }
 
 export interface MatchJournalConnection {

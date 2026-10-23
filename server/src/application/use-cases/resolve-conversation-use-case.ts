@@ -55,12 +55,10 @@ export class ResolveConversationUseCase {
       Boolean(card?.compatibleActions.includes('converse')),
     )
     const totalCost = questionCost + pressLeakSurcharge + (card?.cost ?? 0)
-    const specialtyEligible = card?.ownerId === match.activeInvestigatorId
     if (
       !canPayAction(match.actionPoints, {
         action: 'converse',
         amount: totalCost,
-        specialtyEligible,
       })
     ) {
       throw new DomainError('PA insuficientes para esta pergunta.')
@@ -88,7 +86,6 @@ export class ResolveConversationUseCase {
       actionPoints: spendActionPoints(match.actionPoints, {
         action: 'converse',
         amount: totalCost,
-        specialtyEligible,
       }),
       decks: resolveConversationDecks(match, activeDeck, card, reward),
       preparedCardInstanceId: null,

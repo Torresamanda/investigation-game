@@ -42,14 +42,13 @@ export class ResolveActionUseCase {
       locationId: command.locationId,
       examinedLocationsThisRound: match.examinedLocationsThisRound,
       preparedCardCost: card?.cost ?? 0,
+      preparedCardId: card?.definitionId,
       canCreateConnection: Boolean(connectionCandidate),
     })
-    const specialtyEligible = card?.ownerId === match.activeInvestigatorId
     if (
       !canPayAction(match.actionPoints, {
         action: command.action,
         amount: cost,
-        specialtyEligible,
       })
     ) {
       throw new DomainError('PA insuficientes para esta ação.')
@@ -60,6 +59,7 @@ export class ResolveActionUseCase {
       command.action,
       command.locationId,
     )
+    if (caseResolution.errorMessage) throw new InvalidActionError(caseResolution.errorMessage)
     const resolution =
       match.round === 6 && connectionCandidate && caseResolution.entry.type === 'clue'
         ? {
@@ -81,7 +81,6 @@ export class ResolveActionUseCase {
     const actionPoints = spendActionPoints(match.actionPoints, {
       action: command.action,
       amount: cost,
-      specialtyEligible,
     })
     const usesRafaelPassive =
       match.activeInvestigatorId === 'rafael' &&
@@ -97,7 +96,11 @@ export class ResolveActionUseCase {
           content: `${resolution.entry.content} Rafael confirmou o vestígio na análise pericial.`,
         }
       : resolution.entry
-    const journalEntries = [...match.journalEntries, resolvedEntry]
+    const journalEntries = match.journalEntries.map(
+      (entry) =>
+        resolution.journalEntryUpdates?.find((updated) => updated.id === entry.id) ?? entry,
+    )
+    journalEntries.push(resolvedEntry)
     const revealsPreservedPerimeterDetail =
       match.round === 1 &&
       command.action === 'examine' &&
@@ -115,8 +118,14 @@ export class ResolveActionUseCase {
         status: 'note',
       })
     }
+    for (const entry of resolution.additionalEntries ?? []) {
+      journalEntries.push({ ...entry, id: `journal-${journalEntries.length + 1}` })
+    }
     const resolvedKeys = [...match.resolvedKeys]
     if (resolution.resolvedKey) resolvedKeys.push(resolution.resolvedKey)
+    for (const key of resolution.resolvedKeys ?? []) {
+      if (!resolvedKeys.includes(key)) resolvedKeys.push(key)
+    }
     if (usesRafaelPassive && resolution.resolvedKey === 'gallery-lock') {
       resolvedKeys.push('e1-confirmed')
     }
@@ -158,6 +167,9 @@ export class ResolveActionUseCase {
         : match.decks,
       preparedCardInstanceId: null,
       journalEntries,
+      journalConnections: resolution.journalConnection
+        ? [...match.journalConnections, { ...resolution.journalConnection, round: match.round }]
+        : match.journalConnections,
       resolvedKeys,
       examinedLocationsThisRound:
         command.action === 'examine' &&
@@ -166,11 +178,14 @@ export class ResolveActionUseCase {
           : match.examinedLocationsThisRound,
       hasUsedPassiveThisRound: match.hasUsedPassiveThisRound || usesRafaelPassive,
       hasReceivedSocialBonusThisRound: match.hasReceivedSocialBonusThisRound || receivedSocialBonus,
-      unlockedLocations:
-        resolution.resolvedKey === 'gallery-service-door' &&
-        !match.unlockedLocations.includes('service-corridor')
-          ? [...match.unlockedLocations, 'service-corridor' as const]
-          : match.unlockedLocations,
+      unlockedLocations: [
+        ...match.unlockedLocations,
+        ...(resolution.resolvedKey === 'gallery-service-door' ||
+        resolution.resolvedKeys?.includes('gallery-service-door')
+          ? ['service-corridor' as const]
+          : []),
+        ...(resolution.unlockedLocationIds ?? []),
+      ].filter((locationId, index, all) => all.indexOf(locationId) === index),
     }
     this.repository.save(updated)
     return updated

@@ -133,7 +133,6 @@ export class MatchService {
               canPayAction(match.actionPoints, {
                 action: 'converse',
                 amount: totalCost,
-                specialtyEligible: preparedCard?.ownerId === match.activeInvestigatorId,
               }),
           }
         }),

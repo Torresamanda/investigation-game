@@ -54,7 +54,6 @@ export class CreateJournalConnectionUseCase {
       !canPayAction(match.actionPoints, {
         action: 'research',
         amount: 1,
-        specialtyEligible: true,
       })
     ) {
       throw new DomainError('É preciso ter 1 PA geral ou de pesquisa para criar a conexão.')
@@ -65,7 +64,6 @@ export class CreateJournalConnectionUseCase {
       : spendActionPoints(match.actionPoints, {
           action: 'research',
           amount: 1,
-          specialtyEligible: true,
         })
     const decks =
       usesConnectionCard && preparedCard

@@ -409,28 +409,40 @@ describe('MatchService', () => {
   })
 
   it('valida a carta preparada e a move para o descarte após uma ação compatível', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
-    const card = match.decks.livia.hand[0]
-    if (!card) throw new Error('A mão inicial precisa conter cartas para este cenário.')
-    const action = card.compatibleActions[0]
-    if (!action || action === 'converse') {
-      throw new Error('A primeira carta precisa ser compatível com uma ação de cenário.')
+    const card = [...match.decks.livia.hand, ...match.decks.livia.drawPile].find(
+      (candidate) => candidate.definitionId === 'ultraviolet-flashlight',
+    )
+    if (!card) throw new Error('A Lanterna Ultravioleta precisa estar no baralho inicial.')
+    if (!match.decks.livia.hand.some((handCard) => handCard.instanceId === card.instanceId)) {
+      const updatedDeck = {
+        ...match.decks.livia,
+        hand: [...match.decks.livia.hand, card],
+        drawPile: match.decks.livia.drawPile.filter(
+          (drawCard) => drawCard.instanceId !== card.instanceId,
+        ),
+      }
+      repository.save({
+        ...match,
+        decks: { ...match.decks, livia: updatedDeck },
+      })
     }
     service.prepareCard(match.id, card.instanceId)
 
     const updated = service.resolveAction({
       matchId: match.id,
-      action,
+      action: 'examine',
       locationId: 'gallery',
     })
 
     expect(updated.decks.livia.hand).not.toContainEqual(card)
     expect(updated.decks.livia.discardPile).toContainEqual(card)
-    expect(updated.actionPoints.general).toBe(5 - (action === 'examine' ? 1 : 2) - card.cost)
+    expect(updated.actionPoints.general).toBe(5 - 1 - card.cost)
   })
 
   it('embaralha novamente a mão no início do turno e mantém exatamente quatro cartas', () => {

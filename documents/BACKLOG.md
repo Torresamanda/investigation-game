@@ -24,7 +24,8 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
    - Concluído: `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
    - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA). Aguardar validação do usuário antes de avançar.
-   - Próxima após validação: `14 · INV-02` → Rotas investigativas alternativas por investigador.
+   - Concluído: `14 · INV-02` → Rotas investigativas alternativas por investigador; aguardando validação do usuário.
+   - Próxima após validação: `19 · CASO-07` → Acusação e desfechos.
    - `19 · CASO-07` → Acusação e desfechos (no modo solo, permitir acusar nas Rodadas 5 ou 6 pagando 3 PA para não inutilizar a Rodada 6).
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
@@ -235,7 +236,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
     - **Otávio (`Conexões Ocultas`):** Usa os `2 PA` de pesquisa em `Pesquisar` ou cartas de pesquisa e pode gastar `1 PA` de pesquisa para criar uma conexão no diário entre uma pista confirmada e uma não verificada, revelando uma dica de local ou pergunta.
   - Critério de aceite: o desconto de Lívia e as habilidades de Rafael, Isadora e Otávio funcionam no servidor e na validação de botões da UI, equilibrando o gasto de PA de cada perfil.
 
-- [ ] **14 · INV-02 — Criar rotas investigativas alternativas** `[Back] [Definição]`
+- [x] **14 · INV-02 — Criar rotas investigativas alternativas** `[Back] [Definição]`
   - **Escopo técnico (`Case01ContentRepository` e efeitos de cartas):**
     - Garantir que todas as cartas dos baralhos iniciais (`Lanterna Ultravioleta`, `Marcador de Vestígio`, `Mapa de Rotas`, `Credencial de Acesso`, `Lupa Comparativa`, `Câmera Forense`, `Envelope de Custódia`, `Reagente de Traços`, `Transcrição Marcada`, `Cartão de Contato`, `Caixa de Arquivo`, `Fio Cronológico`, `Cruzamento de Registros`, `Selo Institucional`) apliquem seu benefício mecânico real ao serem usadas com uma ação compatível (reduzindo custo da próxima análise, confirmando pista física, organizando cronologia 22h13–22h16–22h21, abrindo acesso restrito ou gerando conexão).
     - Garantir que tanto a **rota técnica** (`E1 + E2 + E3`) quanto a **rota exploratória/documental** (`E4 + E5 + E6`) permitam vencer com qualquer dupla de investigadores.
