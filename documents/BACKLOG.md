@@ -431,6 +431,19 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Desabilitar controles ligados à API durante a requisição para evitar submissões repetidas.
   - Critério de aceite: o jogador entende o estado da conexão, recebe erro recuperável e pode continuar após a API responder novamente.
 
+- [ ] **36 · BUG-08 — Preservar cartas do Apoio de Plantão além da mão regular** `[P1] [Front] [Back]`
+  - Uma carta recebida do Apoio de Plantão deve ser tratada como carta extra na mão do investigador ativo: ela não ocupa uma das quatro vagas do baralho regular do investigador.
+  - Ao descartar uma carta regular, recompor as quatro cartas regulares sem remover ou contar cartas de apoio; ao encerrar o turno, manter cartas de apoio não usadas na mão e renovar somente as quatro cartas regulares.
+  - Cartas de apoio usadas ou descartadas continuam retornando ao descarte do investigador dono, com o custo original restaurado; cartas temporárias mantêm a mesma regra de permanência já definida para elas.
+  - Critério de aceite: após acionar o apoio e manter a carta sem usá-la, o jogador inicia o turno seguinte com quatro cartas regulares mais a carta de apoio; descartar uma carta regular preserva a carta de apoio e recompõe somente a parte regular da mão.
+
+- [ ] **37 · CASO-09 — Desbloquear perguntas por evidência, não por rodada ou turno** `[P1] [Front] [Back] [Definição]`
+  - Remover bloqueios de disponibilidade baseados exclusivamente em rodada e o limite de uma pergunta por turno. O jogador pode fazer perguntas ainda não usadas enquanto tiver PA aplicáveis.
+  - Manter cada pergunta como uso único e preservar o custo, as cartas preparadas e as demais validações autoritativas do servidor.
+  - Perguntas que exigem uma pista ou declaração independente permanecem bloqueadas até que a evidência correspondente seja realmente obtida; avançar de turno ou de rodada, por si só, não as desbloqueia.
+  - Atualizar os retornos públicos e a interface para comunicar somente o requisito de evidência já conhecido, sem revelar local, rodada futura ou caminho investigativo.
+  - Critério de aceite: com PA suficientes, o jogador pode realizar mais de uma pergunta distinta no mesmo turno; uma pergunta sem evidência exigida permanece bloqueada no turno e nas rodadas seguintes até a pista ser encontrada; ela fica disponível imediatamente após a descoberta, independentemente da rodada.
+
 - [ ] **27 · UX-02 — Refinar o layout das cartas em resoluções menores** `[Pós-MVP] [P3] [Front]`
   - Confirmar legibilidade do selo de PA, botão de informação, título e moldura em notebook e celular, preservando o agrupamento entre Baralho Padrão e Cartas Temporárias.
   - Critério de aceite: os controles não se sobrepõem em nenhum breakpoint suportado, mesmo com 5 ou mais cartas na mão.
