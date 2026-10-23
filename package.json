@@ -4,10 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "server:dev": "tsx watch server/src/main.ts",
-    "server:start": "tsx server/src/main.ts",
-    "server:check": "tsc --project server/tsconfig.json",
+    "dev": "npm run cloudflare:dev",
     "worker:check": "tsc --project worker/tsconfig.json",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
@@ -15,21 +12,19 @@
     "cloudflare:deploy": "npm run build && wrangler deploy",
     "cloudflare:d1:migrate": "wrangler d1 migrations apply cidade-das-brumas --remote",
     "test": "vitest run",
-    "lint": "eslint src backend server worker vite.config.ts eslint.config.js --max-warnings=0",
-    "format": "prettier --write src backend server worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
-    "format:check": "prettier --check src backend server worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
-    "check": "npm run lint && npm run format:check && npm test && npm run server:check && npm run worker:check && npm run build"
+    "lint": "eslint src backend worker vite.config.ts eslint.config.js --max-warnings=0",
+    "format": "prettier --write src backend worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
+    "format:check": "prettier --check src backend worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
+    "check": "npm run lint && npm run format:check && npm test && npm run worker:check && npm run build"
   },
   "dependencies": {
     "@phosphor-icons/vue": "^2.2.1",
-    "fastify": "^5.12.7",
     "pinia": "^4.1.0",
     "vue": "^3.5.44",
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^24.19.2",
     "@vitejs/plugin-vue": "^6.0.10",
     "@vue/test-utils": "^2.5.1",
     "eslint": "^10.13.0",
@@ -38,7 +33,6 @@
     "globals": "^17.13.0",
     "jsdom": "^30.1.3",
     "prettier": "^3.9.10",
-    "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.72.0",
     "vite": "^8.3.5",

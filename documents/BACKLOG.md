@@ -143,7 +143,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Critério de aceite: inspecionar qualquer resposta de `/api/matches/*` no navegador não revela a sequência de próximas cartas a comprar nem chaves internas de controle.
 
 - [x] **04B · ARQ-02 — Refatorar backend em camadas estritas de Clean Architecture e Domínio Rico** `[P1] [Back]`
-  - Dividir `MatchService` em Casos de Uso independentes por responsabilidade (`CreateSoloMatchUseCase`, `ResolveActionUseCase`, `ResolveConversationUseCase`, `PrepareCardUseCase`, `EndTurnUseCase`) e mover `InMemoryMatchRepository` para `server/src/infrastructure/`.
+  - Dividir `MatchService` em Casos de Uso independentes por responsabilidade (`CreateSoloMatchUseCase`, `ResolveActionUseCase`, `ResolveConversationUseCase`, `PrepareCardUseCase`, `EndTurnUseCase`) e mover `InMemoryMatchRepository` para `backend/infrastructure/persistence/`.
   - Modelar `Match`, `InvestigatorDeck` e `TurnState` como entidades/Value Objects ricos que protegem suas invariantes, substituindo o array de strings mágicas `resolvedKeys` por estruturas tipadas e eliminando a dependência circular entre `match.ts` e `match-deck.ts`.
   - Extrair a resolução narrativa hardcoded do Caso 01 (`resolveCaseAction` e diálogos) para uma porta `CaseContentRepository` implementada na infraestrutura.
   - Critério de aceite: cada classe, entidade, caso de uso e repositório reside em seu próprio arquivo com responsabilidade única, e `domain/` não possui dependências externas.
@@ -161,7 +161,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Critério de aceite: descartar uma carta limpa `preparedCardInstanceId` no servidor; a virada de turno randomiza a mão e sempre distribui 4 cartas; cartas temporárias entram direto na mão ao conversar e somem após usadas; preparar carta de custo > 0 em conversa atualiza `canResolve` corretamente.
 
 - [x] **20 · JOGO-04 — Persistir partidas e diário** `[Back]`
-  - Substituir o repositório em memória por SQLite local durante o MVP.
+  - Substituir o repositório em memória por persistência D1 durante o MVP.
   - Persistir partida, ações, diário, cartas e hipóteses compartilhadas.
   - Critério de aceite: reiniciar a API não apaga uma partida existente.
 
@@ -332,45 +332,46 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Adicionar WebSocket para atualizar ações, diário, turno e estado da sala.
   - Critério de aceite: o segundo jogador vê uma ação concluída sem recarregar a página.
 
-- [ ] **22 · AUTH-01 — Autenticação leve** `[Back] [Definição]`
-  - Começar com sessão anônima e token de sala; evoluir para conta opcional somente se a persistência entre dispositivos for necessária.
+- [x] **22 · AUTH-01 — Autenticação leve** `[Back] [Definição]`
+  - Implementada sessão anônima por partida com token opaco; uma conta opcional só será avaliada se houver persistência entre dispositivos.
   - Critério de aceite: um jogador não consegue executar ações em uma sala à qual não pertence.
 
-- [ ] **22A · AUTH-02 — Autorizar ações pela sessão da partida** `[Back] [Definição]`
+- [x] **22A · AUTH-02 — Autorizar ações pela sessão da partida** `[Back] [Definição]`
   - Emitir um token opaco vinculado à partida ao criá-la ou entrar nela e exigir esse token em toda leitura ou mutação da partida.
   - Não aceitar o identificador da partida como autorização; validar que a sessão apresentada pertence à partida solicitada.
   - Critério de aceite: uma chamada direta à API, sem sessão válida ou com token de outra partida, recebe erro e não revela nem altera o estado.
 
-- [ ] **23 · SEC-01 — Regras e conteúdo sensível somente no backend** `[Front] [Back]`
+- [x] **23 · SEC-01 — Regras e conteúdo sensível somente no backend** `[Front] [Back]`
   - Não enviar solução do caso, condições futuras ou resultados não desbloqueados ao navegador.
   - Validar toda ação no servidor e limitar requisições por sessão.
   - Critério de aceite: inspecionar o catálogo público do cliente não revela o culpado ou a rota completa da missão.
 
-- [ ] **23A · SEC-02 — Limitar abuso e endurecer contratos da API** `[Back] [Definição]`
+- [x] **23A · SEC-02 — Limitar abuso e endurecer contratos da API** `[Back] [Definição]`
   - Aplicar limite de requisições por sessão e endereço de origem às rotas de partida, com respostas seguras para excesso de tentativas.
   - Manter as respostas limitadas ao estado já desbloqueado; não criar rotas de catálogo completo para conteúdo de casos, diálogos ou desfechos.
   - Critério de aceite: tentativas automatizadas são limitadas sem afetar uma sessão normal, e consultas diretas não retornam conteúdo futuro.
 
 - [x] **23B · SEC-04 — Validar schemas de entrada, tratar erros de domínio e sanitizar parâmetros HTTP** `[P1] [Front] [Back]`
-  - Definir schemas de validação (`body`, `params`, `querystring`) e `bodyLimit` explícito em todas as rotas de `server/src/http/app.ts`, evitando `TypeError` (status `500`) quando `request.body` for nulo ou malformado.
-  - Substituir a comparação de string `message === 'Partida não encontrada.'` por classes de erro semânticas (`DomainError`, `MatchNotFoundError`, `InvalidActionError`) tratadas em um `setErrorHandler` centralizado no Fastify.
+  - Definir validação de `body`, `params` e `querystring`, com limite explícito de payload, nas rotas de `worker/src/http/match-routes.ts`, evitando `TypeError` (status `500`) quando o corpo for nulo ou malformado.
+  - Substituir a comparação de string `message === 'Partida não encontrada.'` por classes de erro semânticas (`DomainError`, `MatchNotFoundError`, `InvalidActionError`) tratadas centralmente pelo adaptador HTTP do Worker.
   - Sanitizar todos os parâmetros dinâmicos de URL (`matchId`, `personId`, `questionId`) com `encodeURIComponent()` em `src/services/game-api.ts`.
   - Critério de aceite: payloads nulos ou malformados retornam `400` estruturado sem lançar `500`, e o status HTTP de erro é determinado pela classe de domínio, nunca por comparação de texto.
 
-- [ ] **23C · SEC-05 — Adotar CSPRNG no embaralhamento e controle de concorrência no SQLite** `[P2] [Back]`
-  - Substituir `Math.random()` em `backend/domain/match-deck.ts` por uma porta `RandomGenerator` implementada com `crypto.randomInt()` (`node:crypto`).
-  - Configurar `PRAGMA journal_mode = WAL;` e `PRAGMA busy_timeout` no `SqliteMatchRepository`, adicionando controle de concorrência otimista (`version`) para impedir condições de corrida (*lost updates*) em requisições simultâneas.
-  - Critério de aceite: o embaralhamento no servidor usa CSPRNG injetável em testes e requisições concorrentes para a mesma partida não sobrescrevem silenciosamente o estado uma da outra.
+- [x] **23C · SEC-05 — Adotar CSPRNG no embaralhamento e controle de concorrência no D1** `[P2] [Back]`
+  - Substituir `Math.random()` em `backend/domain/match-deck.ts` por uma porta `RandomGenerator` implementada com Web Crypto.
+  - Usar controle de concorrência otimista (`version`) no repositório D1 para impedir condições de corrida (*lost updates*) em requisições simultâneas.
+  - Critério de aceite: o embaralhamento no Worker usa CSPRNG injetável em testes e requisições concorrentes para a mesma partida não sobrescrevem silenciosamente o estado uma da outra.
 
-- [ ] **26 · OPS-01 — Preparar deploy gratuito** `[Front] [Back] [Definição]`
-  - Publicar frontend estático e API Node com variáveis de ambiente separadas.
-  - Configurar banco persistente compatível com o provedor escolhido.
+- [x] **26 · OPS-01 — Preparar deploy gratuito** `[Front] [Back] [Definição]`
+  - Publicado frontend estático e API Worker no Cloudflare, sob o mesmo domínio.
+  - Configurado banco D1 persistente no ambiente Cloudflare.
   - Critério de aceite: ambiente de produção permite criar, retomar e jogar uma partida sem depender do computador local.
 
-- [ ] **26A · OPS-02 — Isolar a implementação do servidor em produção** `[Back] [Definição]`
-  - Publicar somente os artefatos necessários do cliente e executar a API como serviço separado, sem servir fontes, documentação privada ou source maps do backend.
-  - Configurar segredos e dados de sessão exclusivamente no ambiente do servidor; revisar cabeçalhos, logs e erros para não expor dados internos.
-  - Critério de aceite: o navegador não consegue baixar arquivos de `server/` ou `docs/private/`, e uma falha de API não revela detalhes internos.
+- [x] **26A · OPS-02 — Isolar a implementação do servidor em produção** `[Back] [Definição]`
+  - Publicar somente os artefatos necessários do cliente e executar a API no Worker, sem servir fontes, documentação privada ou source maps do backend.
+  - Configurar dados de sessão no ambiente do Worker; revisar cabeçalhos, logs e erros para não expor dados internos.
+  - Remover o adaptador legado Node/Fastify/SQLite e suas dependências locais.
+  - Critério de aceite: o navegador não consegue baixar arquivos de `backend/` ou `docs/private/`, e uma falha de API não revela detalhes internos.
 
 - [ ] **27 · DATA-01 — Gerenciar retenção e exclusão de partidas concluídas** `[Pós-MVP] [Front] [Back]`
   - Oferecer ao jogador, após vitória, derrota ou abandono, uma ação explícita para excluir a partida, com confirmação antes da remoção.
@@ -384,8 +385,8 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
 
 - [ ] **31 · CONTEUDO-01 — Externalizar diálogos e resultados dos casos** `[Pós-MVP] [Back] [Definição]`
   - Substituir definições narrativas codificadas no servidor por uma camada de conteúdo versionada e validada, sem disponibilizar o catálogo completo ao cliente.
-  - Começar com arquivos estruturados privados em `server/content/cases/<caso>/` (por exemplo, diálogos, condições e resultados), validados por schema e testes de compilação de conteúdo.
-  - Publicar versões aprovadas desse conteúdo em tabelas próprias do banco de dados — SQLite no desenvolvimento e PostgreSQL em produção — com versão, status de publicação e possibilidade de reversão.
+  - Começar com arquivos estruturados privados em `backend/content/cases/<caso>/` (por exemplo, diálogos, condições e resultados), validados por schema e testes de compilação de conteúdo.
+  - Publicar versões aprovadas desse conteúdo em tabelas próprias do D1, com versão, status de publicação e possibilidade de reversão.
   - Introduzir um CMS/headless CMS somente se a edição por pessoas não técnicas ou o fluxo editorial justificar a complexidade; ele deve publicar para a mesma camada de banco, nunca diretamente para o navegador.
   - Definir uma interface de repositório de conteúdo no servidor para que o motor consulte diálogos, perguntas e variantes sem depender do formato de origem.
   - Critério de aceite: um novo caso pode ser adicionado ou uma conversa pode ser corrigida por uma nova versão de conteúdo, sem alteração do motor; a API continua entregando apenas opções e resultados já desbloqueados.
@@ -418,7 +419,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - A contingência local em falhas de conexão continua rastreada separadamente em BUG-03.
 
 - [x] **21 · BUG-02 — A API em memória perde partidas ao reiniciar** `[P1] [Back]`
-  - Resolvido por JOGO-04: SQLite persiste a partida e o diário para que a missão seja retomada depois de reiniciar a API.
+  - Resolvido por JOGO-04: D1 persiste a partida e o diário para que a missão seja retomada depois de reiniciar a API.
 
 - [x] **18 · BUG-03 — O cliente possui modo de contingência local quando a API está indisponível** `[P1] [Front] [Back]`
   - Consequência: a mesma ação pode ter comportamento diferente se o servidor não estiver ativo.

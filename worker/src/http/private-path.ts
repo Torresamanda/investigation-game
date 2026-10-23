@@ -1,4 +1,5 @@
 const privatePathRoots = new Set([
+  'backend',
   '.git',
   '.env',
   'docs',

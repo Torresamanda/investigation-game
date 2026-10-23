@@ -20,7 +20,6 @@ O multiplayer, autenticação e persistência em banco de dados fazem parte das 
 
 - **Frontend:** Vue 3, TypeScript, Vite e Pinia.
 - **Backend de produção:** Cloudflare Workers, D1 e TypeScript.
-- **Backend local legado:** Node.js, TypeScript e Fastify.
 - **Qualidade:** ESLint, Prettier, Vitest e Vue TSC.
 
 ## Como rodar
@@ -38,19 +37,13 @@ npm ci
 
 ### Desenvolvimento
 
-Em um terminal, inicie a interface:
+Inicie o Worker local, que atende a interface e a API no mesmo endereço:
 
 ```bash
 npm run dev
 ```
 
-Em outro terminal, inicie a API:
-
-```bash
-npm run server:dev
-```
-
-Abra no navegador o endereço exibido pelo Vite. A API local fica disponível em `http://127.0.0.1:3333`; use `http://127.0.0.1:3333/health` para confirmar que ela está ativa.
+Abra no navegador o endereço informado pelo Wrangler. Use `/health` nesse mesmo endereço para confirmar que a API está ativa.
 
 ### Verificação
 
@@ -58,17 +51,17 @@ Abra no navegador o endereço exibido pelo Vite. A API local fica disponível em
 npm run check
 ```
 
-Esse comando executa lint, checagem de formatação, testes, tipos do servidor e build da aplicação.
+Esse comando executa lint, checagem de formatação, testes, tipos do Worker e build da aplicação.
 
 ### Configuração local
 
-Copie `.env.example` e preencha as variáveis para executar o servidor Node localmente. Ele usa `PORT`, `DATABASE_PATH` e `ALLOWED_ORIGIN`. O build local do cliente usa `VITE_API_URL` para apontar à API local.
+O desenvolvimento integrado usa D1 local pelo Wrangler e não exige arquivo `.env`. Opcionalmente, `VITE_API_URL` pode apontar o build do cliente para uma API externa.
 
 ### Produção no Cloudflare
 
 O Worker publica apenas o conteúdo gerado em `dist/` e atende a API no mesmo domínio, em `/api/*`. Assim, o cliente não precisa de `VITE_API_URL` em produção e não há CORS entre interface e API.
 
-As fontes de `backend/`, `server/`, `worker/`, `shared/`, migrações, arquivos de configuração e as pastas privadas `docs/` e `documents/` não pertencem aos assets publicados. O Worker também rejeita diretamente tentativas de acesso a esses caminhos, inclusive quando codificados na URL. Respostas da interface e da API recebem cabeçalhos restritivos de segurança; falhas inesperadas devolvem apenas uma mensagem genérica.
+As fontes de `backend/`, `worker/`, `shared/`, migrações, arquivos de configuração e as pastas privadas `docs/` e `documents/` não pertencem aos assets publicados. O Worker também rejeita diretamente tentativas de acesso a esses caminhos, inclusive quando codificados na URL. Respostas da interface e da API recebem cabeçalhos restritivos de segurança; falhas inesperadas devolvem apenas uma mensagem genérica.
 
 Antes do primeiro deploy, crie o banco D1 configurado em `wrangler.jsonc`, aplique as migrações e autentique o Wrangler na conta Cloudflare. Em seguida, use:
 
@@ -77,15 +70,12 @@ npm run cloudflare:d1:migrate
 npm run cloudflare:deploy
 ```
 
-O runtime Node local não é o alvo de publicação. Ele permanece apenas para desenvolvimento e compatibilidade durante a transição para Worker/D1.
-
 ## Organização
 
 ```text
 src/       interface, componentes e estado de apresentação
 backend/   núcleo privado: regras, casos de uso, conteúdo de casos e presenters
 worker/    API publicada: Cloudflare Worker e persistência D1
-server/    adaptador legado local: Fastify e SQLite
 assets/    artes de cartas, mapas, locais e interface
 tests/     testes automatizados
 ```

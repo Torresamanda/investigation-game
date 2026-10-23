@@ -71,10 +71,6 @@ backend/                        Núcleo privado autoritativo, reutilizável por 
 │   └── crypto/                 Gerador aleatório seguro compatível com Worker
 └── presenters/                 Transformam entidades de domínio em DTOs públicos seguros
 
-server/                         Adaptador legado local (Node.js / Fastify e SQLite)
-├── infrastructure/             SqliteMatchRepository e NodeCryptoRandomGenerator
-└── http/                       Rotas Fastify finas para desenvolvimento e compatibilidade
-
 worker/                         Adaptador de produção (Cloudflare Worker / D1)
 ├── http/                       Rotas, validação de requisição e limites de taxa
 └── infrastructure/             Persistência D1 e sessões de partida
@@ -108,9 +104,9 @@ src/                            Frontend (Vue 3 / Pinia / Vite)
    - Entidades de domínio devem proteger suas próprias invariantes (ex.: validar se há PA suficientes, validar limite de 6 rodadas, validar se a carta está na mão).
    - O domínio deve ser 100% determinístico: nunca chame `Math.random()`, `new Date()` ou `crypto.randomUUID()` diretamente dentro de funções/entidades de domínio sem recebê-los via parâmetro ou porta injetada.
    - Evite estados baseados em "strings mágicas" concatenadas (ex.: `resolvedKeys: string[]` misturando pistas, turnos e bônus). Use Value Objects e propriedades tipadas explícitas (`TurnState`, `discoveredClues`, `askedQuestions`).
-4. **Rotas HTTP Finas e Tratamento de Erros Semântico (`server/src/http/` e `worker/src/http/`):**
+4. **Rotas HTTP Finas e Tratamento de Erros Semântico (`worker/src/http/`):**
    - Rotas apenas validam a entrada via schema, invocam o caso de uso correspondente e retornam o DTO formatado pelo `Presenter`.
-   - **Proibido** decidir status HTTP comparando textos de mensagens de erro (`message === 'Partida não encontrada.'`). Utilize classes de erro tipadas (`NotFoundError`, `DomainRuleError`, `ValidationError`) tratadas de forma centralizada no `setErrorHandler` do Fastify.
+   - **Proibido** decidir status HTTP comparando textos de mensagens de erro (`message === 'Partida não encontrada.'`). Utilize classes de erro tipadas (`NotFoundError`, `DomainRuleError`, `ValidationError`) tratadas de forma centralizada no adaptador HTTP.
 5. **Desacoplamento no Frontend (`src/`):**
    - O roteador (`router.ts`) cuida exclusivamente de navegação e guardas de rota; nunca execute mutações destrutivas de negócio silenciosamente em hooks globais como `afterEach`.
    - Componentes Vue não devem conter regras de negócio complexas nem chamadas diretas à camada `services/`.
@@ -132,8 +128,8 @@ src/                            Frontend (Vue 3 / Pinia / Vite)
 4. **Sanitização de Parâmetros no Cliente HTTP:**
    - Ao construir URLs dinâmicas em `src/services/game-api.ts`, sempre utilize `encodeURIComponent()` para qualquer parâmetro de rota (`matchId`, `personId`, `questionId`).
 5. **Aleatoriedade Segura e Concorrência:**
-   - No backend, operações de embaralhamento devem usar geração criptograficamente segura (`crypto.randomInt` de `node:crypto`) através da porta `RandomGenerator`.
-   - Operações de escrita em partida devem prevenir condições de corrida (bloqueio de submissão dupla no frontend com estado `isPending` e controle de versão/transação no repositório SQLite).
+   - No backend, operações de embaralhamento devem usar geração criptograficamente segura de Web Crypto através da porta `RandomGenerator`.
+   - Operações de escrita em partida devem prevenir condições de corrida (bloqueio de submissão dupla no frontend com estado `isPending` e controle de versão no repositório D1).
 6. **Autorização de Sessão e Proteção contra Abuso:**
    - Nenhuma leitura ou mutação de partida em produção deve confiar apenas no UUID público da URL; valide o token de sessão vinculado à partida e aplique _rate limiting_ nas rotas.
 
@@ -186,7 +182,7 @@ src/                            Frontend (Vue 3 / Pinia / Vite)
   ```bash
   npm run check
   ```
-  Esse comando valida ESLint (`--max-warnings=0`), Prettier, testes unitários/integrados, checagem de tipos do servidor (`tsc`) e build/tipos do frontend (`vue-tsc` + `vite build`).
+  Esse comando valida ESLint (`--max-warnings=0`), Prettier, testes unitários/integrados, checagem de tipos do Worker (`tsc`) e build/tipos do frontend (`vue-tsc` + `vite build`).
 - **Convenção de Commits e Controle de Push:**
   - Antes de criar qualquer commit, leia obrigatoriamente [COMMIT_CONVENTIONS.md](COMMIT_CONVENTIONS.md).
   - Todos os commits devem seguir o padrão **Conventional Commits** em inglês e em minúsculas no formato `<type>(<scope>): <short description>` (com escopo obrigatório e verbo no imperativo, sem ponto final).

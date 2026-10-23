@@ -50,7 +50,7 @@ describe('worker production isolation', () => {
     const assets = environment()
 
     const response = await handleWorkerRequest(
-      new Request('https://game.test/server/src/main.ts'),
+      new Request('https://game.test/backend/domain/match.ts'),
       assets.environment,
     )
 
