@@ -11,7 +11,7 @@ O projeto explora investigação por turnos: o jogador escolhe um investigador, 
 - Seleção de mundo, missão, investigador e apoio.
 - Tela de investigação com locais, pessoas de interesse, diário e cartas.
 - Pontos de ação, ações de investigação e registros dinâmicos no diário.
-- API local para criar partidas, executar ações e encerrar turnos.
+- API autoritativa executada por Cloudflare Worker com persistência em D1.
 - Testes, lint, formatação e verificação de tipos reunidos em um único comando.
 
 O multiplayer, autenticação e persistência em banco de dados fazem parte das próximas etapas.
@@ -19,7 +19,8 @@ O multiplayer, autenticação e persistência em banco de dados fazem parte das 
 ## Tecnologias
 
 - **Frontend:** Vue 3, TypeScript, Vite e Pinia.
-- **Backend:** Node.js, TypeScript e Fastify.
+- **Backend de produção:** Cloudflare Workers, D1 e TypeScript.
+- **Backend local legado:** Node.js, TypeScript e Fastify.
 - **Qualidade:** ESLint, Prettier, Vitest e Vue TSC.
 
 ## Como rodar
@@ -59,11 +60,24 @@ npm run check
 
 Esse comando executa lint, checagem de formatação, testes, tipos do servidor e build da aplicação.
 
-### Configuração de ambiente
+### Configuração local
 
-Copie `.env.example` e preencha as variáveis no ambiente de execução. O servidor usa `PORT`, `DATABASE_PATH` e `ALLOWED_ORIGIN`; em produção, as duas últimas são obrigatórias. O build do cliente usa `VITE_API_URL` para apontar à API publicada.
+Copie `.env.example` e preencha as variáveis para executar o servidor Node localmente. Ele usa `PORT`, `DATABASE_PATH` e `ALLOWED_ORIGIN`. O build local do cliente usa `VITE_API_URL` para apontar à API local.
 
-O cliente é gerado somente em `dist/`. A API não serve arquivos estáticos: publique `dist/` em uma hospedagem estática e execute o servidor como serviço separado, mantendo `server/` e `docs/` fora do ambiente público.
+### Produção no Cloudflare
+
+O Worker publica apenas o conteúdo gerado em `dist/` e atende a API no mesmo domínio, em `/api/*`. Assim, o cliente não precisa de `VITE_API_URL` em produção e não há CORS entre interface e API.
+
+As fontes de `server/`, `worker/`, `shared/`, migrações, arquivos de configuração e as pastas privadas `docs/` e `documents/` não pertencem aos assets publicados. O Worker também rejeita diretamente tentativas de acesso a esses caminhos, inclusive quando codificados na URL. Respostas da interface e da API recebem cabeçalhos restritivos de segurança; falhas inesperadas devolvem apenas uma mensagem genérica.
+
+Antes do primeiro deploy, crie o banco D1 configurado em `wrangler.jsonc`, aplique as migrações e autentique o Wrangler na conta Cloudflare. Em seguida, use:
+
+```bash
+npm run cloudflare:d1:migrate
+npm run cloudflare:deploy
+```
+
+O runtime Node local não é o alvo de publicação. Ele permanece apenas para desenvolvimento e compatibilidade durante a transição para Worker/D1.
 
 ## Organização
 
