@@ -1,4 +1,4 @@
-import { canPayAction, spendActionPoints } from '../../../../shared/domain/action-points.js'
+import { canPayAction, spendActionPoints } from '../../../shared/domain/action-points.js'
 import type { CreateJournalConnectionCommand } from '../commands.js'
 import type { MatchRepository } from '../ports/match-repository.js'
 import { assertMatchIsActive, DomainError, MatchNotFoundError } from '../../domain/errors.js'

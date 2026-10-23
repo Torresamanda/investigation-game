@@ -1,10 +1,6 @@
-import { canPayAction } from '../../../shared/domain/action-points.js'
-import {
-  locationIds,
-  type InvestigatorId,
-  type PersonId,
-} from '../../../shared/domain/identifiers.js'
-import type { InvestigationAction as SharedInvestigationAction } from '../../../shared/domain/identifiers.js'
+import { canPayAction } from '../../shared/domain/action-points.js'
+import { locationIds, type InvestigatorId, type PersonId } from '../../shared/domain/identifiers.js'
+import type { InvestigationAction as SharedInvestigationAction } from '../../shared/domain/identifiers.js'
 import { investigatorIds, type LocationId, type SoloMatch } from '../domain/match.js'
 import type {
   CaseContentRepository,

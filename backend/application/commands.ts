@@ -3,7 +3,7 @@ import type {
   InvestigatorId,
   LocationId,
   PersonId,
-} from '../../../shared/domain/identifiers.js'
+} from '../../shared/domain/identifiers.js'
 
 export interface CreateMatchCommand {
   readonly activeInvestigatorId: InvestigatorId

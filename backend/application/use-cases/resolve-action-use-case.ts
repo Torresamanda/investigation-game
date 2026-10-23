@@ -3,7 +3,7 @@ import {
   canPayAction,
   investigatorActionCost,
   spendActionPoints,
-} from '../../../../shared/domain/action-points.js'
+} from '../../../shared/domain/action-points.js'
 import type { ResolveActionCommand } from '../commands.js'
 import type { MatchRepository } from '../ports/match-repository.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'

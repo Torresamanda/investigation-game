@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MatchService } from '../match-service.js'
 import { InMemoryMatchRepository } from '../../infrastructure/persistence/in-memory-match-repository.js'
-import { MatchPresenter } from '../../http/presenters/match-presenter.js'
+import { MatchPresenter } from '../../presenters/match-presenter.js'
 import type { SoloMatch } from '../../domain/match.js'
 
 function createSupportedDossier() {

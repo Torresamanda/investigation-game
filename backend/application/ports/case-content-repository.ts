@@ -2,7 +2,7 @@ import type {
   InvestigationAction,
   LocationId,
   PersonId,
-} from '../../../../shared/domain/identifiers.js'
+} from '../../../shared/domain/identifiers.js'
 import type {
   CaseEvidenceKey,
   JournalConnection,

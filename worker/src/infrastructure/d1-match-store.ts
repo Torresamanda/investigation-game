@@ -1,4 +1,4 @@
-import type { SoloMatch } from '../../../server/src/domain/match.js'
+import type { SoloMatch } from '../../../backend/domain/match.js'
 
 export interface D1PreparedStatement {
   bind(...values: readonly unknown[]): D1PreparedStatement

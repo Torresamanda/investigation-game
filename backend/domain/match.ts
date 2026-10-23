@@ -5,8 +5,8 @@ import {
   type InvestigatorId,
   type LocationId,
   type InvestigationAction,
-} from '../../../shared/domain/identifiers.js'
-import type { ActionPointPool } from '../../../shared/domain/action-points.js'
+} from '../../shared/domain/identifiers.js'
+import type { ActionPointPool } from '../../shared/domain/action-points.js'
 
 export { investigatorIds, locationIds, investigationActions }
 export type { InvestigatorId, LocationId, InvestigationAction }

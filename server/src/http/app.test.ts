@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from './app.js'
-import { InMemoryMatchRepository } from '../infrastructure/persistence/in-memory-match-repository.js'
-import { MatchService } from '../application/match-service.js'
+import { InMemoryMatchRepository } from '../../../backend/infrastructure/persistence/in-memory-match-repository.js'
+import { MatchService } from '../../../backend/application/match-service.js'
 
 describe('API de partidas', () => {
   let app: ReturnType<typeof createApp>

@@ -1,4 +1,4 @@
-import type { PersonId } from '../../../shared/domain/identifiers.js'
+import type { PersonId } from '../../shared/domain/identifiers.js'
 import type { SoloMatch } from './match.js'
 
 export function isPressLeakConversation(match: SoloMatch, personId: PersonId): boolean {

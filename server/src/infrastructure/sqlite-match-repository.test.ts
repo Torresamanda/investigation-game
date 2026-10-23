@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createSoloMatch } from '../domain/match.js'
+import { createSoloMatch } from '../../../backend/domain/match.js'
 import { SqliteMatchRepository } from './sqlite-match-repository.js'
 
 describe('SqliteMatchRepository', () => {

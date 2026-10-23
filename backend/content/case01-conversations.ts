@@ -1,5 +1,5 @@
 import type { LocationId } from '../domain/match.js'
-import { personIds, type PersonId } from '../../../shared/domain/identifiers.js'
+import { personIds, type PersonId } from '../../shared/domain/identifiers.js'
 
 export { personIds }
 export type ConversationApproach = 'inquiry' | 'pressure' | 'context'

@@ -1,5 +1,5 @@
 import { createApp } from './http/app.js'
-import { MatchService } from './application/match-service.js'
+import { MatchService } from '../../backend/application/match-service.js'
 import { SqliteMatchRepository } from './infrastructure/sqlite-match-repository.js'
 import { NodeCryptoRandomGenerator } from './infrastructure/crypto/node-crypto-random-generator.js'
 import { readServerConfig } from './config/server-config.js'

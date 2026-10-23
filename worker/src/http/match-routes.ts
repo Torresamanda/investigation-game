@@ -3,12 +3,12 @@ import {
   isInvestigationAction,
   isInvestigatorId,
   isLocationId,
-} from '../../../server/src/application/match-service.js'
-import { DomainError, MatchNotFoundError } from '../../../server/src/domain/errors.js'
-import type { SoloMatch } from '../../../server/src/domain/match.js'
-import { isPersonId } from '../../../server/src/content/case01-conversations.js'
-import { MatchPresenter } from '../../../server/src/http/presenters/match-presenter.js'
-import { InMemoryMatchRepository } from '../../../server/src/infrastructure/persistence/in-memory-match-repository.js'
+} from '../../../backend/application/match-service.js'
+import { DomainError, MatchNotFoundError } from '../../../backend/domain/errors.js'
+import type { SoloMatch } from '../../../backend/domain/match.js'
+import { isPersonId } from '../../../backend/content/case01-conversations.js'
+import { MatchPresenter } from '../../../backend/presenters/match-presenter.js'
+import { InMemoryMatchRepository } from '../../../backend/infrastructure/persistence/in-memory-match-repository.js'
 import { createWorkerMatchService } from '../application/create-worker-match-service.js'
 import { D1MatchSessionStore } from '../infrastructure/d1-match-session-store.js'
 import {

@@ -1,5 +1,5 @@
-import { canPayAction, spendActionPoints } from '../../../../shared/domain/action-points.js'
-import type { LocationId } from '../../../../shared/domain/identifiers.js'
+import { canPayAction, spendActionPoints } from '../../../shared/domain/action-points.js'
+import type { LocationId } from '../../../shared/domain/identifiers.js'
 import { assertMatchIsActive, DomainError, MatchNotFoundError } from '../../domain/errors.js'
 import type { SoloMatch } from '../../domain/match.js'
 import type { MatchRepository } from '../ports/match-repository.js'

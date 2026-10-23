@@ -1,9 +1,9 @@
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { MatchRepository } from '../application/ports/match-repository.js'
-import type { SoloMatch } from '../domain/match.js'
-import { DomainError } from '../domain/errors.js'
+import type { MatchRepository } from '../../../backend/application/ports/match-repository.js'
+import type { SoloMatch } from '../../../backend/domain/match.js'
+import { DomainError } from '../../../backend/domain/errors.js'
 
 interface StoredMatch {
   readonly state: string

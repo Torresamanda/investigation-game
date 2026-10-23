@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { InvestigatorId, LocationId } from '../../../../shared/domain/identifiers.js'
+import type { InvestigatorId, LocationId } from '../../../shared/domain/identifiers.js'
 import { MatchService } from '../../application/match-service.js'
 import type { JournalEntry } from '../../domain/match.js'
 import { InMemoryMatchRepository } from '../persistence/in-memory-match-repository.js'

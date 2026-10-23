@@ -1,14 +1,14 @@
 import Fastify from 'fastify'
-import { InMemoryMatchRepository } from '../infrastructure/persistence/in-memory-match-repository.js'
+import { InMemoryMatchRepository } from '../../../backend/infrastructure/persistence/in-memory-match-repository.js'
 import {
   isInvestigationAction,
   isInvestigatorId,
   isLocationId,
   MatchService,
-} from '../application/match-service.js'
-import { isPersonId } from '../content/case01-conversations.js'
-import { MatchPresenter } from './presenters/match-presenter.js'
-import { DomainError, MatchNotFoundError } from '../domain/errors.js'
+} from '../../../backend/application/match-service.js'
+import { isPersonId } from '../../../backend/content/case01-conversations.js'
+import { MatchPresenter } from '../../../backend/presenters/match-presenter.js'
+import { DomainError, MatchNotFoundError } from '../../../backend/domain/errors.js'
 import { locationIds, investigatorIds, personIds } from '../../../shared/domain/identifiers.js'
 
 interface CreateMatchBody {

@@ -15,10 +15,9 @@ Qualquer IA ou assistente de código que analisar, planejar, criar ou editar arq
 - **Evite jogar todas as lógicas em um único arquivo:** Separe rigorosamente por responsabilidade. Cada classe, caso de uso, entidade, repositório, presenter, store ou composable deve ter um único propósito claro e ficar em seu próprio arquivo.
 - **Respeite as camadas:**
   - `shared/`: Apenas tipos primitivos compartilhados (`InvestigatorId`, `LocationId`, `InvestigationAction`), DTOs públicos e funções puras compartilhadas (ex.: `canPayAction`). Zero segredos do caso.
-  - `server/src/domain/`: Entidades ricas (`Match`, `InvestigatorDeck`, `TurnState`), Value Objects, erros semânticos (`DomainError`) e serviços de domínio determinísticos. Proibido depender de Fastify, SQLite, `Math.random()` direto ou HTTP.
-  - `server/src/application/`: Portas (`MatchRepository`, `CaseContentRepository`, `RandomGenerator`) e Casos de Uso (`CreateSoloMatchUseCase`, `ResolveActionUseCase`, etc.). Proibido implementar repositórios concretos (`InMemoryMatchRepository`) ou hardcoded de casos dentro da camada `application`.
-  - `server/src/infrastructure/`: Implementações concretas (`SqliteMatchRepository`, `InMemoryMatchRepository`, `NodeCryptoRandomGenerator`, repositórios de conteúdo do caso).
-  - `server/src/http/`: Controllers/rotas finas, validação de schema, `ErrorHandler` centralizado e `Presenters` (`MatchPresenter`).
+  - `backend/`: Núcleo privado e independente de runtime: domínio, portas, casos de uso, conteúdo do caso, presenters e adaptadores reutilizáveis. Proibido depender de Fastify, SQLite, `Math.random()` direto ou HTTP.
+  - `server/`: Adaptador legado local de Node/Fastify e SQLite. Deve consumir `backend/`, sem duplicar regras ou conteúdo do caso.
+  - `worker/`: Adaptador de produção Cloudflare Worker/D1. Deve consumir `backend/` e nunca expor seu conteúdo como asset estático.
   - `src/`: Interface Vue 3 reativa. Stores Pinia separadas por responsabilidade (`useMatchStore`, `useNotesStore`), orquestração de tela em `composables/` e componentes de UI desacoplados.
 
 ---

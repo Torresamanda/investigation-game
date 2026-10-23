@@ -15,9 +15,9 @@
     "cloudflare:deploy": "npm run build && wrangler deploy",
     "cloudflare:d1:migrate": "wrangler d1 migrations apply cidade-das-brumas --remote",
     "test": "vitest run",
-    "lint": "eslint src server worker vite.config.ts eslint.config.js --max-warnings=0",
-    "format": "prettier --write src server worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
-    "format:check": "prettier --check src server worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
+    "lint": "eslint src backend server worker vite.config.ts eslint.config.js --max-warnings=0",
+    "format": "prettier --write src backend server worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
+    "format:check": "prettier --check src backend server worker migrations vite.config.ts eslint.config.js wrangler.jsonc",
     "check": "npm run lint && npm run format:check && npm test && npm run server:check && npm run worker:check && npm run build"
   },
   "dependencies": {

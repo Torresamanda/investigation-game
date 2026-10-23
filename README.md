@@ -68,7 +68,7 @@ Copie `.env.example` e preencha as variáveis para executar o servidor Node loca
 
 O Worker publica apenas o conteúdo gerado em `dist/` e atende a API no mesmo domínio, em `/api/*`. Assim, o cliente não precisa de `VITE_API_URL` em produção e não há CORS entre interface e API.
 
-As fontes de `server/`, `worker/`, `shared/`, migrações, arquivos de configuração e as pastas privadas `docs/` e `documents/` não pertencem aos assets publicados. O Worker também rejeita diretamente tentativas de acesso a esses caminhos, inclusive quando codificados na URL. Respostas da interface e da API recebem cabeçalhos restritivos de segurança; falhas inesperadas devolvem apenas uma mensagem genérica.
+As fontes de `backend/`, `server/`, `worker/`, `shared/`, migrações, arquivos de configuração e as pastas privadas `docs/` e `documents/` não pertencem aos assets publicados. O Worker também rejeita diretamente tentativas de acesso a esses caminhos, inclusive quando codificados na URL. Respostas da interface e da API recebem cabeçalhos restritivos de segurança; falhas inesperadas devolvem apenas uma mensagem genérica.
 
 Antes do primeiro deploy, crie o banco D1 configurado em `wrangler.jsonc`, aplique as migrações e autentique o Wrangler na conta Cloudflare. Em seguida, use:
 
@@ -83,7 +83,9 @@ O runtime Node local não é o alvo de publicação. Ele permanece apenas para d
 
 ```text
 src/       interface, componentes e estado de apresentação
-server/    regras de domínio, casos de uso e API HTTP
+backend/   núcleo privado: regras, casos de uso, conteúdo de casos e presenters
+worker/    API publicada: Cloudflare Worker e persistência D1
+server/    adaptador legado local: Fastify e SQLite
 assets/    artes de cartas, mapas, locais e interface
 tests/     testes automatizados
 ```

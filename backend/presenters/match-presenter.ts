@@ -1,7 +1,7 @@
-import type { PublicMatchDto } from '../../../../shared/contracts/match.js'
-import type { MatchCard } from '../../domain/match-deck.js'
-import type { SoloMatch } from '../../domain/match.js'
-import { findClueConnectionCandidate } from '../../domain/clue-connection.js'
+import type { PublicMatchDto } from '../../shared/contracts/match.js'
+import type { MatchCard } from '../domain/match-deck.js'
+import type { SoloMatch } from '../domain/match.js'
+import { findClueConnectionCandidate } from '../domain/clue-connection.js'
 
 export const MatchPresenter = {
   toPublicDto(match: SoloMatch): PublicMatchDto {

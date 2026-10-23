@@ -1,4 +1,4 @@
-import { canPayAction, spendActionPoints } from '../../../../shared/domain/action-points.js'
+import { canPayAction, spendActionPoints } from '../../../shared/domain/action-points.js'
 import type { ResolveConversationCommand } from '../commands.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import type { MatchRepository } from '../ports/match-repository.js'

@@ -13,7 +13,7 @@ import type {
   InvestigationAction,
   LocationId,
   PersonId,
-} from '../../../../shared/domain/identifiers.js'
+} from '../../../shared/domain/identifiers.js'
 import type { CaseEvidenceKey, SoloMatch } from '../../domain/match.js'
 import { resolveCase01CardEffect } from './case01-card-effects.js'
 

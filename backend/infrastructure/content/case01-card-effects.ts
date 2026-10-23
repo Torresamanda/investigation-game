@@ -1,4 +1,4 @@
-import type { InvestigationAction, LocationId } from '../../../../shared/domain/identifiers.js'
+import type { InvestigationAction, LocationId } from '../../../shared/domain/identifiers.js'
 import type {
   CaseActionResolution,
   NewJournalEntry,

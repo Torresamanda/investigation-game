@@ -57,7 +57,7 @@ shared/                         Contratos públicos, IDs, Value Objects puros e 
 ├── domain/                     Tipos primitivos (InvestigatorId, LocationId), ActionPointPool e validações puras
 └── contracts/                  DTOs públicos de entrada/saída da API (PublicMatchDto, ConversationOptionsDto)
 
-server/src/                     Backend autoritativo (Node.js / Fastify)
+backend/                        Núcleo privado autoritativo, reutilizável por runtimes de backend
 ├── domain/                     1. DOMÍNIO PURO (Zero dependências de HTTP, SQLite ou frameworks)
 │   ├── entities/               Entidades ricas e Aggregate Roots (Match, InvestigatorDeck, TurnState)
 │   ├── services/               Serviços de domínio puros, Strategies de efeitos de cartas e motor de regras
@@ -65,14 +65,19 @@ server/src/                     Backend autoritativo (Node.js / Fastify)
 ├── application/                2. APLICAÇÃO / CASOS DE USO (Orquestração)
 │   ├── ports/                  Interfaces/contratos de saída (MatchRepository, CaseContentRepository, RandomGenerator)
 │   └── use-cases/              Casos de uso focados (um fluxo por classe/arquivo)
-├── infrastructure/             3. INFRAESTRUTURA (Implementações concretas das portas)
-│   ├── persistence/            SqliteMatchRepository, InMemoryMatchRepository
+├── infrastructure/             3. INFRAESTRUTURA PORTÁVEL (Implementações sem dependência do runtime)
+│   ├── persistence/            InMemoryMatchRepository
 │   ├── content/                Repositórios de conteúdo privado dos casos (ex.: Case01ContentRepository)
-│   └── crypto/                 Geradores aleatórios seguros (NodeCryptoRandomGenerator)
-└── http/                       4. INTERFACE ADAPTERS (Fastify)
-    ├── controllers/            Rotas finas: validam request, chamam UseCase, passam pelo Presenter
-    ├── presenters/             Transformam entidades de domínio em DTOs públicos seguros
-    └── schemas/                Schemas de validação de payload/params/query
+│   └── crypto/                 Gerador aleatório seguro compatível com Worker
+└── presenters/                 Transformam entidades de domínio em DTOs públicos seguros
+
+server/                         Adaptador legado local (Node.js / Fastify e SQLite)
+├── infrastructure/             SqliteMatchRepository e NodeCryptoRandomGenerator
+└── http/                       Rotas Fastify finas para desenvolvimento e compatibilidade
+
+worker/                         Adaptador de produção (Cloudflare Worker / D1)
+├── http/                       Rotas, validação de requisição e limites de taxa
+└── infrastructure/             Persistência D1 e sessões de partida
 
 src/                            Frontend (Vue 3 / Pinia / Vite)
 ├── app/                        Bootstrap da aplicação e configuração de rotas (sem lógica de negócio)
@@ -98,13 +103,13 @@ src/                            Frontend (Vue 3 / Pinia / Vite)
    - Cada caso de uso, entidade, repositório, presenter ou composable deve residir em seu próprio módulo focado.
 2. **Fonte Única para Regras Compartilhadas (`shared/`):**
    - Tipos, identificadores (`InvestigatorId`, `LocationId`, `InvestigationAction`) e cálculos públicos de viabilidade de ação (`canPayAction`) devem ficar em `shared/` e ser importados tanto pelo frontend quanto pelo backend.
-   - É proibido duplicar regras de cálculo de PA ou tipos de contrato entre `src/` e `server/src/`.
-3. **Domínio Rico e Determinístico (`server/src/domain/`):**
+   - É proibido duplicar regras de cálculo de PA ou tipos de contrato entre `src/` e `backend/`.
+3. **Domínio Rico e Determinístico (`backend/domain/`):**
    - Entidades de domínio devem proteger suas próprias invariantes (ex.: validar se há PA suficientes, validar limite de 6 rodadas, validar se a carta está na mão).
    - O domínio deve ser 100% determinístico: nunca chame `Math.random()`, `new Date()` ou `crypto.randomUUID()` diretamente dentro de funções/entidades de domínio sem recebê-los via parâmetro ou porta injetada.
    - Evite estados baseados em "strings mágicas" concatenadas (ex.: `resolvedKeys: string[]` misturando pistas, turnos e bônus). Use Value Objects e propriedades tipadas explícitas (`TurnState`, `discoveredClues`, `askedQuestions`).
-4. **Rotas HTTP Finas e Tratamento de Erros Semântico (`server/src/http/`):**
-   - Rotas Fastify apenas validam a entrada via schema, invocam o caso de uso correspondente e retornam o DTO formatado pelo `Presenter`.
+4. **Rotas HTTP Finas e Tratamento de Erros Semântico (`server/src/http/` e `worker/src/http/`):**
+   - Rotas apenas validam a entrada via schema, invocam o caso de uso correspondente e retornam o DTO formatado pelo `Presenter`.
    - **Proibido** decidir status HTTP comparando textos de mensagens de erro (`message === 'Partida não encontrada.'`). Utilize classes de erro tipadas (`NotFoundError`, `DomainRuleError`, `ValidationError`) tratadas de forma centralizada no `setErrorHandler` do Fastify.
 5. **Desacoplamento no Frontend (`src/`):**
    - O roteador (`router.ts`) cuida exclusivamente de navegação e guardas de rota; nunca execute mutações destrutivas de negócio silenciosamente em hooks globais como `afterEach`.
@@ -119,7 +124,7 @@ src/                            Frontend (Vue 3 / Pinia / Vite)
    - A API jamais deve retornar `drawPile` (ordem das cartas a comprar), baralho completo do apoio ou chaves internas de controle.
    - Toda resposta HTTP de partida deve passar por um `Presenter` (`MatchPresenter.toPublicDto(match)`), expondo apenas a mão ativa (`hand`) e a contagem numérica das pilhas (`drawPileCount`, `discardPileCount`).
 2. **Autoridade Exclusiva do Servidor:**
-   - O backend Node/Fastify é a única autoridade para criação de partida, PA, resolução de ações, uso/preparação de cartas, avanço de turnos e registros do diário.
+   - O backend autoritativo (em produção, Worker/D1) é a única autoridade para criação de partida, PA, resolução de ações, uso/preparação de cartas, avanço de turnos e registros do diário.
    - O frontend nunca deve resolver ações de jogo localmente em produção nem mascarar falhas de rede com estado local divergente.
 3. **Validação Estrita de Entrada (Schema Validation):**
    - Toda rota HTTP que receba `body`, `params` ou `querystring` deve validar seu formato antes de desestruturar propriedades (prevenindo `TypeError` / erro `500` em payloads nulos ou malformados).

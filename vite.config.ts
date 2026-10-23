@@ -18,6 +18,7 @@ export default defineConfig({
     setupFiles: ['src/test/setup.ts'],
     include: [
       'src/**/*.test.ts',
+      'backend/**/*.test.ts',
       'server/**/*.test.ts',
       'shared/**/*.test.ts',
       'worker/**/*.test.ts',
