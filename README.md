@@ -14,7 +14,7 @@ O projeto explora investigação por turnos: o jogador escolhe um investigador, 
 - API autoritativa executada por Cloudflare Worker com persistência em D1.
 - Testes, lint, formatação e verificação de tipos reunidos em um único comando.
 
-O multiplayer, autenticação e persistência em banco de dados fazem parte das próximas etapas.
+O multiplayer permanece planejado para uma etapa futura.
 
 ## Tecnologias
 
@@ -69,6 +69,8 @@ Antes do primeiro deploy, crie o banco D1 configurado em `wrangler.jsonc`, apliq
 npm run cloudflare:d1:migrate
 npm run cloudflare:deploy
 ```
+
+O fluxo de publicação contínua e a separação entre desenvolvimento e produção estão documentados em [Deploy no Cloudflare](documents/DEPLOYMENT.md).
 
 ## Organização
 
