@@ -4,7 +4,12 @@ import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import type { MatchRepository } from '../ports/match-repository.js'
 import { addTemporaryCardToHand, recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
-import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
+import {
+  assertMatchIsActive,
+  DomainError,
+  InvalidActionError,
+  MatchNotFoundError,
+} from '../../domain/errors.js'
 import {
   isPressLeakConversation,
   pressLeakConversationSurcharge,
@@ -19,6 +24,7 @@ export class ResolveConversationUseCase {
   execute(command: ResolveConversationCommand): SoloMatch {
     const match = this.repository.findById(command.matchId)
     if (!match) throw new MatchNotFoundError()
+    assertMatchIsActive(match.status)
     this.assertPersonAvailability(command.personId, command.locationId)
     const conversation = this.caseContentRepository.getConversation(command.personId)
     const question = conversation.questions.find((item) => item.id === command.questionId)

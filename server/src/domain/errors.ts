@@ -21,3 +21,7 @@ export class InvalidActionError extends DomainError {
     this.name = 'InvalidActionError'
   }
 }
+
+export function assertMatchIsActive(status: 'active' | 'won' | 'lost'): void {
+  if (status !== 'active') throw new DomainError('A partida já foi encerrada.')
+}

@@ -1,7 +1,7 @@
 import type { MatchRepository } from '../ports/match-repository.js'
 import type { SoloMatch } from '../../domain/match.js'
 import { drawToHand, INITIAL_HAND_SIZE, recycleCardFromHand } from '../../domain/match-deck.js'
-import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
+import { assertMatchIsActive, DomainError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class DiscardCardUseCase {
   constructor(private readonly repository: MatchRepository) {}
@@ -9,6 +9,7 @@ export class DiscardCardUseCase {
   execute(matchId: string, instanceId: string): SoloMatch {
     const match = this.repository.findById(matchId)
     if (!match) throw new MatchNotFoundError()
+    assertMatchIsActive(match.status)
     if (match.hasDiscardedCardThisRound) {
       throw new DomainError('Apenas uma carta pode ser descartada por rodada.')
     }

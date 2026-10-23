@@ -9,8 +9,14 @@ defineProps<{
   actionCosts: Readonly<Record<VisibleInvestigationAction, number>>
   feedback: InvestigationFeedback
   canEndTurn: boolean
+  canAccuse: boolean
+  round: number
 }>()
-const emit = defineEmits<{ execute: [action: InvestigationAction]; endTurn: [] }>()
+const emit = defineEmits<{
+  execute: [action: InvestigationAction]
+  endTurn: []
+  accuse: []
+}>()
 const actions: readonly { label: string; action: VisibleInvestigationAction }[] = [
   { label: 'Examinar', action: 'examine' },
   { label: 'Conversar', action: 'converse' },
@@ -52,12 +58,15 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
       <p class="feedback-result">{{ feedback.result }}</p>
     </div>
     <button class="end-turn" :disabled="!canEndTurn" @click="emit('endTurn')">
-      Encerrar turno <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
+      {{ round === 6 ? 'Encerrar missão' : 'Encerrar turno' }}
+      <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
     </button>
     <div class="accusation-control">
-      <button disabled aria-describedby="accusation-help">Acusação bloqueada</button>
+      <button :disabled="!canAccuse" aria-describedby="accusation-help" @click="emit('accuse')">
+        {{ canAccuse ? 'Apresentar acusação' : 'Acusação bloqueada' }}
+      </button>
       <p id="accusation-help" class="help-text">
-        No início de um turno das Rodadas 5 ou 6. Consome o turno completo.
+        Disponível nas Rodadas 5 e 6. No modo solo, exige 3 PA gerais.
       </p>
     </div>
   </section>

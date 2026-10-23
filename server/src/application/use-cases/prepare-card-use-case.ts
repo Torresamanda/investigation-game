@@ -1,6 +1,6 @@
 import type { MatchRepository } from '../ports/match-repository.js'
 import type { SoloMatch } from '../../domain/match.js'
-import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
+import { assertMatchIsActive, DomainError, MatchNotFoundError } from '../../domain/errors.js'
 
 export class PrepareCardUseCase {
   constructor(private readonly repository: MatchRepository) {}
@@ -8,6 +8,7 @@ export class PrepareCardUseCase {
   execute(matchId: string, instanceId: string | null): SoloMatch {
     const match = this.repository.findById(matchId)
     if (!match) throw new MatchNotFoundError()
+    assertMatchIsActive(match.status)
     if (
       instanceId &&
       !match.decks[match.activeInvestigatorId].hand.some((card) => card.instanceId === instanceId)

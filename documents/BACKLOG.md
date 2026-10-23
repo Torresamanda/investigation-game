@@ -23,15 +23,20 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 
 4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
    - Concluído: `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
-   - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA). Aguardar validação do usuário antes de avançar.
-   - Concluído: `14 · INV-02` → Rotas investigativas alternativas por investigador; aguardando validação do usuário.
-   - Próxima após validação: `19 · CASO-07` → Acusação e desfechos.
-   - `19 · CASO-07` → Acusação e desfechos (no modo solo, permitir acusar nas Rodadas 5 ou 6 pagando 3 PA para não inutilizar a Rodada 6).
+   - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA).
+   - Concluído: `19 · CASO-07` → Acusação e desfechos nas Rodadas 5 e 6 (dossiê validado pelo servidor; 3 PA gerais no modo solo; Rodada 6 encerra a partida sem vitória).
+   - Próxima após validação: `17 · UX-01` → Refinar início de partida e seleção de investigadores.
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
    - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
 
 ### Prompt de Handoff para a Próxima IA
+
+```text
+Leia AGENTS.md, documents/PROJECT_RULES.md, documents/COMMIT_CONVENTIONS.md e documents/BACKLOG.md.
+As tarefas `14 · INV-02`, `16 · DIARIO-02` e `19 · CASO-07` foram implementadas. Aguarde a validação do usuário da `19 · CASO-07` antes de iniciar outra tarefa.
+Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commitar. Nunca faça git push.
+```
 
 ## P0 — Fundação visual transversal
 
@@ -213,7 +218,7 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
       - **Rodada 6 (`Prazo final`):** Impede o surgimento de pistas inéditas de exploração básica (permitindo apenas analisar pistas pendentes, criar conexões, confrontar inconsistências ou acusar).
   - Critério de aceite: custos, bônus e restrições de cada rodada são validados pelo servidor e comunicados ao jogador na abertura da rodada.
 
-- [ ] **19 · CASO-07 — Acusação e desfechos** `[Front] [Back] [Definição]`
+- [x] **19 · CASO-07 — Acusação e desfechos** `[Front] [Back] [Definição]`
   - **Escopo técnico (`AccuseSuspectUseCase`, `POST /api/matches/:id/accuse` e modal de Acusação no frontend):**
     - Desbloquear acusação somente após o encerramento da Rodada 4, disponível nas Rodadas 5 e 6.
     - **Regra de custo Solo vs. Coop:** Em **cooperação**, a acusação deve ser escolhida no início de um turno (`hasActedThisTurn === false`) e consome o turno completo daquele investigador; no **modo solo**, permitir apresentar a acusação em qualquer momento das Rodadas 5 ou 6 desde que o investigador possua e gaste **3 PA** (permitindo que o jogador solo use até 2 PA na Rodada 6 para concluir uma última análise ou conexão antes de acusar).

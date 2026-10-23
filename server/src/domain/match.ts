@@ -34,7 +34,16 @@ export interface JournalEntry {
   readonly relatedEntryIds?: readonly string[]
   readonly protectedUntilRound?: number
   readonly markedForFollowUp?: boolean
+  readonly caseEvidenceKey?: CaseEvidenceKey
 }
+
+export type CaseEvidenceKey =
+  | 'e1-confirmed'
+  | 'e2-confirmed'
+  | 'e3-confirmed'
+  | 'e4-confirmed'
+  | 'e5-confirmed'
+  | 'e6-confirmed'
 
 export interface JournalConnection {
   readonly id: string
@@ -60,7 +69,7 @@ export interface SoloMatch {
   readonly unlockedLocations: readonly LocationId[]
   readonly hasUsedFreeMoveThisRound: boolean
   readonly hasDiscardedCardThisRound: boolean
-  readonly status: 'active'
+  readonly status: 'active' | 'won' | 'lost'
   readonly createdAt: string
   readonly actionPoints: ActionPoints
   readonly journalEntries: readonly JournalEntry[]

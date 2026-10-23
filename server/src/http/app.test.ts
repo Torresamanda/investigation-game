@@ -75,6 +75,95 @@ describe('API de partidas', () => {
     expect(retrieve.json()).toMatchObject({ id: match.id, mode: 'solo' })
   })
 
+  it('valida o formato do dossiê de acusação na rota', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/matches',
+      payload: { activeInvestigatorId: 'livia', supportInvestigatorId: 'rafael' },
+    })
+    const { id } = create.json<{ id: string }>()
+    const invalid = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/accuse`,
+      payload: {
+        suspectId: 'unknown',
+        meansClueId: 'clue-1',
+        opportunityClueId: 'clue-2',
+        linkClueId: 'clue-3',
+      },
+    })
+
+    expect(invalid.statusCode).toBe(400)
+    expect(invalid.json()).toHaveProperty('message')
+  })
+
+  it('apresenta o dossiê via API e não publica as chaves internas das evidências', async () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'accusation-api')
+    app = createApp(service)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({
+      ...match,
+      round: 5,
+      canAccuse: true,
+      journalEntries: [
+        {
+          id: 'means',
+          type: 'clue',
+          title: 'Meios',
+          content: '',
+          locationId: 'gallery',
+          round: 3,
+          status: 'confirmed',
+          caseEvidenceKey: 'e1-confirmed',
+        },
+        {
+          id: 'opportunity',
+          type: 'clue',
+          title: 'Oportunidade',
+          content: '',
+          locationId: 'security',
+          round: 3,
+          status: 'confirmed',
+          caseEvidenceKey: 'e2-confirmed',
+        },
+        {
+          id: 'link',
+          type: 'clue',
+          title: 'Vínculo',
+          content: '',
+          locationId: 'security',
+          round: 4,
+          status: 'confirmed',
+          caseEvidenceKey: 'e3-confirmed',
+        },
+      ],
+      journalConnections: [
+        { id: 'connection-1', fromClueId: 'means', toClueId: 'opportunity', round: 4 },
+        { id: 'connection-2', fromClueId: 'opportunity', toClueId: 'link', round: 4 },
+      ],
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/matches/${match.id}/accuse`,
+      payload: {
+        suspectId: 'raul',
+        meansClueId: 'means',
+        opportunityClueId: 'opportunity',
+        linkClueId: 'link',
+      },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({ status: 'won', actionPoints: { general: 2 } })
+    expect(response.json()).not.toHaveProperty('resolvedKeys')
+    expect(response.json().journalEntries[0]).not.toHaveProperty('caseEvidenceKey')
+  })
+
   it('resolve uma ação e devolve o diário atualizado', async () => {
     const create = await app.inject({
       method: 'POST',

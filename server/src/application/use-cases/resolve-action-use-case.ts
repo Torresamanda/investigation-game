@@ -11,7 +11,12 @@ import { recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import type { InvestigatorId } from '../../domain/match.js'
 import { findClueConnectionCandidate } from '../../domain/clue-connection.js'
-import { DomainError, InvalidActionError, MatchNotFoundError } from '../../domain/errors.js'
+import {
+  assertMatchIsActive,
+  DomainError,
+  InvalidActionError,
+  MatchNotFoundError,
+} from '../../domain/errors.js'
 
 export class ResolveActionUseCase {
   constructor(
@@ -22,6 +27,7 @@ export class ResolveActionUseCase {
   execute(command: ResolveActionCommand): SoloMatch {
     const match = this.repository.findById(command.matchId)
     if (!match) throw new MatchNotFoundError()
+    assertMatchIsActive(match.status)
     const activeDeck = match.decks[match.activeInvestigatorId]
     const card = match.preparedCardInstanceId
       ? activeDeck.hand.find((item) => item.instanceId === match.preparedCardInstanceId)
@@ -93,9 +99,14 @@ export class ResolveActionUseCase {
       ? {
           ...resolution.entry,
           status: 'confirmed' as const,
+          ...(resolution.resolvedKey === 'gallery-lock'
+            ? { caseEvidenceKey: 'e1-confirmed' as const }
+            : {}),
           content: `${resolution.entry.content} Rafael confirmou o vestígio na análise pericial.`,
         }
-      : resolution.entry
+      : resolution.entry.caseEvidenceKey || !isConfirmedCaseEvidence(resolution.resolvedKey)
+        ? resolution.entry
+        : { ...resolution.entry, caseEvidenceKey: resolution.resolvedKey }
     const journalEntries = match.journalEntries.map(
       (entry) =>
         resolution.journalEntryUpdates?.find((updated) => updated.id === entry.id) ?? entry,
@@ -190,6 +201,19 @@ export class ResolveActionUseCase {
     this.repository.save(updated)
     return updated
   }
+}
+
+function isConfirmedCaseEvidence(
+  key: string | undefined,
+): key is NonNullable<SoloMatch['journalEntries'][number]['caseEvidenceKey']> {
+  return (
+    key === 'e1-confirmed' ||
+    key === 'e2-confirmed' ||
+    key === 'e3-confirmed' ||
+    key === 'e4-confirmed' ||
+    key === 'e5-confirmed' ||
+    key === 'e6-confirmed'
+  )
 }
 
 function isPhysicalEvidenceLocation(locationId: ResolveActionCommand['locationId']): boolean {

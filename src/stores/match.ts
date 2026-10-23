@@ -4,7 +4,12 @@ import { investigators, type InvestigatorId } from '../content/investigators'
 import { getCardDefinition, type CardDefinition } from '../content/cards'
 import type { InvestigationAction, LocationId, PersonId } from '../../shared/domain/identifiers'
 import { canPayAction, investigatorActionCost } from '../../shared/domain/action-points'
-import { gameApi, type MatchJournalEntry, type RemoteMatch } from '../services/game-api'
+import {
+  gameApi,
+  type AccusationSubmission,
+  type MatchJournalEntry,
+  type RemoteMatch,
+} from '../services/game-api'
 
 export interface HandCard extends CardDefinition {
   readonly instanceId: string
@@ -57,7 +62,14 @@ export const useMatchStore = defineStore('match', () => {
   const canDiscardPreparedCard = computed(
     () => Boolean(preparedCard.value) && !remoteMatch.value?.hasDiscardedCardThisRound,
   )
-  const canEndTurn = computed(() => Boolean(remoteMatch.value) && round.value < 6)
+  const canEndTurn = computed(() => remoteMatch.value?.status === 'active' && round.value <= 6)
+  const canAccuse = computed(
+    () =>
+      remoteMatch.value?.status === 'active' &&
+      remoteMatch.value.canAccuse &&
+      round.value >= 5 &&
+      round.value <= 6,
+  )
   const preparedCard = computed(() =>
     hand.value.find(
       (card) =>
@@ -101,7 +113,7 @@ export const useMatchStore = defineStore('match', () => {
     action: InvestigationAction,
     locationId: LocationId = currentLocationId.value,
   ): boolean {
-    if (!remoteMatch.value) return false
+    if (!remoteMatch.value || remoteMatch.value.status !== 'active') return false
     const card = preparedCard.value
     if (card && !card.compatibleActions.includes(action)) return false
     return canPayAction(remoteMatch.value.actionPoints, {
@@ -157,6 +169,12 @@ export const useMatchStore = defineStore('match', () => {
       toClueId,
     )
     preparedCardId.value = remoteMatch.value.preparedCardInstanceId
+  }
+
+  async function accuse(accusation: AccusationSubmission): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A acusação exige uma partida conectada à API.')
+    remoteMatch.value = await gameApi.accuse(remoteMatch.value.id, accusation)
+    preparedCardId.value = null
   }
 
   async function moveInvestigator(locationId: LocationId): Promise<void> {
@@ -232,6 +250,7 @@ export const useMatchStore = defineStore('match', () => {
     moveCostLabel,
     pointsLabel,
     canEndTurn,
+    canAccuse,
     canDiscardPreparedCard,
     preparedCard,
     journalEntries,
@@ -242,6 +261,7 @@ export const useMatchStore = defineStore('match', () => {
     createRemoteMatch,
     resolveAction,
     createJournalConnection,
+    accuse,
     moveInvestigator,
     endRemoteTurn,
     discardPreparedCard,

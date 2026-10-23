@@ -17,6 +17,8 @@ describe('InvestigationActions', () => {
           status: 'indicio',
         },
         canEndTurn: true,
+        canAccuse: false,
+        round: 1,
       },
       global: { stubs: { PhArrowRight: true } },
     })

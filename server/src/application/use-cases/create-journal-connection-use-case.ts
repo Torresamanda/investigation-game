@@ -1,7 +1,7 @@
 import { canPayAction, spendActionPoints } from '../../../../shared/domain/action-points.js'
 import type { CreateJournalConnectionCommand } from '../commands.js'
 import type { MatchRepository } from '../ports/match-repository.js'
-import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
+import { assertMatchIsActive, DomainError, MatchNotFoundError } from '../../domain/errors.js'
 import { recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 
@@ -16,6 +16,7 @@ export class CreateJournalConnectionUseCase {
   execute(command: CreateJournalConnectionCommand): SoloMatch {
     const match = this.repository.findById(command.matchId)
     if (!match) throw new MatchNotFoundError()
+    assertMatchIsActive(match.status)
     if (command.fromClueId === command.toClueId) {
       throw new DomainError('Escolha duas pistas diferentes para criar a conexão.')
     }

@@ -15,6 +15,7 @@ export const MatchPresenter = {
       activeInvestigatorId: match.activeInvestigatorId,
       supportInvestigatorId: match.supportInvestigatorId,
       round: match.round,
+      status: match.status,
       examinedLocationsThisRound: match.examinedLocationsThisRound,
       hasUsedPassiveThisRound: match.hasUsedPassiveThisRound,
       hasReceivedSocialBonusThisRound: match.hasReceivedSocialBonusThisRound,
@@ -29,7 +30,7 @@ export const MatchPresenter = {
       hasUsedFreeMoveThisRound: match.hasUsedFreeMoveThisRound,
       hasDiscardedCardThisRound: match.hasDiscardedCardThisRound,
       actionPoints: match.actionPoints,
-      journalEntries: match.journalEntries,
+      journalEntries: match.journalEntries.map(toPublicJournalEntry),
       journalConnections: match.journalConnections,
       decks: {
         [match.activeInvestigatorId]: {
@@ -40,6 +41,13 @@ export const MatchPresenter = {
       },
     }
   },
+}
+
+function toPublicJournalEntry({
+  caseEvidenceKey: _caseEvidenceKey,
+  ...entry
+}: SoloMatch['journalEntries'][number]) {
+  return _caseEvidenceKey ? entry : { ...entry }
 }
 
 function toPublicCard(card: MatchCard) {

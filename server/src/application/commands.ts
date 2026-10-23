@@ -28,3 +28,14 @@ export interface CreateJournalConnectionCommand {
   readonly fromClueId: string
   readonly toClueId: string
 }
+
+export interface AccusationEvidenceSelection {
+  readonly meansClueId: string
+  readonly opportunityClueId: string
+  readonly linkClueId: string
+}
+
+export interface AccuseSuspectCommand extends AccusationEvidenceSelection {
+  readonly matchId: string
+  readonly suspectId: PersonId
+}

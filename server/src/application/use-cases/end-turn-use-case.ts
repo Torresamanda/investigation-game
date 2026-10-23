@@ -9,7 +9,17 @@ export class EndTurnUseCase {
   execute(matchId: string): SoloMatch {
     const match = this.repository.findById(matchId)
     if (!match) throw new MatchNotFoundError()
-    if (match.round >= 6) throw new DomainError('A missão já alcançou o limite de rodadas.')
+    if (match.status !== 'active') throw new DomainError('A partida já foi encerrada.')
+    if (match.round === 6) {
+      const finished: SoloMatch = {
+        ...match,
+        status: 'lost',
+        canAccuse: false,
+        preparedCardInstanceId: null,
+      }
+      this.repository.save(finished)
+      return finished
+    }
 
     const nextRound = match.round + 1
     const nextJournalEntries =

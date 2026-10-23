@@ -39,6 +39,7 @@ export interface PublicMatchDto {
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly round: number
+  readonly status: 'active' | 'won' | 'lost'
   readonly examinedLocationsThisRound: readonly LocationId[]
   readonly hasUsedPassiveThisRound: boolean
   readonly hasReceivedSocialBonusThisRound: boolean

@@ -13,7 +13,8 @@ import SuspectSection from './components/SuspectSection.vue'
 import CaseJournal from './components/CaseJournal.vue'
 import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
-import type { ConversationOptions } from '../../services/game-api'
+import AccusationDialog from './components/AccusationDialog.vue'
+import type { AccusationSubmission, ConversationOptions } from '../../services/game-api'
 import { feedbackFromEntry, statusFeedback } from './action-feedback'
 import './investigation.css'
 
@@ -66,6 +67,11 @@ const hasConfirmedRaulEvidence = computed(() =>
   ),
 )
 const journalTab = ref<'timeline' | 'clues' | 'suspects' | 'notes'>('timeline')
+const showAccusation = ref(false)
+const accusationError = ref<string | null>(null)
+const confirmedClues = computed(() =>
+  session.journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
+)
 const hasFreeJournalConnection = computed(() =>
   Boolean(
     session.remoteMatch?.hasFreeConnectionThisRound &&
@@ -162,16 +168,38 @@ async function clearPreparedCard() {
 
 async function endTurn() {
   try {
+    if (!(await session.endRemoteTurn())) return
     feedback.value = statusFeedback(
-      (await session.endRemoteTurn())
-        ? `Rodada ${String(session.round).padStart(2, '0')} iniciada: mão renovada e PA restaurados.`
-        : 'Esta é a última rodada da missão.',
+      session.remoteMatch?.status === 'lost'
+        ? 'Missão encerrada sem uma acusação sustentada.'
+        : `Rodada ${String(session.round).padStart(2, '0')} iniciada: mão renovada e PA restaurados.`,
     )
   } catch (error) {
     feedback.value = statusFeedback(
       error instanceof Error ? error.message : 'Não foi possível encerrar o turno.',
     )
   }
+}
+
+async function accuseSuspect(submission: AccusationSubmission) {
+  accusationError.value = null
+  try {
+    await session.accuse(submission)
+    showAccusation.value = false
+    feedback.value = statusFeedback(
+      session.remoteMatch?.status === 'won'
+        ? 'O dossiê foi aceito. O caso está resolvido.'
+        : 'A acusação não foi sustentada. A investigação foi encerrada.',
+    )
+  } catch (error) {
+    accusationError.value =
+      error instanceof Error ? error.message : 'Não foi possível apresentar a acusação.'
+  }
+}
+
+function openAccusation() {
+  showAccusation.value = true
+  accusationError.value = null
 }
 
 async function discardPreparedCard() {
@@ -280,6 +308,21 @@ async function clearConversationCardPreparation() {
     :class="{ 'journal-is-open': open }"
     @keydown.esc="close"
   >
+    <section
+      v-if="session.remoteMatch?.status === 'won' || session.remoteMatch?.status === 'lost'"
+      class="case-outcome"
+      role="alert"
+      aria-live="assertive"
+    >
+      <h2>{{ session.remoteMatch.status === 'won' ? 'Caso resolvido' : 'Missão encerrada' }}</h2>
+      <p>
+        {{
+          session.remoteMatch.status === 'won'
+            ? 'O dossiê sustentou a acusação.'
+            : 'A investigação terminou sem uma acusação sustentada.'
+        }}
+      </p>
+    </section>
     <div v-if="session.connectionState !== 'connected'" class="connection-state" role="alert">
       <strong>Investigação indisponível</strong>
       <span>{{ session.connectionError ?? 'Conecte-se à API para iniciar ações.' }}</span>
@@ -324,8 +367,11 @@ async function clearConversationCardPreparation() {
         :action-costs="actionCosts"
         :feedback="feedback"
         :can-end-turn="session.canEndTurn"
+        :can-accuse="session.canAccuse"
+        :round="session.round"
         @execute="executeSelectedAction"
         @end-turn="endTurn"
+        @accuse="openAccusation"
       />
       <CaseJournal
         v-if="open"
@@ -355,6 +401,16 @@ async function clearConversationCardPreparation() {
       @resolve="resolveConversation"
       @prepare-card="prepareConversationCard"
       @clear-prepared-card="clearConversationCardPreparation"
+    />
+    <AccusationDialog
+      v-if="showAccusation && session.remoteMatch?.status === 'active'"
+      :suspects="suspectProfiles"
+      :confirmed-clues="confirmedClues"
+      :connection-count="session.journalConnections.length"
+      :action-points="session.remoteMatch.actionPoints"
+      :error-message="accusationError"
+      @close="showAccusation = false"
+      @accuse="accuseSuspect"
     />
   </main>
 </template>

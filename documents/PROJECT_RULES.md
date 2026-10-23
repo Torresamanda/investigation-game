@@ -21,7 +21,7 @@
 - O modo jogável atual é **solo**: um investigador ativo e um apoio diferente, escolhidos antes da missão.
 - Uma futura partida cooperativa terá exatamente dois investigadores, definidos no início e mantidos até o fim da missão.
 - Uma missão tem, no máximo, **seis rodadas**. Toda rodada começa com seu evento.
-- A **acusação** é desbloqueada somente após o encerramento da Rodada 4. Ela pode ser escolhida no início de um turno das Rodadas 5 ou 6 e consome esse turno inteiro.
+- A **acusação** é desbloqueada somente após o encerramento da Rodada 4 e fica disponível nas Rodadas 5 e 6. No modo solo, pode ser apresentada a qualquer momento do turno por 3 PA gerais; em uma futura partida cooperativa, deverá ser escolhida no início do turno e consumirá o turno inteiro.
 
 ### 2.2. Turnos e Pontos de Ação (PA)
 

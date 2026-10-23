@@ -3,7 +3,12 @@ import type {
   LocationId,
   PersonId,
 } from '../../../../shared/domain/identifiers.js'
-import type { JournalConnection, JournalEntry, SoloMatch } from '../../domain/match.js'
+import type {
+  CaseEvidenceKey,
+  JournalConnection,
+  JournalEntry,
+  SoloMatch,
+} from '../../domain/match.js'
 
 export type NewJournalEntry = Omit<JournalEntry, 'id'>
 
@@ -36,6 +41,14 @@ export interface CaseActionResolution {
 }
 
 export interface CaseContentRepository {
+  isAccusationCorrect(
+    suspectId: PersonId,
+    evidence: {
+      readonly means?: CaseEvidenceKey
+      readonly opportunity?: CaseEvidenceKey
+      readonly link?: CaseEvidenceKey
+    },
+  ): boolean
   getConversation(personId: PersonId): ConversationContent
   isPersonAvailableAtLocation(personId: PersonId, locationId: LocationId): boolean
   getConversationBlockReason(

@@ -72,6 +72,90 @@
   font-size: 12px;
   padding: 10px;
 }
+.accusation-control .button-primary {
+  border-color: var(--gold);
+  color: var(--paper);
+}
+.accusation-dialog {
+  position: fixed;
+  z-index: 20;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  background: #0d1d2c;
+  color: var(--paper);
+  box-shadow:
+    0 0 0 100vmax #030913bb,
+    0 24px 90px #000c;
+}
+.accusation-dialog-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+.accusation-dialog h2 {
+  margin: 0;
+  font:
+    24px Georgia,
+    serif;
+}
+.accusation-dialog label {
+  display: grid;
+  gap: 6px;
+  color: var(--gold);
+  font-size: 12px;
+}
+.accusation-dialog select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #12283a;
+  color: var(--paper);
+  font: inherit;
+}
+.accusation-dialog-help,
+.accusation-readiness,
+.accusation-error {
+  margin: 0;
+  color: #b9cbd3;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.accusation-readiness span {
+  display: block;
+  margin-top: 4px;
+}
+.accusation-error {
+  color: #ffb0a8;
+}
+.case-outcome {
+  position: fixed;
+  z-index: 21;
+  inset: 16px 16px auto;
+  padding: 16px 20px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: #0d1d2cf2;
+  color: var(--paper);
+  box-shadow: 0 12px 40px #0008;
+}
+.case-outcome h2,
+.case-outcome p {
+  margin: 0;
+}
+.case-outcome p {
+  margin-top: 6px;
+  color: #b9cbd3;
+}
 @media (min-width: 1101px) and (max-height: 780px) {
   .investigation-controls h3 {
     font-size: 18px;

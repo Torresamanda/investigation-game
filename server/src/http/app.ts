@@ -9,7 +9,7 @@ import {
 import { isPersonId } from '../content/case01-conversations.js'
 import { MatchPresenter } from './presenters/match-presenter.js'
 import { DomainError, MatchNotFoundError } from '../domain/errors.js'
-import { locationIds, investigatorIds } from '../../../shared/domain/identifiers.js'
+import { locationIds, investigatorIds, personIds } from '../../../shared/domain/identifiers.js'
 
 interface CreateMatchBody {
   activeInvestigatorId?: unknown
@@ -32,6 +32,13 @@ interface MoveBody {
 interface CreateJournalConnectionBody {
   fromClueId?: unknown
   toClueId?: unknown
+}
+
+interface AccusationBody {
+  suspectId?: unknown
+  meansClueId?: unknown
+  opportunityClueId?: unknown
+  linkClueId?: unknown
 }
 
 interface PrepareCardBody {
@@ -167,6 +174,53 @@ export function createApp(service = new MatchService(new InMemoryMatchRepository
         return MatchPresenter.toPublicDto(match)
       } catch (error) {
         return sendMatchError(reply, error, 'Não foi possível criar a conexão.')
+      }
+    },
+  )
+
+  app.post<{ Params: MatchParams; Body: AccusationBody }>(
+    '/api/matches/:id/accuse',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'string', minLength: 1 } },
+        },
+        body: {
+          type: 'object',
+          required: ['suspectId', 'meansClueId', 'opportunityClueId', 'linkClueId'],
+          additionalProperties: false,
+          properties: {
+            suspectId: { type: 'string', enum: [...personIds] },
+            meansClueId: { type: 'string', minLength: 1, maxLength: 120 },
+            opportunityClueId: { type: 'string', minLength: 1, maxLength: 120 },
+            linkClueId: { type: 'string', minLength: 1, maxLength: 120 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { suspectId, meansClueId, opportunityClueId, linkClueId } = request.body
+      if (
+        !isPersonId(suspectId) ||
+        typeof meansClueId !== 'string' ||
+        typeof opportunityClueId !== 'string' ||
+        typeof linkClueId !== 'string'
+      ) {
+        return reply.code(400).send({ message: 'Preencha um dossiê de acusação válido.' })
+      }
+      try {
+        const match = service.accuseSuspect({
+          matchId: request.params.id,
+          suspectId,
+          meansClueId,
+          opportunityClueId,
+          linkClueId,
+        })
+        return MatchPresenter.toPublicDto(match)
+      } catch (error) {
+        return sendMatchError(reply, error, 'Não foi possível apresentar a acusação.')
       }
     },
   )

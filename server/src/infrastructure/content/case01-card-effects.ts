@@ -201,12 +201,13 @@ export function resolveCase01CardEffect(
           'O Reagente de Traços exige uma pista física não verificada no local.',
         )
       const isFalseLead = /Marcas nas ferramentas|Avaliação do seguro/.test(currentClue.title)
+      const key = resolvedKeyForClue(currentClue)
       const validatedClue = {
         ...currentClue,
         status: isFalseLead ? ('refuted' as const) : ('confirmed' as const),
         content: `${currentClue.content} O reagente ${isFalseLead ? 'refutou' : 'confirmou'} o vestígio físico.`,
+        ...(!isFalseLead && isCaseEvidenceKey(key) ? { caseEvidenceKey: key } : {}),
       }
-      const key = resolvedKeyForClue(currentClue)
       return {
         ...resolution,
         entry: currentClue.id === resolution.entry.id ? validatedClue : resolution.entry,
@@ -467,6 +468,19 @@ function resolvedKeyForClue(entry: JournalEntry): string | undefined {
   if (entry.title.includes('Falha de câmera')) return 'e5-confirmed'
   if (entry.title.includes('Retorno do cartão')) return 'e6-confirmed'
   return undefined
+}
+
+function isCaseEvidenceKey(
+  key: string | undefined,
+): key is NonNullable<JournalEntry['caseEvidenceKey']> {
+  return (
+    key === 'e1-confirmed' ||
+    key === 'e2-confirmed' ||
+    key === 'e3-confirmed' ||
+    key === 'e4-confirmed' ||
+    key === 'e5-confirmed' ||
+    key === 'e6-confirmed'
+  )
 }
 
 function isCardId(cardId: string | undefined): cardId is CardId {

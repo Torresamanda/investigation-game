@@ -1,6 +1,6 @@
 import { canPayAction, spendActionPoints } from '../../../../shared/domain/action-points.js'
 import type { LocationId } from '../../../../shared/domain/identifiers.js'
-import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
+import { assertMatchIsActive, DomainError, MatchNotFoundError } from '../../domain/errors.js'
 import type { SoloMatch } from '../../domain/match.js'
 import type { MatchRepository } from '../ports/match-repository.js'
 
@@ -10,6 +10,7 @@ export class MoveInvestigatorUseCase {
   execute(matchId: string, locationId: LocationId): SoloMatch {
     const match = this.repository.findById(matchId)
     if (!match) throw new MatchNotFoundError()
+    assertMatchIsActive(match.status)
     if (!match.unlockedLocations.includes(locationId)) {
       throw new DomainError('Este local ainda não foi liberado.')
     }

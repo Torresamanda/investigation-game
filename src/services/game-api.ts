@@ -3,6 +3,7 @@ import type {
   InvestigatorId,
   InvestigationAction,
   LocationId,
+  PersonId,
 } from '../../shared/domain/identifiers'
 
 export type { MatchJournalEntry }
@@ -23,6 +24,13 @@ export interface ConversationOptions {
   readonly locationId: LocationId
   readonly questionLimitReached: boolean
   readonly questions: readonly ConversationQuestion[]
+}
+
+export interface AccusationSubmission {
+  readonly suspectId: PersonId
+  readonly meansClueId: string
+  readonly opportunityClueId: string
+  readonly linkClueId: string
 }
 
 interface ApiError {
@@ -66,6 +74,13 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/connections`, {
       method: 'POST',
       body: JSON.stringify({ fromClueId, toClueId }),
+    })
+  },
+
+  accuse(matchId: string, accusation: AccusationSubmission) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/accuse`, {
+      method: 'POST',
+      body: JSON.stringify(accusation),
     })
   },
 

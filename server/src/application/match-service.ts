@@ -14,6 +14,7 @@ import type {
 import type { MatchRepository } from './ports/match-repository.js'
 import { Case01ContentRepository } from '../infrastructure/content/case01-content-repository.js'
 import {
+  type AccuseSuspectCommand,
   type CreateMatchCommand,
   type ResolveActionCommand,
   type ResolveConversationCommand,
@@ -28,6 +29,7 @@ import { ResolveActionUseCase } from './use-cases/resolve-action-use-case.js'
 import { ResolveConversationUseCase } from './use-cases/resolve-conversation-use-case.js'
 import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.js'
 import { CreateJournalConnectionUseCase } from './use-cases/create-journal-connection-use-case.js'
+import { AccuseSuspectUseCase } from './use-cases/accuse-suspect-use-case.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 
 export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
@@ -54,6 +56,7 @@ export class MatchService {
   private readonly resolveConversationUseCase: ResolveConversationUseCase
   private readonly moveInvestigatorUseCase: MoveInvestigatorUseCase
   private readonly createJournalConnectionUseCase: CreateJournalConnectionUseCase
+  private readonly accuseSuspectUseCase: AccuseSuspectUseCase
 
   constructor(
     private readonly repository: MatchRepository,
@@ -73,6 +76,7 @@ export class MatchService {
     )
     this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
     this.createJournalConnectionUseCase = new CreateJournalConnectionUseCase(repository, createId)
+    this.accuseSuspectUseCase = new AccuseSuspectUseCase(repository, caseContentRepository)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -165,6 +169,10 @@ export class MatchService {
 
   createJournalConnection(command: CreateJournalConnectionCommand): SoloMatch {
     return this.createJournalConnectionUseCase.execute(command)
+  }
+
+  accuseSuspect(command: AccuseSuspectCommand): SoloMatch {
+    return this.accuseSuspectUseCase.execute(command)
   }
 
   private assertPersonAvailability(personId: PersonId, locationId: LocationId) {

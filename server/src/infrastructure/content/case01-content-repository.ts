@@ -14,10 +14,29 @@ import type {
   LocationId,
   PersonId,
 } from '../../../../shared/domain/identifiers.js'
-import type { SoloMatch } from '../../domain/match.js'
+import type { CaseEvidenceKey, SoloMatch } from '../../domain/match.js'
 import { resolveCase01CardEffect } from './case01-card-effects.js'
 
 export class Case01ContentRepository implements CaseContentRepository {
+  isAccusationCorrect(
+    suspectId: PersonId,
+    evidence: {
+      readonly means?: CaseEvidenceKey
+      readonly opportunity?: CaseEvidenceKey
+      readonly link?: CaseEvidenceKey
+    },
+  ): boolean {
+    return (
+      suspectId === 'raul' &&
+      (evidence.means === 'e1-confirmed' || evidence.means === 'e5-confirmed') &&
+      (evidence.opportunity === 'e2-confirmed' || evidence.opportunity === 'e6-confirmed') &&
+      (evidence.link === 'e3-confirmed' ||
+        evidence.link === 'e4-confirmed' ||
+        evidence.link === 'e5-confirmed' ||
+        evidence.link === 'e6-confirmed')
+    )
+  }
+
   getConversation(personId: PersonId) {
     const conversation = getConversation(personId)
     return {
@@ -84,6 +103,7 @@ export class Case01ContentRepository implements CaseContentRepository {
         locationId,
         round: match.round,
         status,
+        ...(isCaseEvidenceKey(key) && status === 'confirmed' ? { caseEvidenceKey: key } : {}),
       },
     })
     const observation: CaseActionResolution = {
@@ -246,6 +266,19 @@ export class Case01ContentRepository implements CaseContentRepository {
 
     return observation
   }
+}
+
+function isCaseEvidenceKey(
+  key: string,
+): key is NonNullable<SoloMatch['journalEntries'][number]['caseEvidenceKey']> {
+  return (
+    key === 'e1-confirmed' ||
+    key === 'e2-confirmed' ||
+    key === 'e3-confirmed' ||
+    key === 'e4-confirmed' ||
+    key === 'e5-confirmed' ||
+    key === 'e6-confirmed'
+  )
 }
 
 function locationName(locationId: LocationId): string {
