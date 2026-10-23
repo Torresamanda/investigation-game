@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { locations, suspectProfiles, type LocationId, type SuspectId } from '../../content/case01'
 import { useInvestigationStore } from '../../stores/investigation'
 import type { InvestigationAction } from '../../domain/game/action-points'
@@ -14,6 +14,8 @@ import CaseJournal from './components/CaseJournal.vue'
 import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
 import AccusationDialog from './components/AccusationDialog.vue'
+import DiscoveryToast from './components/DiscoveryToast.vue'
+import { findNewDiscoveries, type DiscoveryNotification } from './discovery-notifications'
 import type { AccusationSubmission, ConversationOptions } from '../../services/game-api'
 import { feedbackFromEntry, statusFeedback } from './action-feedback'
 import './investigation.css'
@@ -117,6 +119,45 @@ const toolbar = ref<InstanceType<typeof CaseToolbar> | null>(null)
 const { open, pinned, enter, leave, toggle, pin, close } = useJournalDisclosure(() =>
   toolbar.value?.focusBookmark(),
 )
+const unreadDiscoveryIds = ref<readonly string[]>([])
+const discoveryToast = ref<DiscoveryNotification | null>(null)
+let toastTimeout: ReturnType<typeof setTimeout> | undefined
+
+function dismissDiscoveryToast() {
+  clearTimeout(toastTimeout)
+  discoveryToast.value = null
+}
+
+function openDiscoveryInJournal() {
+  if (discoveryToast.value?.kind === 'clue') journalTab.value = 'clues'
+  pin()
+  unreadDiscoveryIds.value = []
+  dismissDiscoveryToast()
+}
+
+watch(
+  () => session.remoteMatch,
+  (current, previous) => {
+    const discoveries = findNewDiscoveries(previous, current)
+    if (!discoveries.length) return
+
+    if (!open.value) {
+      unreadDiscoveryIds.value = [
+        ...unreadDiscoveryIds.value,
+        ...discoveries.map((discovery) => discovery.id),
+      ]
+    }
+    discoveryToast.value = discoveries[0] ?? null
+    clearTimeout(toastTimeout)
+    toastTimeout = setTimeout(dismissDiscoveryToast, 6000)
+  },
+)
+
+watch(open, (isOpen) => {
+  if (isOpen) unreadDiscoveryIds.value = []
+})
+
+onUnmounted(() => clearTimeout(toastTimeout))
 
 async function executeAction(action: InvestigationAction) {
   const labels: Record<InvestigationAction, string> = {
@@ -420,6 +461,7 @@ async function clearConversationCardPreparation() {
       :open="open"
       :pinned="pinned"
       :round="session.round"
+      :unread-count="unreadDiscoveryIds.length"
       @enter="enter"
       @leave="leave"
       @toggle="toggle"
@@ -504,6 +546,12 @@ async function clearConversationCardPreparation() {
       :error-message="accusationError"
       @close="showAccusation = false"
       @accuse="accuseSuspect"
+    />
+    <DiscoveryToast
+      v-if="discoveryToast"
+      :message="discoveryToast.message"
+      @open-journal="openDiscoveryInJournal"
+      @dismiss="dismissDiscoveryToast"
     />
   </main>
 </template>

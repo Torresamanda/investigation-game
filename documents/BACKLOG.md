@@ -32,14 +32,15 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
    - Concluído: `05A · UX-06`.
-   - Próxima: `05B · UX-07`, seguida de `05C · NOTIF-01`, `03A–03G`, `COOP`, `AUTH` e `OPS`.
+   - Concluído: `05B · UX-07`.
+   - Próxima: `05C · NOTIF-01`, seguida de `03A–03G`, `COOP`, `AUTH` e `OPS`.
 
 ### Prompt de Handoff para a Próxima IA
 
 ```text
 Leia AGENTS.md, documents/PROJECT_RULES.md, documents/COMMIT_CONVENTIONS.md e documents/BACKLOG.md.
 As tarefas prioritárias `14A · JOGO-07`, `16A · BUG-07`, `15 · INV-03` e `17 · UX-01` foram concluídas. Prossiga com a próxima tarefa listada no backlog, sem antecipar itens Pós-MVP:
-Próxima tarefa: `05B · UX-07` — Sinalizar descoberta de pista nova via Toast. Leia a especificação atual no backlog antes de implementar.
+Próxima tarefa: `05C · NOTIF-01` — Criar serviço geral de notificações do jogo. Leia a especificação atual no backlog antes de implementar.
 Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commitar. Nunca faça git push.
 ```
 
@@ -58,7 +59,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Não exibir confirmação se não houver PA aplicáveis ou se o turno já estiver esgotado.
   - Critério de aceite: cancelar preserva integralmente o estado; confirmar encerra uma única vez e avança a rodada quando aplicável.
 
-- [ ] **05B · UX-07 — Sinalizar descoberta de pista nova via Toast** `[Pós-MVP] [Front] [Back]`
+- [x] **05B · UX-07 — Sinalizar descoberta de pista nova via Toast** `[Pós-MVP] [Front] [Back]`
   - Quando a API registrar uma pista, declaração ou carta temporária, exibir um *toast* não-bloqueante no canto superior direito (ex.: `"Uma nova pista foi encontrada e registrada no diário"`) com contador de itens não lidos na aba `Diário` e atalho `Abrir no Diário`.
   - Manter observações sem nova descoberta (`observation`) com visual discreto, sem o destaque de pista inédita.
   - Critério de aceite: uma descoberta mostra confirmação visual imediata e atalho para consulta na mesma página; uma observação sem nova pista não usa o mesmo destaque.
