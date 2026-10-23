@@ -2,7 +2,7 @@
 import type { HandCard } from '../../../stores/investigation'
 import CardArtwork from '../../../components/ui/CardArtwork.vue'
 import { PhInfo } from '../../../components/icons'
-defineProps<{ card: HandCard; prepared: boolean }>()
+defineProps<{ card: HandCard; prepared: boolean; isDisabled: boolean }>()
 const emit = defineEmits<{ inspect: [card: HandCard]; toggle: [instanceId: string] }>()
 </script>
 
@@ -10,6 +10,7 @@ const emit = defineEmits<{ inspect: [card: HandCard]; toggle: [instanceId: strin
   <div class="investigation-card-shell" :class="{ prepared }">
     <button
       class="investigation-card"
+      :disabled="isDisabled"
       :aria-label="
         prepared ? `Remover preparação de ${card.name}` : `Preparar ${card.name}, ${card.cost} PA`
       "
@@ -20,6 +21,7 @@ const emit = defineEmits<{ inspect: [card: HandCard]; toggle: [instanceId: strin
     <button
       class="card-information"
       :aria-label="`Ver informações de ${card.name}`"
+      :disabled="isDisabled"
       @click="emit('inspect', card)"
     >
       <PhInfo :size="15" weight="bold" aria-hidden="true" />

@@ -4,6 +4,7 @@ import { investigators, type InvestigatorId } from '../../../content/investigato
 import { getPortrait } from '../../../content/portraits'
 const active = defineModel<InvestigatorId>('active', { required: true })
 const support = defineModel<InvestigatorId>('support', { required: true })
+defineProps<{ isDisabled: boolean }>()
 const availableSupport = computed(() => investigators.filter((item) => item.id !== active.value))
 watch(active, (value) => {
   if (support.value === value) support.value = investigators.find((item) => item.id !== value)!.id
@@ -21,6 +22,7 @@ watch(active, (value) => {
         :key="item.id"
         class="investigator-option"
         :aria-pressed="active === item.id"
+        :disabled="isDisabled"
         @click="active = item.id"
       >
         <img
@@ -35,7 +37,7 @@ watch(active, (value) => {
   </section>
   <div class="support-selection">
     <label class="field-label" for="support">Apoio de plantão</label
-    ><select id="support" v-model="support">
+    ><select id="support" v-model="support" :disabled="isDisabled">
       <option v-for="item in availableSupport" :key="item.id" :value="item.id">
         {{ item.name }}
       </option>

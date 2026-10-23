@@ -37,18 +37,36 @@ interface ApiError {
   readonly message: string
 }
 
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly statusCode: number,
+  ) {
+    super(message)
+    this.name = 'ApiRequestError'
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      ...(init?.body ? { 'content-type': 'application/json' } : {}),
-      ...init?.headers,
-    },
-  })
+  let response: Response
+  try {
+    response = await fetch(path, {
+      ...init,
+      headers: {
+        ...(init?.body ? { 'content-type': 'application/json' } : {}),
+        ...init?.headers,
+      },
+    })
+  } catch {
+    throw new Error('A API está indisponível. Verifique sua conexão e tente novamente.')
+  }
   if (response.ok) return response.json() as Promise<T>
 
   const error = (await response.json().catch(() => null)) as ApiError | null
-  throw new Error(error?.message ?? 'Não foi possível comunicar com a investigação.')
+  throw new ApiRequestError(
+    error?.message ?? 'Não foi possível comunicar com a investigação.',
+    response.status,
+  )
 }
 
 function encodePathSegment(value: string): string {
@@ -56,6 +74,10 @@ function encodePathSegment(value: string): string {
 }
 
 export const gameApi = {
+  getMatch(matchId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}`)
+  },
+
   createMatch(activeInvestigatorId: InvestigatorId, supportInvestigatorId: InvestigatorId) {
     return request<RemoteMatch>('/api/matches', {
       method: 'POST',

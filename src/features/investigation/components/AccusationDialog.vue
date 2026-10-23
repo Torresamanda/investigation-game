@@ -12,6 +12,7 @@ const props = defineProps<{
   connectionCount: number
   actionPoints: ActionPointPool
   errorMessage: string | null
+  isRequestPending?: boolean
 }>()
 
 const emit = defineEmits<{ close: []; accuse: [submission: AccusationSubmission] }>()
@@ -106,7 +107,12 @@ function submitAccusation() {
         </option>
       </select>
     </label>
-    <button class="button-primary" type="button" :disabled="!canSubmit" @click="submitAccusation">
+    <button
+      class="button-primary"
+      type="button"
+      :disabled="!canSubmit || isRequestPending"
+      @click="submitAccusation"
+    >
       Apresentar dossiê · 3 PA
     </button>
   </section>

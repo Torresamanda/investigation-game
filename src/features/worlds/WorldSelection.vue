@@ -14,6 +14,7 @@ const support = ref<InvestigatorId>('rafael')
 const router = useRouter()
 const session = useInvestigationStore()
 async function start() {
+  if (session.isRequestPending) return
   session.startInvestigation(active.value, support.value)
   try {
     await session.createRemoteMatch(active.value, support.value)
@@ -39,7 +40,11 @@ async function start() {
           </p>
         </div>
       </div>
-      <InvestigatorSelection v-model:active="active" v-model:support="support" />
+      <InvestigatorSelection
+        v-model:active="active"
+        v-model:support="support"
+        :is-disabled="session.isRequestPending"
+      />
       <section class="mission-summary">
         <p class="eyebrow">Caso 01 · Introdução</p>
         <h3>O Vazio na Vitrine</h3>
@@ -52,8 +57,26 @@ async function start() {
         </div>
       </section>
       <footer class="mission-footer">
-        <button class="button-primary full-width" @click="start">
-          Iniciar investigação <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
+        <p
+          v-if="session.isRequestPending"
+          class="connection-progress"
+          role="status"
+          aria-live="polite"
+        >
+          Conectando ao servidor e preparando a partida…
+        </p>
+        <button
+          class="button-primary full-width"
+          :disabled="session.isRequestPending"
+          @click="start"
+        >
+          {{ session.isRequestPending ? 'Conectando…' : 'Iniciar investigação' }}
+          <PhArrowRight
+            v-if="!session.isRequestPending"
+            :size="18"
+            weight="bold"
+            aria-hidden="true"
+          />
         </button>
       </footer>
     </aside>

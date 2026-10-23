@@ -8,6 +8,7 @@ const props = defineProps<{
   pointsLabel: string
   conversationCards: readonly HandCard[]
   preparedCardId: string | null
+  isRequestPending?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -53,7 +54,7 @@ const availableConversationCards = computed(() =>
       <button
         v-for="question in conversation.questions"
         :key="question.id"
-        :disabled="!question.canResolve"
+        :disabled="!question.canResolve || isRequestPending"
         @click="emit('resolve', question.id)"
       >
         <span
@@ -80,6 +81,7 @@ const availableConversationCards = computed(() =>
           :key="card.instanceId"
           type="button"
           :aria-pressed="preparedCardId === card.instanceId"
+          :disabled="isRequestPending"
           @click="
             preparedCardId === card.instanceId
               ? emit('clearPreparedCard')

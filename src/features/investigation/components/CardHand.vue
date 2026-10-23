@@ -9,6 +9,7 @@ const props = defineProps<{
   ownerLabel: string
   preparedCardId: string | null
   canDiscardPreparedCard: boolean
+  isRequestPending?: boolean
   compactActions?: boolean
 }>()
 const emit = defineEmits<{
@@ -40,6 +41,7 @@ function toggleCard(instanceId: string) {
         :key="card.instanceId"
         :card="card"
         :prepared="preparedCardId === card.instanceId"
+        :is-disabled="isRequestPending"
         @toggle="toggleCard"
         @inspect="inspectedCard = $event"
       />
@@ -49,13 +51,18 @@ function toggleCard(instanceId: string) {
         class="discard-card"
         :class="{ 'discard-card--icon-only': compactActions }"
         aria-label="Descartar carta"
-        :disabled="!canDiscardPreparedCard"
+        :disabled="!canDiscardPreparedCard || isRequestPending"
         @click="emit('discardPrepared')"
       >
         <PhTrash :size="16" weight="bold" aria-hidden="true" />
         <span v-if="!compactActions" class="discard-label">Descartar carta</span>
       </button>
-      <button v-if="preparedCardId" class="clear-prepared" @click="emit('clearPrepared')">
+      <button
+        v-if="preparedCardId"
+        class="clear-prepared"
+        :disabled="isRequestPending"
+        @click="emit('clearPrepared')"
+      >
         Cancelar
       </button>
     </div>

@@ -31,4 +31,34 @@ describe('InvestigationActions', () => {
     expect(feedback.text()).toContain('Indício')
     expect(feedback.text()).toContain('Vestígio no pedestal')
   })
+
+  it('desabilita ações, turno e acusação enquanto espera o servidor', () => {
+    const view = mount(InvestigationActions, {
+      props: {
+        availableActions: ['examine', 'research'],
+        actionCosts: { examine: 1, converse: 2, analyse: 2, research: 2 },
+        feedback: {
+          target: 'Aguardando servidor',
+          cost: null,
+          cardName: null,
+          result: 'A solicitação está em andamento.',
+          resultType: 'status',
+          status: null,
+        },
+        canEndTurn: true,
+        canAccuse: true,
+        isRequestPending: true,
+        round: 5,
+      },
+      global: { stubs: { PhArrowRight: true } },
+    })
+
+    expect(
+      view
+        .findAll('.action-grid button')
+        .every((button) => button.attributes('disabled') !== undefined),
+    ).toBe(true)
+    expect(view.get('.end-turn').attributes('disabled')).toBeDefined()
+    expect(view.get('.accusation-control button').attributes('disabled')).toBeDefined()
+  })
 })

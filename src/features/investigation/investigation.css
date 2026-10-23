@@ -11,9 +11,19 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
   padding: 0.75rem 1rem;
   color: var(--color-text, #f4ead7);
   background: rgba(126, 38, 38, 0.35);
   border: 1px solid rgba(230, 140, 120, 0.55);
   border-radius: 0.5rem;
+}
+.connection-state--pending {
+  color: #dce9ed;
+  background: rgba(35, 85, 105, 0.42);
+  border-color: rgba(125, 190, 205, 0.55);
+}
+.connection-state button {
+  margin-left: auto;
+  padding: 0.45rem 0.75rem;
 }

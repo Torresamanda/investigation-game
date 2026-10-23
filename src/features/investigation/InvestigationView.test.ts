@@ -53,6 +53,42 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
+  it('mostra o estado do servidor e permite tentar recuperar a conexão', async () => {
+    const session = useInvestigationStore()
+    session.connectionState = 'error'
+    session.connectionError = 'Conexão interrompida.'
+    const retryConnection = vi.spyOn(session, 'retryConnection').mockResolvedValue()
+    const view = createView()
+
+    expect(view.get('.connection-state').attributes('role')).toBe('alert')
+    expect(view.get('.connection-state').text()).toContain('API indisponível')
+    await view.get('.connection-state button').trigger('click')
+    await flushPromises()
+
+    expect(retryConnection).toHaveBeenCalledOnce()
+    view.unmount()
+  })
+
+  it('avisa durante uma requisição e bloqueia novas ações até a resposta', () => {
+    const session = useInvestigationStore()
+    session.isRequestPending = true
+    const view = createView()
+
+    expect(view.get('.connection-state').attributes('role')).toBe('status')
+    expect(view.get('.connection-state').text()).toContain('Solicitação em andamento')
+    expect(
+      view
+        .findAll('.action-grid button')
+        .every((button) => button.attributes('disabled') !== undefined),
+    ).toBe(true)
+    expect(
+      view
+        .findAll('.location-list button')
+        .every((button) => button.attributes('disabled') !== undefined),
+    ).toBe(true)
+    view.unmount()
+  })
+
   it('não encerra o turno localmente quando a API está indisponível', async () => {
     const view = createView()
     await view.findAll('.action-grid button')[0]!.trigger('click')

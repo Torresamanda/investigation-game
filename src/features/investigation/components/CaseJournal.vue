@@ -11,6 +11,7 @@ const props = defineProps<{
   journalConnections: readonly { id: string; fromClueId: string; toClueId: string; round: number }[]
   hasFreeConnection: boolean
   hasPreparedConnectionCard: boolean
+  isRequestPending?: boolean
 }>()
 const tab = defineModel<'timeline' | 'clues' | 'suspects' | 'notes'>('tab', { required: true })
 const emit = defineEmits<{
@@ -230,7 +231,11 @@ const tabs = [
             type="submit"
             class="save-note"
             :disabled="
-              availableClues.length < 2 || !fromClueId || !toClueId || fromClueId === toClueId
+              availableClues.length < 2 ||
+              !fromClueId ||
+              !toClueId ||
+              fromClueId === toClueId ||
+              isRequestPending
             "
           >
             {{

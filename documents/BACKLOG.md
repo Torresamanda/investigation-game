@@ -28,19 +28,17 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
    - Concluído: `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
    - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA).
    - Concluído: `19 · CASO-07` → Acusação e desfechos nas Rodadas 5 e 6 (dossiê validado pelo servidor; 3 PA gerais no modo solo; Rodada 6 encerra a partida sem vitória).
-   - Próxima: `17 · UX-01` → Refinar início de partida e estado de conexão.
+   - Concluído: `17 · UX-01` → Exibir estado de conexão e recuperação da partida.
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
-   - `17 · UX-01`, `05A · UX-06`, `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, seguidos de `COOP`, `AUTH` e `OPS`.
+   - Próxima: `05A · UX-06`, seguida de `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, `COOP`, `AUTH` e `OPS`.
 
 ### Prompt de Handoff para a Próxima IA
 
 ```text
 Leia AGENTS.md, documents/PROJECT_RULES.md, documents/COMMIT_CONVENTIONS.md e documents/BACKLOG.md.
-O core loop das Rodadas 1 a 6 e a Acusação (`19 · CASO-07`) foram revisados em playtest e há 3 tarefas prioritárias de mecânica/fluxo que DEVEM ser concluídas antes de avançar para UI/UX (`17 · UX-01`):
-1. `14A · JOGO-07` — Remover travas de cenário específico e spoilers de rodada/local nas cartas (`case01-card-effects.ts`): o jogador deve ter liberdade para usar qualquer carta em qualquer local compatível com a ação, recebendo efeitos/observações contextuais daquele ambiente sem mensagens que entreguem "exige Sala de Segurança" ou "a partir da Rodada 2/3".
-2. `16A · BUG-07` — Garantir que cartas temporárias ganhas de personagens (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`) permaneçam fixas na mão entre turnos sem serem embaralhadas no `drawPile` e somando-se às 4 cartas base do baralho (podendo ficar com 5+ cartas na mão até o jogador decidir usá-las), além de corrigir validação de local atual, passiva do Otávio, desconto do `trace-marker` e `ownerDeck` no Diário.
-3. `15 · INV-03` — Concluir o Apoio de Plantão no modo solo (`RequestSupportCardUseCase`, rota `POST /api/matches/:id/support-card`, `hasUsedSupportThisRound` e botão na UI para puxar 1 carta do apoio por rodada com desconto de 1 PA).
+As tarefas prioritárias `14A · JOGO-07`, `16A · BUG-07`, `15 · INV-03` e `17 · UX-01` foram concluídas. Prossiga com a próxima tarefa listada no backlog, sem antecipar itens Pós-MVP:
+Próxima tarefa: `05A · UX-06` — Confirmar encerramento de turno com PA restantes. Leia a especificação atual no backlog antes de implementar.
 Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commitar. Nunca faça git push.
 ```
 
@@ -419,9 +417,10 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Correção planejada: tornar a API obrigatória para ações de jogo, preservar somente uma tela de indisponibilidade e impedir alteração local do estado.
   - Critério de aceite: sem API, o jogador vê o estado de conexão e nenhuma ação, carta ou turno é resolvido no cliente.
 
-- [ ] **17 · UX-01 — Exibir estado de conexão da partida** `[P1] [Front] [Back]`
-  - Informar quando a API está indisponível ou quando uma ação está sendo processada.
-  - Critério de aceite: botões não aceitam cliques repetidos durante uma requisição e erros podem ser recuperados.
+- [x] **17 · UX-01 — Exibir estado de conexão da partida** `[P1] [Front] [Back]`
+  - Exibir indisponibilidade da API e solicitações em andamento no início e durante a investigação, com recuperação por nova tentativa ou sincronização da partida.
+  - Desabilitar controles ligados à API durante a requisição para evitar submissões repetidas.
+  - Critério de aceite: o jogador entende o estado da conexão, recebe erro recuperável e pode continuar após a API responder novamente.
 
 - [ ] **27 · UX-02 — Refinar o layout das cartas em resoluções menores** `[Pós-MVP] [P3] [Front]`
   - Confirmar legibilidade do selo de PA, botão de informação, título e moldura em notebook e celular, preservando o agrupamento entre Baralho Padrão e Cartas Temporárias.

@@ -135,7 +135,8 @@ async function moveToLocation() {
 }
 
 async function requestSupportCard() {
-  if (isSupportRequestPending.value || session.hasUsedSupportThisRound) return
+  if (session.isRequestPending || isSupportRequestPending.value || session.hasUsedSupportThisRound)
+    return
   isSupportRequestPending.value = true
   try {
     await session.requestSupportCard()
@@ -148,6 +149,15 @@ async function requestSupportCard() {
     )
   } finally {
     isSupportRequestPending.value = false
+  }
+}
+
+async function retryConnection() {
+  if (session.isRequestPending) return
+  try {
+    await session.retryConnection()
+  } catch {
+    feedback.value = statusFeedback('A conexão falhou. Verifique a API e tente novamente.')
   }
 }
 
@@ -342,9 +352,47 @@ async function clearConversationCardPreparation() {
         }}
       </p>
     </section>
-    <div v-if="session.connectionState !== 'connected'" class="connection-state" role="alert">
-      <strong>Investigação indisponível</strong>
-      <span>{{ session.connectionError ?? 'Conecte-se à API para iniciar ações.' }}</span>
+    <div
+      v-if="session.isRequestPending"
+      class="connection-state connection-state--pending"
+      role="status"
+      aria-live="polite"
+    >
+      <strong>Solicitação em andamento</strong>
+      <span>Aguarde a resposta do servidor antes de continuar.</span>
+    </div>
+    <div
+      v-else-if="session.connectionState !== 'connected'"
+      class="connection-state"
+      :role="session.connectionState === 'error' ? 'alert' : 'status'"
+      :aria-live="session.connectionState === 'error' ? 'assertive' : 'polite'"
+    >
+      <strong>
+        {{
+          session.connectionState === 'connecting'
+            ? 'Conectando à investigação'
+            : session.connectionState === 'error'
+              ? 'API indisponível'
+              : 'Partida ainda sem conexão'
+        }}
+      </strong>
+      <span>
+        {{
+          session.connectionError ??
+          (session.connectionState === 'idle'
+            ? 'Conecte-se à API para iniciar ações.'
+            : 'Aguarde enquanto a partida é iniciada.')
+        }}
+      </span>
+      <button type="button" @click="retryConnection">
+        {{
+          session.remoteMatch
+            ? 'Verificar conexão'
+            : session.connectionState === 'error'
+              ? 'Tentar iniciar novamente'
+              : 'Conectar à API'
+        }}
+      </button>
     </div>
     <CaseToolbar
       ref="toolbar"
@@ -365,6 +413,7 @@ async function clearConversationCardPreparation() {
         :move-cost-label="session.moveCostLabel"
         :has-used-support-this-round="session.hasUsedSupportThisRound"
         :is-support-request-pending="isSupportRequestPending"
+        :is-request-pending="session.isRequestPending"
         :is-connected="session.connectionState === 'connected'"
         @select="moveToLocation"
         @request-support="requestSupportCard"
@@ -381,6 +430,7 @@ async function clearConversationCardPreparation() {
         :prepared-card-id="session.preparedCard?.instanceId ?? null"
         :can-discard-prepared-card="session.canDiscardPreparedCard"
         :compact-actions="open"
+        :is-request-pending="session.isRequestPending"
         @prepare="prepareCard"
         @clear-prepared="clearPreparedCard"
         @discard-prepared="discardPreparedCard"
@@ -391,6 +441,7 @@ async function clearConversationCardPreparation() {
         :feedback="feedback"
         :can-end-turn="session.canEndTurn"
         :can-accuse="session.canAccuse"
+        :is-request-pending="session.isRequestPending"
         :round="session.round"
         @execute="executeSelectedAction"
         @end-turn="endTurn"
@@ -405,6 +456,7 @@ async function clearConversationCardPreparation() {
         :journal-connections="session.journalConnections"
         :has-free-connection="hasFreeJournalConnection"
         :has-prepared-connection-card="hasPreparedConnectionCard"
+        :is-request-pending="session.isRequestPending"
         @save="session.saveNote()"
         @create-connection="createJournalConnection"
         @enter="enter"
@@ -420,6 +472,7 @@ async function clearConversationCardPreparation() {
       :points-label="session.pointsLabel"
       :conversation-cards="cards"
       :prepared-card-id="session.preparedCard?.instanceId ?? null"
+      :is-request-pending="session.isRequestPending"
       @close="conversation = null"
       @resolve="resolveConversation"
       @prepare-card="prepareConversationCard"
@@ -432,6 +485,7 @@ async function clearConversationCardPreparation() {
       :connection-count="session.journalConnections.length"
       :action-points="session.remoteMatch.actionPoints"
       :error-message="accusationError"
+      :is-request-pending="session.isRequestPending"
       @close="showAccusation = false"
       @accuse="accuseSuspect"
     />

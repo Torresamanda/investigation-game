@@ -12,6 +12,7 @@ const props = defineProps<{
   moveCostLabel: string
   hasUsedSupportThisRound: boolean
   isSupportRequestPending: boolean
+  isRequestPending: boolean
   isConnected: boolean
 }>()
 const locationId = defineModel<LocationId>({ required: true })
@@ -42,7 +43,10 @@ function selectLocation(id: LocationId) {
         class="support-action"
         type="button"
         :disabled="
-          props.hasUsedSupportThisRound || props.isSupportRequestPending || !props.isConnected
+          props.hasUsedSupportThisRound ||
+          props.isSupportRequestPending ||
+          props.isRequestPending ||
+          !props.isConnected
         "
         @click="emit('requestSupport')"
       >
@@ -56,7 +60,7 @@ function selectLocation(id: LocationId) {
           v-for="item in locations"
           :key="item.id"
           :aria-pressed="locationId === item.id"
-          :disabled="!props.unlockedLocations.includes(item.id)"
+          :disabled="!props.unlockedLocations.includes(item.id) || props.isRequestPending"
           @click="selectLocation(item.id)"
         >
           {{ item.name }}

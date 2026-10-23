@@ -6,6 +6,7 @@ import type { InvestigationAction, LocationId, PersonId } from '../../shared/dom
 import { canPayAction, investigatorActionCost } from '../../shared/domain/action-points'
 import {
   gameApi,
+  ApiRequestError,
   type AccusationSubmission,
   type MatchJournalEntry,
   type RemoteMatch,
@@ -25,6 +26,30 @@ export const useMatchStore = defineStore('match', () => {
   const preparedCardId = ref<string | null>(null)
   const connectionState = ref<ConnectionState>('idle')
   const connectionError = ref<string | null>(null)
+  const isRequestPending = ref(false)
+
+  async function performApiRequest<T>(request: () => Promise<T>): Promise<T> {
+    if (isRequestPending.value) throw new Error('Aguarde a solicitação atual terminar.')
+
+    isRequestPending.value = true
+    connectionError.value = null
+    try {
+      const result = await request()
+      connectionState.value = 'connected'
+      return result
+    } catch (error) {
+      const isServerUnavailable = !(error instanceof ApiRequestError) || error.statusCode >= 500
+      if (isServerUnavailable || !remoteMatch.value) {
+        connectionState.value = 'error'
+        connectionError.value = error instanceof Error ? error.message : 'A API está indisponível.'
+      } else {
+        connectionState.value = 'connected'
+      }
+      throw error
+    } finally {
+      isRequestPending.value = false
+    }
+  }
 
   const investigator = computed(() =>
     investigators.find((item) => item.id === investigatorId.value),
@@ -84,6 +109,7 @@ export const useMatchStore = defineStore('match', () => {
   )
 
   function startInvestigation(active: InvestigatorId, support: InvestigatorId): void {
+    if (isRequestPending.value) throw new Error('Aguarde a solicitação atual terminar.')
     if (active === support) throw new Error('O apoio deve ser outro investigador.')
     investigatorId.value = active
     supportId.value = support
@@ -131,39 +157,53 @@ export const useMatchStore = defineStore('match', () => {
   }
 
   async function createRemoteMatch(active: InvestigatorId, support: InvestigatorId) {
+    if (isRequestPending.value) throw new Error('Aguarde a solicitação atual terminar.')
     connectionState.value = 'connecting'
     connectionError.value = null
-    try {
-      remoteMatch.value = await gameApi.createMatch(active, support)
-      investigatorId.value = active
-      supportId.value = support
-      connectionState.value = 'connected'
-      return remoteMatch.value
-    } catch (error) {
-      connectionState.value = 'error'
-      connectionError.value = error instanceof Error ? error.message : 'A API está indisponível.'
-      throw error
+    remoteMatch.value = await performApiRequest(() => gameApi.createMatch(active, support))
+    investigatorId.value = active
+    supportId.value = support
+    connectionState.value = 'connected'
+    return remoteMatch.value
+  }
+
+  async function retryConnection(): Promise<void> {
+    if (remoteMatch.value) {
+      remoteMatch.value = await performApiRequest(() => gameApi.getMatch(remoteMatch.value!.id))
+      preparedCardId.value = remoteMatch.value.preparedCardInstanceId
+      return
     }
+
+    const active = investigatorId.value
+    const support = supportId.value
+    if (!active || !support) throw new Error('Escolha a equipe antes de iniciar a investigação.')
+    await createRemoteMatch(active, support)
   }
 
   async function prepareCard(instanceId: string): Promise<boolean> {
     if (!remoteMatch.value || !hand.value.some((card) => card.instanceId === instanceId))
       return false
-    remoteMatch.value = await gameApi.prepareCard(remoteMatch.value.id, instanceId)
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.prepareCard(remoteMatch.value!.id, instanceId),
+    )
     preparedCardId.value = instanceId
     return true
   }
 
   async function clearPreparedCard(): Promise<void> {
     if (!remoteMatch.value) throw new Error('A partida ainda não está conectada à API.')
-    remoteMatch.value = await gameApi.prepareCard(remoteMatch.value.id, null)
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.prepareCard(remoteMatch.value!.id, null),
+    )
     preparedCardId.value = null
   }
 
   async function resolveAction(action: InvestigationAction, locationId: LocationId) {
     if (!remoteMatch.value) throw new Error('A partida exige uma conexão ativa com a API.')
     if (!canExecute(action, locationId)) throw new Error('Ação indisponível para os PA atuais.')
-    const updated = await gameApi.resolveAction(remoteMatch.value.id, action, locationId)
+    const updated = await performApiRequest(() =>
+      gameApi.resolveAction(remoteMatch.value!.id, action, locationId),
+    )
     remoteMatch.value = updated
     preparedCardId.value = updated.preparedCardInstanceId
     return updated.journalEntries.at(-1) ?? null
@@ -171,30 +211,32 @@ export const useMatchStore = defineStore('match', () => {
 
   async function createJournalConnection(fromClueId: string, toClueId: string): Promise<void> {
     if (!remoteMatch.value) throw new Error('A conexão exige uma partida conectada à API.')
-    remoteMatch.value = await gameApi.createJournalConnection(
-      remoteMatch.value.id,
-      fromClueId,
-      toClueId,
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.createJournalConnection(remoteMatch.value!.id, fromClueId, toClueId),
     )
     preparedCardId.value = remoteMatch.value.preparedCardInstanceId
   }
 
   async function accuse(accusation: AccusationSubmission): Promise<void> {
     if (!remoteMatch.value) throw new Error('A acusação exige uma partida conectada à API.')
-    remoteMatch.value = await gameApi.accuse(remoteMatch.value.id, accusation)
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.accuse(remoteMatch.value!.id, accusation),
+    )
     preparedCardId.value = null
   }
 
   async function moveInvestigator(locationId: LocationId): Promise<void> {
     if (!remoteMatch.value) throw new Error('A partida exige uma conexão ativa com a API.')
-    remoteMatch.value = await gameApi.moveInvestigator(remoteMatch.value.id, locationId)
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.moveInvestigator(remoteMatch.value!.id, locationId),
+    )
     preparedCardId.value = remoteMatch.value.preparedCardInstanceId
   }
 
   async function endRemoteTurn(): Promise<boolean> {
     if (!remoteMatch.value) throw new Error('A partida exige uma conexão ativa com a API.')
     if (!canEndTurn.value) return false
-    const updated = await gameApi.endTurn(remoteMatch.value.id)
+    const updated = await performApiRequest(() => gameApi.endTurn(remoteMatch.value!.id))
     remoteMatch.value = updated
     preparedCardId.value = updated.preparedCardInstanceId
     return true
@@ -202,15 +244,16 @@ export const useMatchStore = defineStore('match', () => {
 
   async function requestSupportCard(): Promise<void> {
     if (!remoteMatch.value) throw new Error('A partida ainda não está conectada à API.')
-    remoteMatch.value = await gameApi.requestSupportCard(remoteMatch.value.id)
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.requestSupportCard(remoteMatch.value!.id),
+    )
     preparedCardId.value = remoteMatch.value.preparedCardInstanceId
   }
 
   async function discardPreparedCard(): Promise<boolean> {
     if (!remoteMatch.value || !preparedCard.value || !canDiscardPreparedCard.value) return false
-    remoteMatch.value = await gameApi.discardCard(
-      remoteMatch.value.id,
-      preparedCard.value.instanceId,
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.discardCard(remoteMatch.value!.id, preparedCard.value!.instanceId),
     )
     preparedCardId.value = null
     return true
@@ -218,7 +261,9 @@ export const useMatchStore = defineStore('match', () => {
 
   async function loadConversationOptions(personId: PersonId, locationId: LocationId) {
     if (!remoteMatch.value) throw new Error('A conversa exige uma partida conectada à API.')
-    return gameApi.getConversationOptions(remoteMatch.value.id, personId, locationId)
+    return performApiRequest(() =>
+      gameApi.getConversationOptions(remoteMatch.value!.id, personId, locationId),
+    )
   }
 
   async function resolveConversation(
@@ -227,11 +272,8 @@ export const useMatchStore = defineStore('match', () => {
     locationId: LocationId,
   ) {
     if (!remoteMatch.value) throw new Error('A conversa exige uma partida conectada à API.')
-    const updated = await gameApi.resolveConversation(
-      remoteMatch.value.id,
-      personId,
-      questionId,
-      locationId,
+    const updated = await performApiRequest(() =>
+      gameApi.resolveConversation(remoteMatch.value!.id, personId, questionId, locationId),
     )
     remoteMatch.value = updated
     preparedCardId.value = updated.preparedCardInstanceId
@@ -257,6 +299,7 @@ export const useMatchStore = defineStore('match', () => {
     remoteMatch,
     connectionState,
     connectionError,
+    isRequestPending,
     hand,
     round,
     currentLocationId,
@@ -274,6 +317,7 @@ export const useMatchStore = defineStore('match', () => {
     prepareCard,
     clearPreparedCard,
     createRemoteMatch,
+    retryConnection,
     resolveAction,
     createJournalConnection,
     accuse,

@@ -10,6 +10,7 @@ defineProps<{
   feedback: InvestigationFeedback
   canEndTurn: boolean
   canAccuse: boolean
+  isRequestPending?: boolean
   round: number
 }>()
 const emit = defineEmits<{
@@ -35,7 +36,7 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
       <button
         v-for="item in actions"
         :key="item.action"
-        :disabled="!availableActions.includes(item.action)"
+        :disabled="!availableActions.includes(item.action) || isRequestPending"
         @click="emit('execute', item.action)"
       >
         {{ item.label }}<small>{{ actionCosts[item.action] }} PA</small>
@@ -57,12 +58,16 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
       </span>
       <p class="feedback-result">{{ feedback.result }}</p>
     </div>
-    <button class="end-turn" :disabled="!canEndTurn" @click="emit('endTurn')">
+    <button class="end-turn" :disabled="!canEndTurn || isRequestPending" @click="emit('endTurn')">
       {{ round === 6 ? 'Encerrar missão' : 'Encerrar turno' }}
       <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
     </button>
     <div class="accusation-control">
-      <button :disabled="!canAccuse" aria-describedby="accusation-help" @click="emit('accuse')">
+      <button
+        :disabled="!canAccuse || isRequestPending"
+        aria-describedby="accusation-help"
+        @click="emit('accuse')"
+      >
         {{ canAccuse ? 'Apresentar acusação' : 'Acusação bloqueada' }}
       </button>
       <p id="accusation-help" class="help-text">

@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useInvestigationStore } from './investigation'
+import { gameApi, type RemoteMatch } from '../services/game-api'
 
 describe('seleção da prévia solo', () => {
   beforeEach(() => setActivePinia(createPinia()))
@@ -53,5 +54,79 @@ describe('seleção da prévia solo', () => {
     expect(store.canExecute('examine')).toBe(false)
     expect(store.executeBasicAction('examine')).toBe(false)
     await expect(store.endRemoteTurn()).rejects.toThrow('conexão ativa')
+  })
+
+  it('sinaliza uma solicitação em andamento, bloqueia duplicatas e permite tentar de novo', async () => {
+    const store = useInvestigationStore()
+    store.startInvestigation('livia', 'rafael')
+    let rejectRequest: ((reason: Error) => void) | undefined
+    const pendingMatch = new Promise<RemoteMatch>((_resolve, reject) => {
+      rejectRequest = reject
+    })
+    const createMatch = vi
+      .spyOn(gameApi, 'createMatch')
+      .mockReturnValueOnce(pendingMatch)
+      .mockRejectedValueOnce(new Error('Servidor indisponível.'))
+
+    const firstRequest = store.createRemoteMatch('livia', 'rafael')
+    expect(store.isRequestPending).toBe(true)
+    await expect(store.retryConnection()).rejects.toThrow('Aguarde a solicitação atual terminar.')
+    expect(createMatch).toHaveBeenCalledOnce()
+
+    rejectRequest?.(new Error('Conexão interrompida.'))
+    await expect(firstRequest).rejects.toThrow('Conexão interrompida.')
+    expect(store.isRequestPending).toBe(false)
+    expect(store.connectionState).toBe('error')
+    expect(store.connectionError).toBe('Conexão interrompida.')
+
+    await expect(store.retryConnection()).rejects.toThrow('Servidor indisponível.')
+    expect(createMatch).toHaveBeenCalledTimes(2)
+    expect(store.isRequestPending).toBe(false)
+    createMatch.mockRestore()
+  })
+
+  it('restabelece o estado da partida ao verificar novamente a conexão', async () => {
+    const store = useInvestigationStore()
+    store.startInvestigation('livia', 'rafael')
+    store.remoteMatch = {
+      id: 'match-01',
+      mode: 'solo',
+      createdAt: '2026-10-23T12:00:00.000Z',
+      preparedCardInstanceId: null,
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+      round: 1,
+      status: 'active',
+      examinedLocationsThisRound: [],
+      hasUsedPassiveThisRound: false,
+      hasReceivedSocialBonusThisRound: false,
+      hasUsedPressLeakConversationThisRound: false,
+      canAccuse: false,
+      hasFreeConnectionThisRound: false,
+      hasUsedFreeConnectionThisRound: false,
+      canCreateInvestigatorConnection: false,
+      currentLocationId: 'gallery',
+      unlockedLocations: ['gallery', 'security', 'laboratory', 'office'],
+      hasUsedFreeMoveThisRound: false,
+      hasDiscardedCardThisRound: false,
+      hasUsedSupportThisRound: false,
+      actionPoints: { general: 5, specialty: 0, specialtyPoint: null },
+      journalEntries: [],
+      journalConnections: [],
+      decks: { livia: { hand: [], drawPileCount: 4, discardPileCount: 0 } },
+    }
+    store.connectionState = 'error'
+    store.connectionError = 'Conexão interrompida.'
+    const refreshedMatch = { ...store.remoteMatch, round: 2 }
+    const getMatch = vi.spyOn(gameApi, 'getMatch').mockResolvedValue(refreshedMatch)
+
+    await store.retryConnection()
+
+    expect(getMatch).toHaveBeenCalledWith('match-01')
+    expect(store.remoteMatch?.round).toBe(2)
+    expect(store.connectionState).toBe('connected')
+    expect(store.connectionError).toBeNull()
+    expect(store.isRequestPending).toBe(false)
+    getMatch.mockRestore()
   })
 })
