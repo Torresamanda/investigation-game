@@ -69,13 +69,16 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
-  it('avisa durante uma requisição e bloqueia novas ações até a resposta', () => {
+  it('bloqueia novas ações durante uma requisição sem inserir aviso transitório no layout', async () => {
     const session = useInvestigationStore()
-    session.isRequestPending = true
     const view = createView()
+    const layout = view.get('.investigation-layout').element
 
-    expect(view.get('.connection-state').attributes('role')).toBe('status')
-    expect(view.get('.connection-state').text()).toContain('Solicitação em andamento')
+    session.isRequestPending = true
+    await view.vm.$nextTick()
+
+    expect(view.find('.connection-state').exists()).toBe(false)
+    expect(view.get('.investigation-layout').element).toBe(layout)
     expect(
       view
         .findAll('.action-grid button')

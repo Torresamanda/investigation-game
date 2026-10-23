@@ -353,16 +353,7 @@ async function clearConversationCardPreparation() {
       </p>
     </section>
     <div
-      v-if="session.isRequestPending"
-      class="connection-state connection-state--pending"
-      role="status"
-      aria-live="polite"
-    >
-      <strong>Solicitação em andamento</strong>
-      <span>Aguarde a resposta do servidor antes de continuar.</span>
-    </div>
-    <div
-      v-else-if="session.connectionState !== 'connected'"
+      v-if="session.connectionState !== 'connected' && !session.isRequestPending"
       class="connection-state"
       :role="session.connectionState === 'error' ? 'alert' : 'status'"
       :aria-live="session.connectionState === 'error' ? 'assertive' : 'polite'"
