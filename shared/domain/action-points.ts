@@ -21,7 +21,7 @@ export interface InvestigatorActionCostInput {
   readonly examinedLocationsThisRound: readonly LocationId[]
   readonly preparedCardCost: number
   readonly preparedCardId?: string
-  readonly canCreateConnection: boolean
+  readonly hasMarkedClueForFollowUp?: boolean
 }
 
 export function investigatorActionCost(input: InvestigatorActionCostInput): number {
@@ -29,18 +29,14 @@ export function investigatorActionCost(input: InvestigatorActionCostInput): numb
     input.investigatorId === 'livia' &&
     input.action === 'examine' &&
     !input.examinedLocationsThisRound.includes(input.locationId)
-  const connectionCost =
-    input.investigatorId === 'otavio' && input.action === 'research' && input.canCreateConnection
+  const markerDiscount =
+    input.action === 'analyse' &&
+    input.hasMarkedClueForFollowUp &&
+    input.preparedCardId !== 'trace-marker'
       ? 1
       : 0
 
-  const markerDiscount =
-    input.action === 'analyse' && input.preparedCardId === 'trace-marker' ? 1 : 0
-
-  return Math.max(
-    1,
-    (firstExamineInLocation ? 1 : 2) + input.preparedCardCost + connectionCost - markerDiscount,
-  )
+  return Math.max(1, (firstExamineInLocation ? 1 : 2) + input.preparedCardCost - markerDiscount)
 }
 
 export function canPayAction(pool: ActionPointPool, cost: ActionCost): boolean {

@@ -28,6 +28,12 @@ export class ResolveActionUseCase {
     const match = this.repository.findById(command.matchId)
     if (!match) throw new MatchNotFoundError()
     assertMatchIsActive(match.status)
+    if (command.locationId !== match.currentLocationId) {
+      throw new InvalidActionError('O investigador precisa estar no local escolhido para agir.')
+    }
+    if (!match.unlockedLocations.includes(command.locationId)) {
+      throw new InvalidActionError('Este local ainda não foi liberado.')
+    }
     const activeDeck = match.decks[match.activeInvestigatorId]
     const card = match.preparedCardInstanceId
       ? activeDeck.hand.find((item) => item.instanceId === match.preparedCardInstanceId)
@@ -49,7 +55,13 @@ export class ResolveActionUseCase {
       examinedLocationsThisRound: match.examinedLocationsThisRound,
       preparedCardCost: card?.cost ?? 0,
       preparedCardId: card?.definitionId,
-      canCreateConnection: Boolean(connectionCandidate),
+      hasMarkedClueForFollowUp: match.journalEntries.some(
+        (entry) =>
+          entry.type === 'clue' &&
+          entry.locationId === command.locationId &&
+          (entry.status === 'unconfirmed' || entry.status === 'indicio') &&
+          entry.markedForFollowUp === true,
+      ),
     })
     if (
       !canPayAction(match.actionPoints, {
@@ -107,11 +119,18 @@ export class ResolveActionUseCase {
       : resolution.entry.caseEvidenceKey || !isConfirmedCaseEvidence(resolution.resolvedKey)
         ? resolution.entry
         : { ...resolution.entry, caseEvidenceKey: resolution.resolvedKey }
-    const journalEntries = match.journalEntries.map(
-      (entry) =>
+    const finalResolvedEntry =
+      resolvedEntry.type === 'clue' && resolvedEntry.status === 'confirmed'
+        ? { ...resolvedEntry, markedForFollowUp: false }
+        : resolvedEntry
+    const journalEntries = match.journalEntries.map((entry) =>
+      clearConsumedFollowUpMark(
         resolution.journalEntryUpdates?.find((updated) => updated.id === entry.id) ?? entry,
+        command.locationId,
+        finalResolvedEntry,
+      ),
     )
-    journalEntries.push(resolvedEntry)
+    journalEntries.push(finalResolvedEntry)
     const revealsPreservedPerimeterDetail =
       match.round === 1 &&
       command.action === 'examine' &&
@@ -146,7 +165,7 @@ export class ResolveActionUseCase {
     if (
       match.activeInvestigatorId === 'isadora' &&
       !match.hasReceivedSocialBonusThisRound &&
-      resolvedEntry.status === 'refuted' &&
+      finalResolvedEntry.status === 'refuted' &&
       match.journalEntries.some((entry) => entry.isadoraMarkedContestable)
     ) {
       updatedActionPoints = addSpecialtyPoints(updatedActionPoints, 'social', 1)
@@ -170,6 +189,22 @@ export class ResolveActionUseCase {
       resolvedKeys.push(connectionCandidate.key)
     }
 
+    const journalConnections = [...match.journalConnections]
+    if (connectionCandidate) {
+      addFormalConnection(journalConnections, {
+        id: `journal-connection:${[connectionCandidate.confirmedEntry.id, connectionCandidate.pendingEntry.id].sort().join(':')}`,
+        fromClueId: connectionCandidate.confirmedEntry.id,
+        toClueId: connectionCandidate.pendingEntry.id,
+        round: match.round,
+      })
+    }
+    if (resolution.journalConnection) {
+      addFormalConnection(journalConnections, {
+        ...resolution.journalConnection,
+        round: match.round,
+      })
+    }
+
     const updated: SoloMatch = {
       ...match,
       actionPoints: updatedActionPoints,
@@ -178,9 +213,7 @@ export class ResolveActionUseCase {
         : match.decks,
       preparedCardInstanceId: null,
       journalEntries,
-      journalConnections: resolution.journalConnection
-        ? [...match.journalConnections, { ...resolution.journalConnection, round: match.round }]
-        : match.journalConnections,
+      journalConnections,
       resolvedKeys,
       examinedLocationsThisRound:
         command.action === 'examine' &&
@@ -220,6 +253,36 @@ function isPhysicalEvidenceLocation(locationId: ResolveActionCommand['locationId
   return (
     locationId === 'gallery' || locationId === 'laboratory' || locationId === 'service-corridor'
   )
+}
+
+function clearConsumedFollowUpMark(
+  entry: SoloMatch['journalEntries'][number],
+  locationId: ResolveActionCommand['locationId'],
+  resolvedEntry: SoloMatch['journalEntries'][number],
+): SoloMatch['journalEntries'][number] {
+  const isConfirmedInLocation =
+    entry.type === 'clue' && entry.locationId === locationId && entry.status === 'confirmed'
+  const actionConfirmedInLocation =
+    resolvedEntry.type === 'clue' &&
+    resolvedEntry.locationId === locationId &&
+    resolvedEntry.status === 'confirmed'
+  return entry.markedForFollowUp && (isConfirmedInLocation || actionConfirmedInLocation)
+    ? { ...entry, markedForFollowUp: false }
+    : entry
+}
+
+function addFormalConnection(
+  connections: SoloMatch['journalConnections'][number][],
+  candidate: SoloMatch['journalConnections'][number],
+): void {
+  const exists = connections.some(
+    (connection) =>
+      (connection.fromClueId === candidate.fromClueId &&
+        connection.toClueId === candidate.toClueId) ||
+      (connection.fromClueId === candidate.toClueId &&
+        connection.toClueId === candidate.fromClueId),
+  )
+  if (!exists) connections.push(candidate)
 }
 
 function recyclePreparedCard(

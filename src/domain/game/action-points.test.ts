@@ -50,13 +50,12 @@ describe('action points', () => {
     ).toEqual({ general: 0, specialty: 0, specialtyPoint: 'technical' })
   })
 
-  it('calcula o desconto de Lívia e o custo de conexão de Otávio', () => {
+  it('calcula o desconto de Lívia sem adicionar custo obrigatório à pesquisa de Otávio', () => {
     const sharedCost = {
       action: 'examine' as const,
       locationId: 'gallery' as const,
       examinedLocationsThisRound: [] as const,
       preparedCardCost: 0,
-      canCreateConnection: false,
     }
 
     expect(investigatorActionCost({ investigatorId: 'livia', ...sharedCost })).toBe(1)
@@ -72,8 +71,30 @@ describe('action points', () => {
         investigatorId: 'otavio',
         ...sharedCost,
         action: 'research',
-        canCreateConnection: true,
       }),
-    ).toBe(3)
+    ).toBe(2)
+  })
+
+  it('desconta a próxima análise marcada e não a jogada que usa o marcador', () => {
+    expect(
+      investigatorActionCost({
+        investigatorId: 'rafael',
+        action: 'analyse',
+        locationId: 'gallery',
+        examinedLocationsThisRound: [],
+        preparedCardCost: 0,
+        preparedCardId: 'trace-marker',
+      }),
+    ).toBe(2)
+    expect(
+      investigatorActionCost({
+        investigatorId: 'rafael',
+        action: 'analyse',
+        locationId: 'gallery',
+        examinedLocationsThisRound: [],
+        preparedCardCost: 0,
+        hasMarkedClueForFollowUp: true,
+      }),
+    ).toBe(1)
   })
 })

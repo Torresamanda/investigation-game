@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MatchService } from './match-service.js'
 import { InMemoryMatchRepository } from '../infrastructure/persistence/in-memory-match-repository.js'
 import type { InvestigatorId } from '../domain/match.js'
+import type { MatchCard } from '../domain/match-deck.js'
 
 describe('MatchService', () => {
   it('cria uma partida solo com dupla fixa e estado inicial', () => {
@@ -35,6 +36,162 @@ describe('MatchService', () => {
     expect(() =>
       service.createSoloMatch({ activeInvestigatorId: 'livia', supportInvestigatorId: 'livia' }),
     ).toThrow('O investigador ativo e o apoio precisam ser diferentes.')
+  })
+
+  it('rejeita ações e conversas fora do local atual ou em locais bloqueados', () => {
+    const service = new MatchService(new InMemoryMatchRepository())
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    expect(() =>
+      service.resolveAction({ matchId: match.id, action: 'research', locationId: 'security' }),
+    ).toThrow('O investigador precisa estar no local escolhido para agir.')
+    expect(() => service.getConversationOptions(match.id, 'helena', 'office')).toThrow(
+      'O investigador precisa estar no local escolhido para agir.',
+    )
+  })
+
+  it('rejeita ações no local atual quando ele ainda não foi liberado', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({ ...match, currentLocationId: 'service-corridor' })
+
+    expect(() =>
+      service.resolveAction({
+        matchId: match.id,
+        action: 'examine',
+        locationId: 'service-corridor',
+      }),
+    ).toThrow('Este local ainda não foi liberado.')
+  })
+
+  it('mantém quatro cartas regulares e todas as temporárias ao descartar', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const deck = match.decks.livia
+    const temporaryCard: MatchCard = {
+      instanceId: 'temporary:guest-list:livia',
+      definitionId: 'guest-list',
+      ownerId: 'livia',
+      cost: 1,
+      compatibleActions: ['research'],
+      temporary: true,
+    }
+    repository.save({
+      ...match,
+      decks: { ...match.decks, livia: { ...deck, hand: [...deck.hand, temporaryCard] } },
+    })
+
+    const updated = service.discardCard(match.id, deck.hand[0]!.instanceId)
+
+    expect(updated.decks.livia.hand.filter((card) => !card.temporary)).toHaveLength(4)
+    expect(updated.decks.livia.hand).toContainEqual(temporaryCard)
+  })
+
+  it('consome o marcador quando a pista local é confirmada e aplica o desconto na análise', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'rafael',
+      supportInvestigatorId: 'livia',
+    })
+    repository.save({
+      ...match,
+      resolvedKeys: ['gallery-lock'],
+      journalEntries: [
+        {
+          id: 'marked-clue',
+          type: 'clue',
+          title: 'Vestígio marcado',
+          content: 'Pista física pendente.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'unconfirmed',
+          markedForFollowUp: true,
+        },
+      ],
+    })
+
+    const updated = service.resolveAction({
+      matchId: match.id,
+      action: 'analyse',
+      locationId: 'gallery',
+    })
+
+    expect(updated.actionPoints).toMatchObject({ general: 4, specialty: 0 })
+    expect(updated.journalEntries.find((entry) => entry.id === 'marked-clue')).toMatchObject({
+      markedForFollowUp: false,
+    })
+  })
+
+  it('devolve ao baralho do apoio a carta preparada para criar uma conexão no Diário', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    const activeDeck = match.decks.livia
+    const supportDeck = match.decks.rafael
+    const supportCard = [...supportDeck.hand, ...supportDeck.drawPile].find(
+      (card) => card.definitionId === 'comparative-magnifier',
+    )
+    if (!supportCard) throw new Error('O baralho do apoio precisa conter a Lupa Comparativa.')
+    const heldSupportCard = { ...supportCard, cost: 0 as const }
+    repository.save({
+      ...match,
+      journalEntries: [
+        {
+          id: 'connection-first',
+          type: 'clue',
+          title: 'Primeira pista',
+          content: 'Registro inicial.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'confirmed',
+        },
+        {
+          id: 'connection-second',
+          type: 'clue',
+          title: 'Segunda pista',
+          content: 'Registro pendente.',
+          locationId: 'laboratory',
+          round: 1,
+          status: 'unconfirmed',
+        },
+      ],
+      decks: {
+        ...match.decks,
+        livia: { ...activeDeck, hand: [...activeDeck.hand, heldSupportCard] },
+        rafael: {
+          ...supportDeck,
+          hand: supportDeck.hand.filter((card) => card.instanceId !== supportCard.instanceId),
+          drawPile: supportDeck.drawPile.filter(
+            (card) => card.instanceId !== supportCard.instanceId,
+          ),
+        },
+      },
+    })
+    service.prepareCard(match.id, heldSupportCard.instanceId)
+
+    const connected = service.createJournalConnection({
+      matchId: match.id,
+      fromClueId: 'connection-first',
+      toClueId: 'connection-second',
+    })
+
+    expect(connected.decks.livia.hand).not.toContainEqual(heldSupportCard)
+    expect(connected.decks.rafael.discardPile).toContainEqual(heldSupportCard)
   })
 
   it('cobra PA apenas após o primeiro deslocamento da rodada e bloqueia locais não liberados', () => {
@@ -159,6 +316,7 @@ describe('MatchService', () => {
     })
     repository.save({ ...match, round: 2 })
 
+    setCurrentLocation(repository, match.id, 'office')
     const helenaOptions = service.getConversationOptions(match.id, 'helena', 'office')
     expect(
       helenaOptions.questions.find((question) => question.id === 'marta-disagreement'),
@@ -175,6 +333,7 @@ describe('MatchService', () => {
     expect(afterHelena.actionPoints.general).toBe(3)
     expect(afterHelena.hasUsedPressLeakConversationThisRound).toBe(true)
 
+    setCurrentLocation(repository, match.id, 'gallery')
     const daviOptions = service.getConversationOptions(match.id, 'davi', 'gallery')
     expect(daviOptions.questions.find((question) => question.id === 'collectors')).toMatchObject({
       cost: 2,
@@ -194,6 +353,7 @@ describe('MatchService', () => {
     repository.save({ ...repository.findById(match.id)!, round: 2 })
     service.prepareCard(match.id, pause.instanceId)
 
+    setCurrentLocation(repository, match.id, 'office')
     const options = service.getConversationOptions(match.id, 'helena', 'office')
     expect(
       options.questions.find((question) => question.id === 'marta-disagreement'),
@@ -275,6 +435,7 @@ describe('MatchService', () => {
     repository.save({
       ...match,
       round: 6,
+      currentLocationId: 'security',
       journalEntries: [
         {
           id: 'confirmed-clue',
@@ -311,11 +472,13 @@ describe('MatchService', () => {
   })
 
   it('mantém descobertas disponíveis nas rodadas seguintes e libera análise com pré-requisitos', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
+    setCurrentLocation(repository, match.id, 'security')
     service.resolveAction({ matchId: match.id, locationId: 'security', action: 'research' })
     service.endTurn(match.id)
     const gap = service.resolveAction({
@@ -445,7 +608,7 @@ describe('MatchService', () => {
     expect(updated.actionPoints.general).toBe(5 - 1 - card.cost)
   })
 
-  it('embaralha novamente a mão no início do turno e mantém exatamente quatro cartas', () => {
+  it('embaralha as cartas regulares e preserva temporárias acima de quatro cartas', () => {
     const repository = new InMemoryMatchRepository()
     const seededService = new MatchService(repository, undefined, () => 'seeded-match')
     const seededMatch = seededService.createSoloMatch({
@@ -469,10 +632,9 @@ describe('MatchService', () => {
     })
     const changed = seededService.endTurn(seededMatch.id)
 
-    expect(changed.decks.livia.hand).toHaveLength(4)
-    expect([...changed.decks.livia.hand, ...changed.decks.livia.drawPile]).toContainEqual(
-      temporaryCard,
-    )
+    expect(changed.decks.livia.hand).toHaveLength(5)
+    expect(changed.decks.livia.hand.filter((card) => !card.temporary)).toHaveLength(4)
+    expect(changed.decks.livia.hand).toContainEqual(temporaryCard)
     expect(changed.decks.rafael.hand).toEqual(seededMatch.decks.rafael.hand)
   })
 
@@ -491,8 +653,13 @@ describe('MatchService', () => {
   })
 
   it('oferece perguntas da pessoa presente e registra a declaração ao resolvê-la', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
-    service.createSoloMatch({ activeInvestigatorId: 'isadora', supportInvestigatorId: 'rafael' })
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'rafael',
+    })
+    setCurrentLocation(repository, match.id, 'laboratory')
 
     const options = service.getConversationOptions('match-1', 'marta', 'laboratory')
     const updated = service.resolveConversation({
@@ -528,6 +695,7 @@ describe('MatchService', () => {
       supportInvestigatorId: 'rafael',
     })
 
+    setCurrentLocation(repository, match.id, 'laboratory')
     const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
     const fingerprints = options.questions.find((question) => question.id === 'fingerprints')
     expect(fingerprints).toMatchObject({
@@ -543,7 +711,11 @@ describe('MatchService', () => {
         questionId: 'fingerprints',
       }),
     ).toThrow('Diálogo bloqueado: evidência necessária')
-    expect(service.getMatch(match.id)).toEqual(match)
+    expect(service.getMatch(match.id)).toMatchObject({
+      currentLocationId: 'laboratory',
+      actionPoints: match.actionPoints,
+      journalEntries: match.journalEntries,
+    })
   })
 
   it('bloqueia recompensas temporárias até a rodada em que elas podem ser entregues', () => {
@@ -560,11 +732,13 @@ describe('MatchService', () => {
   })
 
   it('aceita uma pergunta por pessoa a cada turno e libera outra na rodada seguinte', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
+    setCurrentLocation(repository, match.id, 'laboratory')
 
     service.resolveConversation({
       matchId: match.id,
@@ -581,6 +755,7 @@ describe('MatchService', () => {
       }),
     ).toThrow('Você já fez uma pergunta neste turno.')
 
+    setCurrentLocation(repository, match.id, 'security')
     const otherPerson = service.resolveConversation({
       matchId: match.id,
       personId: 'raul',
@@ -590,6 +765,7 @@ describe('MatchService', () => {
     expect(otherPerson.journalEntries).toHaveLength(2)
 
     service.endTurn(match.id)
+    setCurrentLocation(repository, match.id, 'laboratory')
     const nextTurn = service.resolveConversation({
       matchId: match.id,
       personId: 'marta',
@@ -600,7 +776,8 @@ describe('MatchService', () => {
   })
 
   it('rejeita conversa fora do local, pergunta inexistente ou já resolvida sem alterar a partida', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
@@ -609,6 +786,7 @@ describe('MatchService', () => {
     expect(() => service.getConversationOptions(match.id, 'marta', 'gallery')).toThrow(
       'Esta pessoa não está disponível neste local.',
     )
+    setCurrentLocation(repository, match.id, 'laboratory')
     expect(() =>
       service.resolveConversation({
         matchId: match.id,
@@ -635,11 +813,13 @@ describe('MatchService', () => {
   })
 
   it('libera a pressão de Marta somente depois da evidência da Galeria', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
+    setCurrentLocation(repository, match.id, 'laboratory')
 
     expect(() =>
       service.resolveConversation({
@@ -650,11 +830,8 @@ describe('MatchService', () => {
       }),
     ).toThrow('Diálogo bloqueado: evidência necessária')
 
-    const corroboratedService = new MatchService(
-      new InMemoryMatchRepository(),
-      undefined,
-      () => 'match-2',
-    )
+    const corroboratedRepository = new InMemoryMatchRepository()
+    const corroboratedService = new MatchService(corroboratedRepository, undefined, () => 'match-2')
     const corroboratedMatch = corroboratedService.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
@@ -664,6 +841,7 @@ describe('MatchService', () => {
       action: 'examine',
       locationId: 'gallery',
     })
+    setCurrentLocation(corroboratedRepository, corroboratedMatch.id, 'laboratory')
     const recorded = corroboratedService.resolveConversation({
       matchId: corroboratedMatch.id,
       personId: 'marta',
@@ -681,6 +859,7 @@ describe('MatchService', () => {
       activeInvestigatorId: 'isadora',
       supportInvestigatorId: 'rafael',
     })
+    setCurrentLocation(repository, match.id, 'laboratory')
     const recorder = putCardInHand(repository, match, 'pocket-recorder')
     service.prepareCard(match.id, recorder.instanceId)
 
@@ -703,6 +882,7 @@ describe('MatchService', () => {
       activeInvestigatorId: 'isadora',
       supportInvestigatorId: 'rafael',
     })
+    setCurrentLocation(repository, match.id, 'laboratory')
     const recorder = putCardInHand(repository, match, 'pocket-recorder')
     const updatedMatch = repository.findById(match.id)
     if (!updatedMatch) throw new Error('A partida precisa permanecer persistida.')
@@ -724,6 +904,7 @@ describe('MatchService', () => {
       activeInvestigatorId: 'isadora',
       supportInvestigatorId: 'rafael',
     })
+    setCurrentLocation(repository, match.id, 'laboratory')
     const pause = putCardInHand(repository, match, 'calculated-pause')
     service.prepareCard(match.id, pause.instanceId)
 
@@ -753,6 +934,7 @@ describe('MatchService', () => {
       activeInvestigatorId: 'isadora',
       supportInvestigatorId: 'rafael',
     })
+    setCurrentLocation(repository, match.id, 'laboratory')
     const afterFirstQuestion = service.resolveConversation({
       matchId: match.id,
       personId: 'marta',
@@ -777,11 +959,13 @@ describe('MatchService', () => {
   })
 
   it('concede uma carta temporária após uma conversa que cumpre sua condição', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
+    setCurrentLocation(repository, match.id, 'office')
 
     const updated = service.resolveConversation({
       matchId: match.id,
@@ -817,16 +1001,14 @@ describe('MatchService', () => {
       expect.objectContaining({ definitionId: 'guest-list', temporary: true }),
     )
 
-    const raulService = new MatchService(
-      new InMemoryMatchRepository(),
-      undefined,
-      () => 'raul-match',
-    )
+    const raulRepository = new InMemoryMatchRepository()
+    const raulService = new MatchService(raulRepository, undefined, () => 'raul-match')
     const raulMatch = raulService.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
     raulService.endTurn(raulMatch.id)
+    setCurrentLocation(raulRepository, raulMatch.id, 'security')
     const afterRaul = raulService.resolveConversation({
       matchId: raulMatch.id,
       personId: 'raul',
@@ -902,15 +1084,13 @@ describe('MatchService', () => {
   })
 
   it('Rafael confirma uma pista física não verificada apenas uma vez por rodada', () => {
-    const service = new MatchService(
-      new InMemoryMatchRepository(),
-      undefined,
-      () => 'rafael-passive',
-    )
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'rafael-passive')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'rafael',
       supportInvestigatorId: 'livia',
     })
+    setCurrentLocation(repository, match.id, 'laboratory')
 
     const first = service.resolveAction({
       matchId: match.id,
@@ -942,6 +1122,7 @@ describe('MatchService', () => {
     })
     repository.save({
       ...match,
+      currentLocationId: 'laboratory',
       resolvedKeys: ['gallery-lock', 'marta-tools'],
       journalEntries: [
         {
@@ -987,6 +1168,7 @@ describe('MatchService', () => {
     })
     repository.save({
       ...match,
+      actionPoints: { general: 0, specialty: 2, specialtyPoint: 'research' },
       journalEntries: [
         {
           id: 'clue-confirmed',
@@ -1014,12 +1196,18 @@ describe('MatchService', () => {
       action: 'research',
       locationId: 'gallery',
     })
-    expect(connected.actionPoints).toMatchObject({ general: 2, specialty: 0 })
+    expect(connected.actionPoints).toMatchObject({ general: 0, specialty: 0 })
     expect(connected.journalEntries.at(-1)).toMatchObject({
       title: 'Conexão de Otávio',
       relatedEntryIds: ['clue-confirmed', 'clue-pending'],
     })
     expect(connected.resolvedKeys).toContain('investigator-connection:clue-confirmed:clue-pending')
+    expect(connected.journalConnections).toContainEqual(
+      expect.objectContaining({
+        fromClueId: 'clue-confirmed',
+        toClueId: 'clue-pending',
+      }),
+    )
   })
 })
 
@@ -1029,13 +1217,14 @@ function putCardInHand(
   definitionId: string,
   investigatorId: InvestigatorId = 'isadora',
 ) {
-  const deck = match.decks[investigatorId]
+  const currentMatch = repository.findById(match.id) ?? match
+  const deck = currentMatch.decks[investigatorId]
   const card = [...deck.hand, ...deck.drawPile].find((item) => item.definitionId === definitionId)
   if (!card) throw new Error(`Carta ${definitionId} não foi criada.`)
   repository.save({
-    ...match,
+    ...currentMatch,
     decks: {
-      ...match.decks,
+      ...currentMatch.decks,
       [investigatorId]: {
         ...deck,
         drawPile: deck.drawPile.filter((item) => item.instanceId !== card.instanceId),
@@ -1046,4 +1235,18 @@ function putCardInHand(
     },
   })
   return card
+}
+
+function setCurrentLocation(
+  repository: InMemoryMatchRepository,
+  matchId: string,
+  locationId: ReturnType<MatchService['createSoloMatch']>['currentLocationId'],
+): void {
+  const match = repository.findById(matchId)
+  if (!match) throw new Error('A partida precisa permanecer persistida.')
+  repository.save({
+    ...match,
+    currentLocationId: locationId,
+    unlockedLocations: [...new Set([...match.unlockedLocations, locationId])],
+  })
 }

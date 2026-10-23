@@ -25,6 +25,12 @@ export class ResolveConversationUseCase {
     const match = this.repository.findById(command.matchId)
     if (!match) throw new MatchNotFoundError()
     assertMatchIsActive(match.status)
+    if (command.locationId !== match.currentLocationId) {
+      throw new DomainError('O investigador precisa estar no local escolhido para agir.')
+    }
+    if (!match.unlockedLocations.includes(command.locationId)) {
+      throw new DomainError('Este local ainda não foi liberado.')
+    }
     this.assertPersonAvailability(command.personId, command.locationId)
     const conversation = this.caseContentRepository.getConversation(command.personId)
     const question = conversation.questions.find((item) => item.id === command.questionId)

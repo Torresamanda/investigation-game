@@ -104,8 +104,13 @@ export const useMatchStore = defineStore('match', () => {
       examinedLocationsThisRound: remoteMatch.value.examinedLocationsThisRound,
       preparedCardCost: card?.cost ?? 0,
       preparedCardId: card?.id,
-      canCreateConnection:
-        action === 'research' && remoteMatch.value.canCreateInvestigatorConnection,
+      hasMarkedClueForFollowUp: remoteMatch.value.journalEntries.some(
+        (entry) =>
+          entry.type === 'clue' &&
+          entry.locationId === locationId &&
+          (entry.status === 'unconfirmed' || entry.status === 'indicio') &&
+          entry.markedForFollowUp === true,
+      ),
     })
   }
 

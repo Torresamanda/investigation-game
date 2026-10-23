@@ -66,17 +66,19 @@ export class CreateJournalConnectionUseCase {
           action: 'research',
           amount: 1,
         })
-    const decks =
-      usesConnectionCard && preparedCard
-        ? {
-            ...match.decks,
-            [match.activeInvestigatorId]: recycleCardFromHand(
-              activeDeck,
-              activeDeck,
-              preparedCard.instanceId,
-            ).holderDeck,
-          }
-        : match.decks
+    let decks = match.decks
+    if (usesConnectionCard && preparedCard) {
+      const recycled = recycleCardFromHand(
+        activeDeck,
+        match.decks[preparedCard.ownerId],
+        preparedCard.instanceId,
+      )
+      decks = {
+        ...match.decks,
+        [match.activeInvestigatorId]: recycled.holderDeck,
+        [preparedCard.ownerId]: recycled.ownerDeck,
+      }
+    }
     const connection = {
       id: this.createId(),
       fromClueId: command.fromClueId,

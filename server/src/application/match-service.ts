@@ -31,6 +31,7 @@ import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.
 import { CreateJournalConnectionUseCase } from './use-cases/create-journal-connection-use-case.js'
 import { AccuseSuspectUseCase } from './use-cases/accuse-suspect-use-case.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
+import { DomainError } from '../domain/errors.js'
 
 export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
 
@@ -94,6 +95,7 @@ export class MatchService {
   ): ConversationOptions {
     const match = this.getMatch(matchId)
     if (!match) throw new Error('Partida não encontrada.')
+    assertCurrentLocation(match, locationId)
     this.assertPersonAvailability(personId, locationId)
     const conversation = this.caseContentRepository.getConversation(personId)
     const questionLimitReached = match.resolvedKeys.includes(conversationTurnKey(match, personId))
@@ -179,6 +181,15 @@ export class MatchService {
     if (!this.caseContentRepository.isPersonAvailableAtLocation(personId, locationId)) {
       throw new Error('Esta pessoa não está disponível neste local.')
     }
+  }
+}
+
+function assertCurrentLocation(match: SoloMatch, locationId: LocationId): void {
+  if (locationId !== match.currentLocationId) {
+    throw new DomainError('O investigador precisa estar no local escolhido para agir.')
+  }
+  if (!match.unlockedLocations.includes(locationId)) {
+    throw new DomainError('Este local ainda não foi liberado.')
   }
 }
 

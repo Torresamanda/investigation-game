@@ -27,4 +27,33 @@ describe('refreshHandForTurn', () => {
     expect(refreshed.hand).toHaveLength(4)
     expect([...refreshed.hand, ...refreshed.drawPile]).toHaveLength(8)
   })
+
+  it('preserva cartas temporárias fora das quatro cartas regulares da mão', () => {
+    const regularCards = Array.from({ length: 8 }, (_, index): MatchCard => ({
+      instanceId: `livia:regular:${index}`,
+      definitionId: `regular-${index}`,
+      ownerId: 'livia',
+      cost: 0,
+      compatibleActions: ['examine'],
+    }))
+    const temporaryCard: MatchCard = {
+      instanceId: 'temporary:guest-list:livia',
+      definitionId: 'guest-list',
+      ownerId: 'livia',
+      cost: 1,
+      compatibleActions: ['research'],
+      temporary: true,
+    }
+    const deck: MatchDeck = {
+      drawPile: regularCards.slice(4),
+      discardPile: [],
+      hand: [...regularCards.slice(0, 4), temporaryCard],
+    }
+
+    const refreshed = refreshHandForTurn(deck, 4, () => 0)
+
+    expect(refreshed.hand.filter((card) => !card.temporary)).toHaveLength(4)
+    expect(refreshed.hand).toContainEqual(temporaryCard)
+    expect(refreshed.hand).toHaveLength(5)
+  })
 })

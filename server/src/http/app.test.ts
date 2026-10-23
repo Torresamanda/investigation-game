@@ -434,6 +434,12 @@ describe('API de partidas', () => {
     })
     const { id } = create.json<{ id: string }>()
 
+    await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/move`,
+      payload: { locationId: 'laboratory' },
+    })
+
     const options = await app.inject({
       method: 'GET',
       url: `/api/matches/${id}/conversations/marta?locationId=laboratory`,
@@ -473,6 +479,12 @@ describe('API de partidas', () => {
     })
     expect(unavailable.statusCode).toBe(400)
 
+    await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/move`,
+      payload: { locationId: 'laboratory' },
+    })
+
     const unknown = await app.inject({
       method: 'POST',
       url: `/api/matches/${id}/conversations/marta/questions/nope`,
@@ -505,6 +517,12 @@ describe('API de partidas', () => {
 
     await app.inject({
       method: 'POST',
+      url: `/api/matches/${id}/move`,
+      payload: { locationId: 'laboratory' },
+    })
+
+    await app.inject({
+      method: 'POST',
       url: `/api/matches/${id}/conversations/marta/questions/davi-interest`,
       payload: { locationId: 'laboratory' },
     })
@@ -516,6 +534,12 @@ describe('API de partidas', () => {
 
     expect(second.statusCode).toBe(400)
     expect(second.json()).toEqual({ message: 'Você já fez uma pergunta neste turno.' })
+
+    await app.inject({
+      method: 'POST',
+      url: `/api/matches/${id}/move`,
+      payload: { locationId: 'security' },
+    })
 
     const otherPerson = await app.inject({
       method: 'POST',

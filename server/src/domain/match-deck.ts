@@ -84,14 +84,17 @@ export function refreshHandForTurn(
   handSize: number,
   random: () => number = Math.random,
 ): MatchDeck {
-  return drawToHand(
+  const temporaryCards = deck.hand.filter((card) => card.temporary)
+  const regularHandCards = deck.hand.filter((card) => !card.temporary)
+  const refreshedDeck = drawToHand(
     {
-      drawPile: shuffle([...deck.drawPile, ...deck.hand], random),
+      drawPile: shuffle([...deck.drawPile, ...regularHandCards], random),
       discardPile: deck.discardPile,
       hand: [],
     },
     handSize,
   )
+  return { ...refreshedDeck, hand: [...refreshedDeck.hand, ...temporaryCards] }
 }
 
 export function discardFromHand(deck: MatchDeck, instanceId: string): MatchDeck {

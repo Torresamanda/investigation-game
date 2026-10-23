@@ -117,6 +117,7 @@ async function executeAction(action: InvestigationAction) {
 
 async function moveToLocation() {
   selectedSuspectId.value = findSuspectIdAtLocation(locationId.value)
+  if (locationId.value === session.currentLocationId) return
   if (session.connectionState !== 'connected') return
   const moveWasFree = session.moveCostLabel !== '1 PA'
   try {

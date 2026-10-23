@@ -20,9 +20,9 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
    - Concluído: `10 · INV-01` (passivas de Lívia, Rafael, Isadora e Otávio; custo e viabilidade refletidos na interface).
    - Concluído: `09 · CASO-06` + `09A · BUG-05` (eventos aplicados no servidor e abertura da Rodada 4 condicionada às evidências confirmadas no diário).
    - Concluído: `14 · INV-02` (rotas investigativas alternativas e efeitos de cartas).
+   - Concluído: `14A · JOGO-07` (efeitos contextuais das cartas por local e validações sem spoilers).
 
    - **Pendente (`P0`/`P1` Correções do Playtest End-to-End):**
-     - `14A · JOGO-07` → Liberdade de uso de cartas em qualquer local e remoção de spoilers de local/rodada (permitir usar as cartas em qualquer cenário com sua ação compatível, gerando descobertas/observações contextuais daquele local sem travas de `locationId === '...'` ou `round >= X`, e proibir mensagens de erro que revelem locais ou rodadas futuras).
      - `16A · BUG-07` → Corrigir os bugs de fluxo encontrados no playtest das Rodadas 1–6 (manter cartas `temporary: true` fixas na mão mesmo além do limite de 4 cartas base — ex.: 5+ cartas na mão — até o jogador decidir usá-las ou descartá-las; validação de `currentLocationId` e clique redundante no local atual; unificação das conexões de Otávio/cartas com `journalConnections` sem cobrar +1 PA compulsório quando Otávio quiser apenas pesquisar; desconto correto de `trace-marker` na próxima análise; `ownerDeck` no `CreateJournalConnectionUseCase`).
      - `15 · INV-03` → Implementar de fato o Apoio de Plantão no modo solo (`RequestSupportCardUseCase`, endpoint `POST /api/matches/:id/support-card`, `hasUsedSupportThisRound`, desconto de 1 PA na carta puxada do apoio e botão na UI; apenas a devolução ao `card.ownerId` no descarte havia sido feita).
 
@@ -296,7 +296,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
     - Validar pares coerentes de conexão (evitando conectar uma pista consigo mesma ou duplicar a mesma conexão).
   - Critério de aceite: as conexões formais consomem 1 PA (salvo isenções), ficam listadas no diário e são contabilizadas nos 2 vínculos exigidos por `19 · CASO-07`.
 
-- [ ] **16A · BUG-07 — Corrigir bugs de fluxo do playtest (cartas temporárias fixas na mão além de 4 cartas, validação de local, conexões de Otávio/cartas e `trace-marker`)** `[P0] [Front] [Back]`
+- [x] **16A · BUG-07 — Corrigir bugs de fluxo do playtest (cartas temporárias fixas na mão além de 4 cartas, validação de local, conexões de Otávio/cartas e `trace-marker`)** `[P0] [Front] [Back]`
   - **1. Manter cartas temporárias fixas na mão entre turnos, somando-se às 4 cartas do baralho (`server/src/domain/match-deck.ts`, `discard-card-use-case.ts` e `match-service.test.ts`):**
     - Quando o jogador obtém uma carta temporária de um personagem (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`), ela deve **permanecer na mão do jogador até que ele próprio decida usá-la ou descartá-la**, mesmo que a mão fique com **5 ou mais cartas**.
     - Em `refreshHandForTurn(deck, handSize, random)` (`server/src/domain/match-deck.ts`):
