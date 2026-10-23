@@ -129,4 +129,44 @@ describe('seleção da prévia solo', () => {
     expect(store.isRequestPending).toBe(false)
     getMatch.mockRestore()
   })
+
+  it('retoma uma partida remota com a equipe persistida no servidor', async () => {
+    const store = useInvestigationStore()
+    const restoredMatch: RemoteMatch = {
+      id: 'match-02',
+      mode: 'solo',
+      createdAt: '2026-10-23T12:00:00.000Z',
+      preparedCardInstanceId: null,
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'otavio',
+      round: 2,
+      status: 'active',
+      examinedLocationsThisRound: [],
+      hasUsedPassiveThisRound: false,
+      hasReceivedSocialBonusThisRound: false,
+      hasUsedPressLeakConversationThisRound: false,
+      canAccuse: false,
+      hasFreeConnectionThisRound: false,
+      hasUsedFreeConnectionThisRound: false,
+      canCreateInvestigatorConnection: false,
+      currentLocationId: 'gallery',
+      unlockedLocations: ['gallery', 'security', 'laboratory', 'office'],
+      hasUsedFreeMoveThisRound: false,
+      hasDiscardedCardThisRound: false,
+      hasUsedSupportThisRound: false,
+      actionPoints: { general: 4, specialty: 0, specialtyPoint: null },
+      journalEntries: [],
+      journalConnections: [],
+      decks: { isadora: { hand: [], drawPileCount: 4, discardPileCount: 0 } },
+    }
+    const getMatch = vi.spyOn(gameApi, 'getMatch').mockResolvedValue(restoredMatch)
+
+    await store.resumeRemoteMatch(restoredMatch.id)
+
+    expect(store.investigatorId).toBe('isadora')
+    expect(store.supportId).toBe('otavio')
+    expect(store.remoteMatch).toStrictEqual(restoredMatch)
+    expect(store.connectionState).toBe('connected')
+    getMatch.mockRestore()
+  })
 })

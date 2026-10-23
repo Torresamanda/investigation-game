@@ -24,6 +24,11 @@ export const useInvestigationStore = defineStore('investigation', () => {
     notes.clearNotes()
   }
 
+  async function deleteRemoteMatch(): Promise<void> {
+    await match.deleteRemoteMatch()
+    notes.clearNotes()
+  }
+
   return {
     investigatorId: matchRefs.investigatorId,
     supportId: matchRefs.supportId,
@@ -52,6 +57,8 @@ export const useInvestigationStore = defineStore('investigation', () => {
     prepareCard: match.prepareCard,
     clearPreparedCard: match.clearPreparedCard,
     createRemoteMatch: match.createRemoteMatch,
+    resumeRemoteMatch: match.resumeRemoteMatch,
+    deleteRemoteMatch,
     retryConnection: match.retryConnection,
     resolveAction: match.resolveAction,
     createJournalConnection: match.createJournalConnection,

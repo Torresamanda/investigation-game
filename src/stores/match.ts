@@ -11,6 +11,7 @@ import {
   type MatchJournalEntry,
   type RemoteMatch,
 } from '../services/game-api'
+import { clearMatchSession } from '../services/match-session'
 
 export interface HandCard extends CardDefinition {
   readonly instanceId: string
@@ -167,6 +168,21 @@ export const useMatchStore = defineStore('match', () => {
     return remoteMatch.value
   }
 
+  async function resumeRemoteMatch(matchId: string): Promise<RemoteMatch> {
+    const restoredMatch = await performApiRequest(() => gameApi.getMatch(matchId))
+    remoteMatch.value = restoredMatch
+    investigatorId.value = restoredMatch.activeInvestigatorId
+    supportId.value = restoredMatch.supportInvestigatorId
+    preparedCardId.value = restoredMatch.preparedCardInstanceId
+    return restoredMatch
+  }
+
+  async function deleteRemoteMatch(): Promise<void> {
+    if (!remoteMatch.value) throw new Error('Não há partida para excluir.')
+    await performApiRequest(() => gameApi.deleteMatch(remoteMatch.value!.id))
+    abandonInvestigation()
+  }
+
   async function retryConnection(): Promise<void> {
     if (remoteMatch.value) {
       remoteMatch.value = await performApiRequest(() => gameApi.getMatch(remoteMatch.value!.id))
@@ -223,6 +239,7 @@ export const useMatchStore = defineStore('match', () => {
       gameApi.accuse(remoteMatch.value!.id, accusation),
     )
     preparedCardId.value = null
+    clearCompletedMatchSession()
   }
 
   async function moveInvestigator(locationId: LocationId): Promise<void> {
@@ -239,7 +256,13 @@ export const useMatchStore = defineStore('match', () => {
     const updated = await performApiRequest(() => gameApi.endTurn(remoteMatch.value!.id))
     remoteMatch.value = updated
     preparedCardId.value = updated.preparedCardInstanceId
+    clearCompletedMatchSession()
     return true
+  }
+
+  function clearCompletedMatchSession(): void {
+    const completedMatch = remoteMatch.value
+    if (completedMatch && completedMatch.status !== 'active') clearMatchSession(completedMatch.id)
   }
 
   async function requestSupportCard(): Promise<void> {
@@ -317,6 +340,8 @@ export const useMatchStore = defineStore('match', () => {
     prepareCard,
     clearPreparedCard,
     createRemoteMatch,
+    resumeRemoteMatch,
+    deleteRemoteMatch,
     retryConnection,
     resolveAction,
     createJournalConnection,

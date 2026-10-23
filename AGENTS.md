@@ -15,10 +15,8 @@ Qualquer IA ou assistente de código que analisar, planejar, criar ou editar arq
 - **Evite jogar todas as lógicas em um único arquivo:** Separe rigorosamente por responsabilidade. Cada classe, caso de uso, entidade, repositório, presenter, store ou composable deve ter um único propósito claro e ficar em seu próprio arquivo.
 - **Respeite as camadas:**
   - `shared/`: Apenas tipos primitivos compartilhados (`InvestigatorId`, `LocationId`, `InvestigationAction`), DTOs públicos e funções puras compartilhadas (ex.: `canPayAction`). Zero segredos do caso.
-  - `server/src/domain/`: Entidades ricas (`Match`, `InvestigatorDeck`, `TurnState`), Value Objects, erros semânticos (`DomainError`) e serviços de domínio determinísticos. Proibido depender de Fastify, SQLite, `Math.random()` direto ou HTTP.
-  - `server/src/application/`: Portas (`MatchRepository`, `CaseContentRepository`, `RandomGenerator`) e Casos de Uso (`CreateSoloMatchUseCase`, `ResolveActionUseCase`, etc.). Proibido implementar repositórios concretos (`InMemoryMatchRepository`) ou hardcoded de casos dentro da camada `application`.
-  - `server/src/infrastructure/`: Implementações concretas (`SqliteMatchRepository`, `InMemoryMatchRepository`, `NodeCryptoRandomGenerator`, repositórios de conteúdo do caso).
-  - `server/src/http/`: Controllers/rotas finas, validação de schema, `ErrorHandler` centralizado e `Presenters` (`MatchPresenter`).
+  - `backend/`: Núcleo privado e independente de runtime: domínio, portas, casos de uso, conteúdo do caso, presenters e adaptadores reutilizáveis. Proibido depender de Fastify, SQLite, `Math.random()` direto ou HTTP.
+  - `worker/`: Adaptador de produção Cloudflare Worker/D1. Deve consumir `backend/` e nunca expor seu conteúdo como asset estático.
   - `src/`: Interface Vue 3 reativa. Stores Pinia separadas por responsabilidade (`useMatchStore`, `useNotesStore`), orquestração de tela em `composables/` e componentes de UI desacoplados.
 
 ---
@@ -26,8 +24,8 @@ Qualquer IA ou assistente de código que analisar, planejar, criar ou editar arq
 ## 3. Segurança (AppSec & Anti-Cheat)
 - **Proteção de Estado Oculto (Data Exposure):** A API jamais deve retornar a entidade de domínio bruta com `drawPile` (ordem das cartas a comprar), baralho completo do apoio ou chaves internas (`resolvedKeys`). Sempre retorne DTOs públicos através de um `Presenter` (expondo apenas `hand`, `drawPileCount` e `discardPileCount`).
 - **Validação de Entrada:** Nunca desestruture `request.body` sem validação prévia de schema (JSON Schema / TypeBox / Zod) para evitar erros `500` com payloads nulos ou malformados.
-- **Tratamento de Erros Semântico:** Proibido definir status HTTP comparando strings de erro (`message === '...'`). Use classes de erro de domínio tratadas pelo `setErrorHandler` do Fastify.
-- **Sanitização e Aleatoriedade:** Use `encodeURIComponent()` em parâmetros de URL no cliente (`src/services/game-api.ts`) e `crypto.randomInt()` (`node:crypto`) para embaralhamento no servidor.
+- **Tratamento de Erros Semântico:** Proibido definir status HTTP comparando strings de erro (`message === '...'`). Use classes de erro de domínio tratadas centralmente pelas rotas do Worker.
+- **Sanitização e Aleatoriedade:** Use `encodeURIComponent()` em parâmetros de URL no cliente (`src/services/game-api.ts`) e Web Crypto para embaralhamento no backend.
 
 ---
 
@@ -55,7 +53,7 @@ Qualquer IA ou assistente de código que analisar, planejar, criar ou editar arq
 ---
 
 ## 6. Validação, Commits (Conventional Commits) e Controle de Push
-- **Verificação Obrigatória:** Sempre execute `npm run check` (lint, format:check, test, server:check e build) para garantir zero erros e zero warnings antes de concluir uma alteração ou criar um commit.
+- **Verificação Obrigatória:** Sempre execute `npm run check` (lint, format:check, test, worker:check e build) para garantir zero erros e zero warnings antes de concluir uma alteração ou criar um commit.
 - **Leitura Obrigatória Antes de Commitar:** Antes de criar qualquer commit, o agente **DEVE** ler [`documents/COMMIT_CONVENTIONS.md`](documents/COMMIT_CONVENTIONS.md) e seguir rigorosamente o padrão **Conventional Commits**:
   - **Formato obrigatório:** `<type>(<scope>): <short description>` (em inglês direto, letras minúsculas, no imperativo e sem ponto final).
   - **Types permitidos:** `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `perf`, `build`, `ci`, `chore` (adicione `!` após `type(scope)` em caso de *breaking change*).

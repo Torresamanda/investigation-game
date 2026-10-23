@@ -138,12 +138,12 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Critério de aceite: dois clientes que consultam a mesma partida veem a mesma carta preparada.
 
 - [x] **04A · SEC-03 — Ocultar baralho de compra e chaves internas nas respostas da API (`MatchPresenter`)** `[P0] [Front] [Back]`
-  - Criar `MatchPresenter` em `server/src/http/presenters/` para transformar a entidade de domínio em DTO público antes de enviá-la nas respostas HTTP.
+  - Criar `MatchPresenter` em `backend/presenters/` para transformar a entidade de domínio em DTO público antes de enviá-la nas respostas HTTP.
   - Expor apenas `hand` do investigador ativo e contadores numéricos (`drawPileCount` e `discardPileCount`), removendo `drawPile` ordenado, baralho completo do apoio e `resolvedKeys` do payload público.
   - Critério de aceite: inspecionar qualquer resposta de `/api/matches/*` no navegador não revela a sequência de próximas cartas a comprar nem chaves internas de controle.
 
 - [x] **04B · ARQ-02 — Refatorar backend em camadas estritas de Clean Architecture e Domínio Rico** `[P1] [Back]`
-  - Dividir `MatchService` em Casos de Uso independentes por responsabilidade (`CreateSoloMatchUseCase`, `ResolveActionUseCase`, `ResolveConversationUseCase`, `PrepareCardUseCase`, `EndTurnUseCase`) e mover `InMemoryMatchRepository` para `server/src/infrastructure/`.
+  - Dividir `MatchService` em Casos de Uso independentes por responsabilidade (`CreateSoloMatchUseCase`, `ResolveActionUseCase`, `ResolveConversationUseCase`, `PrepareCardUseCase`, `EndTurnUseCase`) e mover `InMemoryMatchRepository` para `backend/infrastructure/persistence/`.
   - Modelar `Match`, `InvestigatorDeck` e `TurnState` como entidades/Value Objects ricos que protegem suas invariantes, substituindo o array de strings mágicas `resolvedKeys` por estruturas tipadas e eliminando a dependência circular entre `match.ts` e `match-deck.ts`.
   - Extrair a resolução narrativa hardcoded do Caso 01 (`resolveCaseAction` e diálogos) para uma porta `CaseContentRepository` implementada na infraestrutura.
   - Critério de aceite: cada classe, entidade, caso de uso e repositório reside em seu próprio arquivo com responsabilidade única, e `domain/` não possui dependências externas.
@@ -154,14 +154,14 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Critério de aceite: o jogador com 4 cartas travadas consegue renovar 1 carta por rodada sem precisar forçar uma ação incompatível.
 
 - [x] **04D · BUG-06 — Corrigir ciclo da mão ao encerrar turno, destino de cartas temporárias e estado de carta preparada no descarte** `[P0] [Front] [Back]`
-  - **1. Limpar `preparedCardInstanceId` ao descartar (`server/src/application/use-cases/discard-card-use-case.ts`):** Ao executar `DiscardCardUseCase`, definir `preparedCardInstanceId: null` (se a carta descartada era a preparada) no `SoloMatch` persistido, evitando que `ResolveActionUseCase` lance erro `400 ("A carta não pode ser usada nesta ação.")` na ação seguinte por apontar para uma carta que já saiu da mão.
-  - **2. Reembaralhar a mão ao iniciar o próximo turno (`server/src/application/use-cases/end-turn-use-case.ts` e `server/src/domain/match-deck.ts`):** Recolher as cartas não usadas da mão ao monte de compra, embaralhá-lo e distribuir uma mão nova de exatamente `INITIAL_HAND_SIZE` (4) cartas. Se necessário, embaralhar o descarte para completar quatro.
-  - **3. Entregar cartas temporárias na `hand` e removê-las ao usar em ações (`server/src/domain/match-deck.ts`, `resolve-conversation-use-case.ts` e `resolve-action-use-case.ts`):** Substituir `addTemporaryCardToDrawPile` por `addTemporaryCardToHand` em `ResolveConversationUseCase` para que recompensas de conversa (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`) entrem imediatamente na mão de quem conduziu a conversa. Em `ResolveActionUseCase` e `ResolveConversationUseCase`, usar `recycleCardFromHand` em vez de `discardFromHand` ao consumir a carta preparada, garantindo que cartas `temporary: true` sejam eliminadas após o uso e cartas do apoio retornem para `decks[card.ownerId].discardPile`.
-  - **4. Somar custo da carta preparada e expor requisito de bloqueio em `getConversationOptions` (`server/src/application/match-service.ts` e `ConversationDialog.vue`):** Em `getConversationOptions`, calcular `canResolve` somando o custo da pergunta (`bonusQuestion ? 0 : cost`) ao custo da carta preparada compatível (`preparedCard?.cost ?? 0`), impedindo que perguntas fiquem clicáveis quando preparar `Gravador de Bolso` (1 PA) exceder os PA disponíveis. Incluir também a string `blockedReason` no retorno de cada pergunta bloqueada e exibi-la no modal (`Diálogo bloqueado: necessário evidência — <blockedReason>`).
+  - **1. Limpar `preparedCardInstanceId` ao descartar (`backend/application/use-cases/discard-card-use-case.ts`):** Ao executar `DiscardCardUseCase`, definir `preparedCardInstanceId: null` (se a carta descartada era a preparada) no `SoloMatch` persistido, evitando que `ResolveActionUseCase` lance erro `400 ("A carta não pode ser usada nesta ação.")` na ação seguinte por apontar para uma carta que já saiu da mão.
+  - **2. Reembaralhar a mão ao iniciar o próximo turno (`backend/application/use-cases/end-turn-use-case.ts` e `backend/domain/match-deck.ts`):** Recolher as cartas não usadas da mão ao monte de compra, embaralhá-lo e distribuir uma mão nova de exatamente `INITIAL_HAND_SIZE` (4) cartas. Se necessário, embaralhar o descarte para completar quatro.
+  - **3. Entregar cartas temporárias na `hand` e removê-las ao usar em ações (`backend/domain/match-deck.ts`, `resolve-conversation-use-case.ts` e `resolve-action-use-case.ts`):** Substituir `addTemporaryCardToDrawPile` por `addTemporaryCardToHand` em `ResolveConversationUseCase` para que recompensas de conversa (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`) entrem imediatamente na mão de quem conduziu a conversa. Em `ResolveActionUseCase` e `ResolveConversationUseCase`, usar `recycleCardFromHand` em vez de `discardFromHand` ao consumir a carta preparada, garantindo que cartas `temporary: true` sejam eliminadas após o uso e cartas do apoio retornem para `decks[card.ownerId].discardPile`.
+  - **4. Somar custo da carta preparada e expor requisito de bloqueio em `getConversationOptions` (`backend/application/match-service.ts` e `ConversationDialog.vue`):** Em `getConversationOptions`, calcular `canResolve` somando o custo da pergunta (`bonusQuestion ? 0 : cost`) ao custo da carta preparada compatível (`preparedCard?.cost ?? 0`), impedindo que perguntas fiquem clicáveis quando preparar `Gravador de Bolso` (1 PA) exceder os PA disponíveis. Incluir também a string `blockedReason` no retorno de cada pergunta bloqueada e exibi-la no modal (`Diálogo bloqueado: necessário evidência — <blockedReason>`).
   - Critério de aceite: descartar uma carta limpa `preparedCardInstanceId` no servidor; a virada de turno randomiza a mão e sempre distribui 4 cartas; cartas temporárias entram direto na mão ao conversar e somem após usadas; preparar carta de custo > 0 em conversa atualiza `canResolve` corretamente.
 
 - [x] **20 · JOGO-04 — Persistir partidas e diário** `[Back]`
-  - Substituir o repositório em memória por SQLite local durante o MVP.
+  - Substituir o repositório em memória por persistência D1 durante o MVP.
   - Persistir partida, ações, diário, cartas e hipóteses compartilhadas.
   - Critério de aceite: reiniciar a API não apaga uma partida existente.
 
@@ -190,7 +190,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Critério de aceite: `Gravador de Bolso` registra uma declaração utilizável depois; `Pausa Calculada` abre uma pergunta adicional sem substituir a conversa base (tanto preparada antes quanto após a 1ª pergunta).
 
 - [x] **07 · CASO-04 — Implementar descobertas de todos os locais e rodadas** `[Front] [Back] [Definição]`
-  - **Escopo técnico (`server/src/infrastructure/content/case01-content-repository.ts` e `shared/`):**
+  - **Escopo técnico (`backend/infrastructure/content/case01-content-repository.ts` e `shared/`):**
     - Remover a trava `match.round === 1` da Galeria Principal e modelar todas as descobertas oficiais dos 5 locais (`gallery`, `security`, `laboratory`, `office`, `service-corridor`) usando condições cumulativas `match.round >= minRound` combinadas com pré-requisitos em `resolvedKeys`. Pistas físicas e documentais **nunca expiram** ao avançar de rodada.
     - Mapear as descobertas da simulação oficial (`docs/private/simulacao-caso-01-o-vazio-na-vitrine (1).md`):
       - **Galeria (`gallery`):** `Examinar` vitrine (`round >= 1` → `E1 unconfirmed`, chave `'gallery-lock'`); `Examinar` pedestal (`round >= 1` → indício de óleo/poeira para `E4`, chave `'gallery-pedestal'`); `Examinar` porta de serviço (`round >= 3` → `E4 unconfirmed` + desbloqueia Corredor de Serviço, chave `'gallery-service-door'`); `Analisar` vitrine (`requires: 'gallery-lock'` → confirma `E1`, chave `'e1-confirmed'`).
@@ -254,8 +254,8 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Critério de aceite: nenhuma carta gasta PA em vão sem produzir seu efeito descrito, e a missão pode ser vencida por múltiplas combinações de investigadores.
 
 - [x] **14A · JOGO-07 — Garantir liberdade de uso de cartas por cenário e eliminar spoilers de local/rodada** `[P0] [Front] [Back] [Definição]`
-  - **Problema detectado:** Em `server/src/infrastructure/content/case01-card-effects.ts`, várias cartas bloqueiam a ação do jogador exigindo um único local e uma rodada mínima fixa, além de exibir mensagens de erro com spoilers diretos que apontam para a Sala de Segurança (Raul) e revelam gatilhos de rodadas futuras (ex.: `"O Cartão de Contato exige Pesquisar a Sala de Segurança a partir da Rodada 2"`, `"A Credencial de Acesso exige Pesquisar os arquivos de segurança a partir da Rodada 3"`, `"A Lanterna Ultravioleta exige Examinar a Galeria Principal"`).
-  - **Escopo técnico (`server/src/infrastructure/content/case01-card-effects.ts` e `server/src/infrastructure/content/case01-card-effects.test.ts`):**
+  - **Problema detectado:** Em `backend/infrastructure/content/case01-card-effects.ts`, várias cartas bloqueiam a ação do jogador exigindo um único local e uma rodada mínima fixa, além de exibir mensagens de erro com spoilers diretos que apontam para a Sala de Segurança (Raul) e revelam gatilhos de rodadas futuras (ex.: `"O Cartão de Contato exige Pesquisar a Sala de Segurança a partir da Rodada 2"`, `"A Credencial de Acesso exige Pesquisar os arquivos de segurança a partir da Rodada 3"`, `"A Lanterna Ultravioleta exige Examinar a Galeria Principal"`).
+  - **Escopo técnico (`backend/infrastructure/content/case01-card-effects.ts` e `backend/infrastructure/content/case01-card-effects.test.ts`):**
     1. **Liberdade de cenário (`locationId`):** Permitir que o jogador use suas cartas de `examine`, `research` e `analyse` em **qualquer local investigável** compatível com a ação, sem restringir a carta a uma única sala:
        - **`ultraviolet-flashlight` (`Examinar`):** Na `gallery` ou `service-corridor`, revela o rastro fluorescente de óleo e poeira; em `laboratory`, `security` ou `office`, registra uma observação contextual da varredura UV naquele ambiente (ex.: respingos antigos de verniz e solvente na bancada de restauração; ausência de resíduos anômalos na curadoria/segurança).
        - **`route-map` (`Pesquisar`):** Pode ser usada em qualquer local e em qualquer rodada. Relaciona o local atual às passagens do museu (se usada na `gallery` ou `security`, aponta a ligação técnica com o `service-corridor` e — se `round >= 3` ou se `'gallery-pedestal'` já foi visto — já libera `'gallery-service-door'` / `'service-corridor'`; se já houver duas pistas conectáveis no Diário, também gera `journalConnection`).
@@ -295,13 +295,13 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Critério de aceite: as conexões formais consomem 1 PA (salvo isenções), ficam listadas no diário e são contabilizadas nos 2 vínculos exigidos por `19 · CASO-07`.
 
 - [x] **16A · BUG-07 — Corrigir bugs de fluxo do playtest (cartas temporárias fixas na mão além de 4 cartas, validação de local, conexões de Otávio/cartas e `trace-marker`)** `[P0] [Front] [Back]`
-  - **1. Manter cartas temporárias fixas na mão entre turnos, somando-se às 4 cartas do baralho (`server/src/domain/match-deck.ts`, `discard-card-use-case.ts` e `match-service.test.ts`):**
+  - **1. Manter cartas temporárias fixas na mão entre turnos, somando-se às 4 cartas do baralho (`backend/domain/match-deck.ts`, `discard-card-use-case.ts` e `match-service.test.ts`):**
     - Quando o jogador obtém uma carta temporária de um personagem (`Agenda da Curadoria`, `Ficha de Tratamento`, `Lista de Convidados`, `Mapa de Rondas`), ela deve **permanecer na mão do jogador até que ele próprio decida usá-la ou descartá-la**, mesmo que a mão fique com **5 ou mais cartas**.
-    - Em `refreshHandForTurn(deck, handSize, random)` (`server/src/domain/match-deck.ts`):
+    - Em `refreshHandForTurn(deck, handSize, random)` (`backend/domain/match-deck.ts`):
       1. Separar as cartas da mão atual em `temporaryCards = deck.hand.filter(card => card.temporary)` e `regularHandCards = deck.hand.filter(card => !card.temporary)`.
       2. Embaralhar apenas `[...deck.drawPile, ...regularHandCards]` e comprar até `handSize` (4 cartas regulares do baralho do investigador).
       3. Retornar a nova mão combinando as `4` cartas regulares compradas **mais** todas as `temporaryCards` retidas (`hand: [...refreshedRegularDeck.hand, ...temporaryCards]`). Assim, se o jogador tinha 1 carta temporária na mão ao encerrar o turno, ele iniciará o próximo turno com 4 cartas do seu baralho + 1 carta temporária (5 cartas na mão), sem que a carta temporária suma no `drawPile` nem roube o espaço de compra das 4 cartas normais!
-    - Em `DiscardCardUseCase` (`server/src/application/use-cases/discard-card-use-case.ts`): ao descartar uma carta regular tendo cartas temporárias na mão, garantir que a reposição com `drawToHand` mantenha 4 cartas regulares + as cartas temporárias restantes.
+    - Em `DiscardCardUseCase` (`backend/application/use-cases/discard-card-use-case.ts`): ao descartar uma carta regular tendo cartas temporárias na mão, garantir que a reposição com `drawToHand` mantenha 4 cartas regulares + as cartas temporárias restantes.
   - **2. Validar local atual no servidor e ignorar clique redundante no local ativo (`LocationsPanel.vue`, `InvestigationView.vue`, `ResolveActionUseCase`, `ResolveConversationUseCase`):**
     - No frontend (`LocationsPanel.vue` / `InvestigationView.vue`), se o jogador clicar no botão do local em que já se encontra (`locationId === currentLocationId`), ignorar o disparo de `moveInvestigator` para não consumir o movimento gratuito da rodada por acidente.
     - No backend (`ResolveActionUseCase`, `ResolveConversationUseCase` e `getConversationOptions`), validar que `locationId === match.currentLocationId` e que `match.unlockedLocations.includes(locationId)`, impedindo ações em salas bloqueadas ou diferentes da posição atual do investigador.
@@ -311,7 +311,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - **4. Corrigir momento do desconto da carta `Marcador de Vestígio` (`trace-marker`) (`shared/domain/action-points.ts`, `resolve-action-use-case.ts`, `case01-card-effects.ts`):**
     - A carta `trace-marker` tem custo `0 PA` e seu efeito é: _"Marca uma pista física; a **próxima** análise dessa pista custa 1 PA a menos"_.
     - Ajustar `investigatorActionCost` para aplicar o desconto de `-1 PA` em `analyse` quando já existir no `journalEntries` daquele `locationId` uma pista não confirmada com `markedForFollowUp === true` (e limpar/consumir a marcação ao confirmar a pista), em vez de dar o desconto na própria jogada em que `preparedCardId === 'trace-marker'`.
-  - **5. Corrigir descarte de carta do apoio em `CreateJournalConnectionUseCase` (`server/src/application/use-cases/create-journal-connection-use-case.ts`):**
+  - **5. Corrigir descarte de carta do apoio em `CreateJournalConnectionUseCase` (`backend/application/use-cases/create-journal-connection-use-case.ts`):**
     - Passar `match.decks[preparedCard.ownerId]` como `ownerDeck` ao chamar `recycleCardFromHand(activeDeck, ownerDeck, preparedCard.instanceId)` e atualizar `match.decks[preparedCard.ownerId]` quando uma carta de conexão vinda do Apoio de Plantão for consumida pelo Diário.
   - **6. Limpar código morto legado de partida offline no frontend (`src/domain/game/deck.ts` e `src/application/game/solo-mission.ts`):**
     - Remover `src/application/game/solo-mission.ts`, `src/domain/game/deck.ts` e seus testes legados caso não tenham mais uso após `01 · JOGO-01` e `18 · BUG-03`.
@@ -332,45 +332,52 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Adicionar WebSocket para atualizar ações, diário, turno e estado da sala.
   - Critério de aceite: o segundo jogador vê uma ação concluída sem recarregar a página.
 
-- [ ] **22 · AUTH-01 — Autenticação leve** `[Back] [Definição]`
-  - Começar com sessão anônima e token de sala; evoluir para conta opcional somente se a persistência entre dispositivos for necessária.
+- [x] **22 · AUTH-01 — Autenticação leve** `[Back] [Definição]`
+  - Implementada sessão anônima por partida com token opaco; uma conta opcional só será avaliada se houver persistência entre dispositivos.
   - Critério de aceite: um jogador não consegue executar ações em uma sala à qual não pertence.
 
-- [ ] **22A · AUTH-02 — Autorizar ações pela sessão da partida** `[Back] [Definição]`
+- [x] **22A · AUTH-02 — Autorizar ações pela sessão da partida** `[Back] [Definição]`
   - Emitir um token opaco vinculado à partida ao criá-la ou entrar nela e exigir esse token em toda leitura ou mutação da partida.
   - Não aceitar o identificador da partida como autorização; validar que a sessão apresentada pertence à partida solicitada.
   - Critério de aceite: uma chamada direta à API, sem sessão válida ou com token de outra partida, recebe erro e não revela nem altera o estado.
 
-- [ ] **23 · SEC-01 — Regras e conteúdo sensível somente no backend** `[Front] [Back]`
+- [x] **23 · SEC-01 — Regras e conteúdo sensível somente no backend** `[Front] [Back]`
   - Não enviar solução do caso, condições futuras ou resultados não desbloqueados ao navegador.
   - Validar toda ação no servidor e limitar requisições por sessão.
   - Critério de aceite: inspecionar o catálogo público do cliente não revela o culpado ou a rota completa da missão.
 
-- [ ] **23A · SEC-02 — Limitar abuso e endurecer contratos da API** `[Back] [Definição]`
+- [x] **23A · SEC-02 — Limitar abuso e endurecer contratos da API** `[Back] [Definição]`
   - Aplicar limite de requisições por sessão e endereço de origem às rotas de partida, com respostas seguras para excesso de tentativas.
   - Manter as respostas limitadas ao estado já desbloqueado; não criar rotas de catálogo completo para conteúdo de casos, diálogos ou desfechos.
   - Critério de aceite: tentativas automatizadas são limitadas sem afetar uma sessão normal, e consultas diretas não retornam conteúdo futuro.
 
 - [x] **23B · SEC-04 — Validar schemas de entrada, tratar erros de domínio e sanitizar parâmetros HTTP** `[P1] [Front] [Back]`
-  - Definir schemas de validação (`body`, `params`, `querystring`) e `bodyLimit` explícito em todas as rotas de `server/src/http/app.ts`, evitando `TypeError` (status `500`) quando `request.body` for nulo ou malformado.
-  - Substituir a comparação de string `message === 'Partida não encontrada.'` por classes de erro semânticas (`DomainError`, `MatchNotFoundError`, `InvalidActionError`) tratadas em um `setErrorHandler` centralizado no Fastify.
+  - Definir validação de `body`, `params` e `querystring`, com limite explícito de payload, nas rotas de `worker/src/http/match-routes.ts`, evitando `TypeError` (status `500`) quando o corpo for nulo ou malformado.
+  - Substituir a comparação de string `message === 'Partida não encontrada.'` por classes de erro semânticas (`DomainError`, `MatchNotFoundError`, `InvalidActionError`) tratadas centralmente pelo adaptador HTTP do Worker.
   - Sanitizar todos os parâmetros dinâmicos de URL (`matchId`, `personId`, `questionId`) com `encodeURIComponent()` em `src/services/game-api.ts`.
   - Critério de aceite: payloads nulos ou malformados retornam `400` estruturado sem lançar `500`, e o status HTTP de erro é determinado pela classe de domínio, nunca por comparação de texto.
 
-- [ ] **23C · SEC-05 — Adotar CSPRNG no embaralhamento e controle de concorrência no SQLite** `[P2] [Back]`
-  - Substituir `Math.random()` em `server/src/domain/match-deck.ts` por uma porta `RandomGenerator` implementada com `crypto.randomInt()` (`node:crypto`).
-  - Configurar `PRAGMA journal_mode = WAL;` e `PRAGMA busy_timeout` no `SqliteMatchRepository`, adicionando controle de concorrência otimista (`version`) para impedir condições de corrida (*lost updates*) em requisições simultâneas.
-  - Critério de aceite: o embaralhamento no servidor usa CSPRNG injetável em testes e requisições concorrentes para a mesma partida não sobrescrevem silenciosamente o estado uma da outra.
+- [x] **23C · SEC-05 — Adotar CSPRNG no embaralhamento e controle de concorrência no D1** `[P2] [Back]`
+  - Substituir `Math.random()` em `backend/domain/match-deck.ts` por uma porta `RandomGenerator` implementada com Web Crypto.
+  - Usar controle de concorrência otimista (`version`) no repositório D1 para impedir condições de corrida (*lost updates*) em requisições simultâneas.
+  - Critério de aceite: o embaralhamento no Worker usa CSPRNG injetável em testes e requisições concorrentes para a mesma partida não sobrescrevem silenciosamente o estado uma da outra.
 
-- [ ] **26 · OPS-01 — Preparar deploy gratuito** `[Front] [Back] [Definição]`
-  - Publicar frontend estático e API Node com variáveis de ambiente separadas.
-  - Configurar banco persistente compatível com o provedor escolhido.
+- [x] **26 · OPS-01 — Preparar deploy gratuito** `[Front] [Back] [Definição]`
+  - Publicado frontend estático e API Worker no Cloudflare, sob o mesmo domínio.
+  - Configurado banco D1 persistente no ambiente Cloudflare.
   - Critério de aceite: ambiente de produção permite criar, retomar e jogar uma partida sem depender do computador local.
 
-- [ ] **26A · OPS-02 — Isolar a implementação do servidor em produção** `[Back] [Definição]`
-  - Publicar somente os artefatos necessários do cliente e executar a API como serviço separado, sem servir fontes, documentação privada ou source maps do backend.
-  - Configurar segredos e dados de sessão exclusivamente no ambiente do servidor; revisar cabeçalhos, logs e erros para não expor dados internos.
-  - Critério de aceite: o navegador não consegue baixar arquivos de `server/` ou `docs/private/`, e uma falha de API não revela detalhes internos.
+- [x] **26A · OPS-02 — Isolar a implementação do servidor em produção** `[Back] [Definição]`
+  - Publicar somente os artefatos necessários do cliente e executar a API no Worker, sem servir fontes, documentação privada ou source maps do backend.
+  - Configurar dados de sessão no ambiente do Worker; revisar cabeçalhos, logs e erros para não expor dados internos.
+  - Remover o adaptador legado Node/Fastify/SQLite e suas dependências locais.
+  - Critério de aceite: o navegador não consegue baixar arquivos de `backend/` ou `docs/private/`, e uma falha de API não revela detalhes internos.
+
+- [x] **27 · DATA-01 — Gerenciar retenção e exclusão de partidas concluídas** `[Pós-MVP] [Front] [Back]`
+  - Excluir automaticamente partidas após vitória ou derrota; no abandono, exigir confirmação antes da remoção.
+  - Remover no servidor a partida e sua sessão de autorização associada; no cliente, apagar o token e a referência local da partida.
+  - A retenção automática permanece como avaliação futura (por exemplo, 30 dias), sem apagar partidas ativas ou em andamento.
+  - Critério de aceite: uma partida excluída não pode mais ser retomada nem consultada pela API, e a exclusão não afeta outras partidas.
 
 ## Pós-MVP — Escala de conteúdo e redesign de UI/UX (Mesa Única)
 
@@ -378,8 +385,8 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
 
 - [ ] **31 · CONTEUDO-01 — Externalizar diálogos e resultados dos casos** `[Pós-MVP] [Back] [Definição]`
   - Substituir definições narrativas codificadas no servidor por uma camada de conteúdo versionada e validada, sem disponibilizar o catálogo completo ao cliente.
-  - Começar com arquivos estruturados privados em `server/content/cases/<caso>/` (por exemplo, diálogos, condições e resultados), validados por schema e testes de compilação de conteúdo.
-  - Publicar versões aprovadas desse conteúdo em tabelas próprias do banco de dados — SQLite no desenvolvimento e PostgreSQL em produção — com versão, status de publicação e possibilidade de reversão.
+  - Começar com arquivos estruturados privados em `backend/content/cases/<caso>/` (por exemplo, diálogos, condições e resultados), validados por schema e testes de compilação de conteúdo.
+  - Publicar versões aprovadas desse conteúdo em tabelas próprias do D1, com versão, status de publicação e possibilidade de reversão.
   - Introduzir um CMS/headless CMS somente se a edição por pessoas não técnicas ou o fluxo editorial justificar a complexidade; ele deve publicar para a mesma camada de banco, nunca diretamente para o navegador.
   - Definir uma interface de repositório de conteúdo no servidor para que o motor consulte diálogos, perguntas e variantes sem depender do formato de origem.
   - Critério de aceite: um novo caso pode ser adicionado ou uma conversa pode ser corrigida por uma nova versão de conteúdo, sem alteração do motor; a API continua entregando apenas opções e resultados já desbloqueados.
@@ -412,7 +419,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - A contingência local em falhas de conexão continua rastreada separadamente em BUG-03.
 
 - [x] **21 · BUG-02 — A API em memória perde partidas ao reiniciar** `[P1] [Back]`
-  - Resolvido por JOGO-04: SQLite persiste a partida e o diário para que a missão seja retomada depois de reiniciar a API.
+  - Resolvido por JOGO-04: D1 persiste a partida e o diário para que a missão seja retomada depois de reiniciar a API.
 
 - [x] **18 · BUG-03 — O cliente possui modo de contingência local quando a API está indisponível** `[P1] [Front] [Back]`
   - Consequência: a mesma ação pode ter comportamento diferente se o servidor não estiver ativo.

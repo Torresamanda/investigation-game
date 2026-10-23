@@ -20,7 +20,10 @@
   font-size: 9px;
 }
 .back-link {
+  border: 0;
+  background: transparent;
   color: #b0c5d2;
+  cursor: pointer;
   font-size: 12px;
   white-space: nowrap;
   padding: 8px 0;

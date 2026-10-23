@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouterHistory } from 'vue-router'
+import { getCurrentMatch } from '../services/match-session'
 import { useMatchStore } from '../stores/match'
 
 export function createAppRouter(history: RouterHistory = createWebHistory()) {
@@ -14,7 +15,18 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
         path: '/investigacao',
         name: 'investigation',
         component: () => import('../features/investigation/InvestigationView.vue'),
-        beforeEnter: () => (useMatchStore().investigatorId ? true : { name: 'worlds' }),
+        beforeEnter: async () => {
+          const match = useMatchStore()
+          if (match.investigatorId) return true
+          const matchId = getCurrentMatch()
+          if (!matchId) return { name: 'worlds' }
+          try {
+            await match.resumeRemoteMatch(matchId)
+            return true
+          } catch {
+            return { name: 'worlds' }
+          }
+        },
       },
       { path: '/:pathMatch(.*)*', redirect: '/' },
     ],

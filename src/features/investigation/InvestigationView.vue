@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { locations, suspectProfiles, type LocationId, type SuspectId } from '../../content/case01'
 import { useInvestigationStore } from '../../stores/investigation'
 import type { InvestigationAction } from '../../domain/game/action-points'
@@ -15,12 +16,14 @@ import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
 import AccusationDialog from './components/AccusationDialog.vue'
 import DiscoveryToast from './components/DiscoveryToast.vue'
+import AppModal from '../../components/ui/AppModal.vue'
 import { findNewDiscoveries, type DiscoveryNotification } from './discovery-notifications'
 import type { AccusationSubmission, ConversationOptions } from '../../services/game-api'
 import { feedbackFromEntry, statusFeedback } from './action-feedback'
 import './investigation.css'
 
 const session = useInvestigationStore()
+const router = useRouter()
 const isSupportRequestPending = ref(false)
 const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigação.'))
 const cards = computed(() => session.hand)
@@ -99,6 +102,8 @@ const hasConfirmedRaulEvidence = computed(() =>
 )
 const journalTab = ref<'timeline' | 'clues' | 'suspects' | 'notes'>('timeline')
 const showAccusation = ref(false)
+const showDeletionConfirmation = ref(false)
+const deletionError = ref<string | null>(null)
 const accusationError = ref<string | null>(null)
 const confirmedClues = computed(() =>
   session.journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
@@ -227,6 +232,26 @@ async function retryConnection() {
     await session.retryConnection()
   } catch {
     feedback.value = statusFeedback('A conexão falhou. Verifique a API e tente novamente.')
+  }
+}
+
+function requestReturnToWorld() {
+  if (!session.remoteMatch || session.remoteMatch.status !== 'active') {
+    void router.push({ name: 'worlds' })
+    return
+  }
+  deletionError.value = null
+  showDeletionConfirmation.value = true
+}
+
+async function deleteCurrentMatch() {
+  try {
+    await session.deleteRemoteMatch()
+    showDeletionConfirmation.value = false
+    await router.push({ name: 'worlds' })
+  } catch (error) {
+    deletionError.value =
+      error instanceof Error ? error.message : 'Não foi possível excluir a partida.'
   }
 }
 
@@ -465,6 +490,7 @@ async function clearConversationCardPreparation() {
       @enter="enter"
       @leave="leave"
       @toggle="toggle"
+      @request-return="requestReturnToWorld"
     />
     <div class="investigation-layout">
       <LocationsPanel
@@ -553,5 +579,36 @@ async function clearConversationCardPreparation() {
       @open-journal="openDiscoveryInJournal"
       @dismiss="dismissDiscoveryToast"
     />
+    <AppModal
+      v-if="showDeletionConfirmation"
+      labelled-by="delete-match-title"
+      @close="showDeletionConfirmation = false"
+    >
+      <section class="delete-match-dialog">
+        <h2 id="delete-match-title">Excluir esta partida?</h2>
+        <p>
+          A partida, seu diário e a sessão de acesso serão removidos permanentemente deste navegador
+          e do servidor.
+        </p>
+        <p v-if="deletionError" class="delete-match-error" role="alert">{{ deletionError }}</p>
+        <div class="delete-match-actions">
+          <button
+            type="button"
+            :disabled="session.isRequestPending"
+            @click="showDeletionConfirmation = false"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="button-primary"
+            :disabled="session.isRequestPending"
+            @click="deleteCurrentMatch"
+          >
+            Excluir permanentemente
+          </button>
+        </div>
+      </section>
+    </AppModal>
   </main>
 </template>
