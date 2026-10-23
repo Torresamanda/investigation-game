@@ -89,7 +89,7 @@ export function resolveCase01CardEffect(
         match,
         locationId,
         'Referência cartográfica',
-        `O mapa relaciona este setor (${locationId}) às rotas internas do museu.`,
+        `O mapa relaciona este setor (${locationName(locationId)}) às rotas internas do museu.`,
       )
 
     case 'trace-marker':
@@ -139,6 +139,7 @@ export function resolveCase01CardEffect(
               ? 'A credencial permite confirmar que a lacuna foi criada no terminal de segurança.'
               : 'A credencial dá acesso ao arquivo preservado e revela um bloco removido do terminal.',
             status: hasLogGap ? 'confirmed' : 'unconfirmed',
+            caseEvidenceKey: hasLogGap ? 'e3-confirmed' : undefined,
           },
           resolvedKey: key,
           resolvedKeys: ['gallery-service-door'],
@@ -296,6 +297,7 @@ export function resolveCase01CardEffect(
             content:
               'Uma fonte municipal confirma que a interrupção foi iniciada dentro do prédio às 22h14.',
             status: 'confirmed',
+            caseEvidenceKey: 'e2-confirmed',
           },
           resolvedKey: 'e2-confirmed',
         }
@@ -317,6 +319,7 @@ export function resolveCase01CardEffect(
             content:
               'O arquivo preservado confirma que um bloco foi removido do terminal de segurança às 22h13.',
             status: 'unconfirmed',
+            caseEvidenceKey: undefined,
           },
           resolvedKey: 'security-log-gap',
         }
@@ -336,6 +339,7 @@ export function resolveCase01CardEffect(
             content:
               'O registro de arquivo confirma que a exclusão foi iniciada no terminal da segurança às 22h13.',
             status: 'confirmed',
+            caseEvidenceKey: 'e3-confirmed',
           },
           resolvedKey: 'e3-confirmed',
         }
@@ -376,6 +380,7 @@ export function resolveCase01CardEffect(
               content:
                 'O acesso institucional libera o registro de uma lacuna aberta às 22h13 no terminal de segurança.',
               status: 'unconfirmed',
+              caseEvidenceKey: undefined,
             },
             resolvedKey: 'security-log-gap',
           }
@@ -390,6 +395,7 @@ export function resolveCase01CardEffect(
               content:
                 'O documento oficial confirma que a exclusão começou no terminal da segurança às 22h13.',
               status: 'confirmed',
+              caseEvidenceKey: 'e3-confirmed',
             },
             resolvedKey: 'e3-confirmed',
           }
@@ -520,14 +526,14 @@ function researchContextEffect(
     match,
     locationId,
     'Consulta contextual',
-    `O recurso foi aplicado aos registros disponíveis neste setor (${locationId}).`,
+    `O recurso foi aplicado aos registros disponíveis neste setor (${locationName(locationId)}).`,
   )
 }
 
 function confirmedClue(
   resolution: CaseActionResolution,
   title: string,
-  key: string,
+  key: 'e2-confirmed' | 'e3-confirmed',
 ): CaseActionResolution {
   return {
     ...resolution,
@@ -537,9 +543,21 @@ function confirmedClue(
       title,
       content: 'O registro consultado confirma a informação.',
       status: 'confirmed',
+      caseEvidenceKey: key,
     },
     resolvedKey: key,
   }
+}
+
+function locationName(locationId: LocationId): string {
+  const names: Record<LocationId, string> = {
+    gallery: 'Galeria Principal',
+    security: 'Sala de Segurança',
+    laboratory: 'Laboratório de Restauração',
+    office: 'Escritório da Curadoria',
+    'service-corridor': 'Corredor de Serviço',
+  }
+  return names[locationId]
 }
 
 function connectionForMap(

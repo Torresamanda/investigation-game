@@ -296,7 +296,24 @@ describe('efeitos das cartas iniciais do Caso 01', () => {
     })
 
     expect(updated.resolvedKeys).toContain('e2-confirmed')
-    expect(updated.journalEntries.at(-1)?.status).toBe('confirmed')
+    expect(updated.journalEntries.at(-1)).toMatchObject({
+      status: 'confirmed',
+      caseEvidenceKey: 'e2-confirmed',
+    })
+  })
+
+  it('usa o nome do local em português nas observações contextuais do Mapa de Rotas', () => {
+    const { service, match } = prepareCard('livia', 'route-map', {
+      locationId: 'office',
+    })
+
+    const updated = service.resolveAction({
+      matchId: match.id,
+      action: 'research',
+      locationId: 'office',
+    })
+
+    expect(updated.journalEntries.at(-1)?.content).toContain('Escritório da Curadoria')
   })
 
   it('não inclui local ou rodada em mensagens de validação de cartas', () => {

@@ -177,7 +177,7 @@ export class ResolveActionUseCase {
         id: `journal-${journalEntries.length + 1}`,
         type: 'observation',
         title: 'Conexão de Otávio',
-        content: `“${connectionCandidate.confirmedEntry.title}” se relaciona a “${connectionCandidate.pendingEntry.title}”. Reavalie ${connectionCandidate.pendingEntry.locationId} para verificar essa ligação.`,
+        content: `“${connectionCandidate.confirmedEntry.title}” se relaciona a “${connectionCandidate.pendingEntry.title}”. Reavalie ${locationName(connectionCandidate.pendingEntry.locationId)} para verificar essa ligação.`,
         locationId: command.locationId,
         round: match.round,
         status: 'note',
@@ -253,6 +253,17 @@ function isPhysicalEvidenceLocation(locationId: ResolveActionCommand['locationId
   return (
     locationId === 'gallery' || locationId === 'laboratory' || locationId === 'service-corridor'
   )
+}
+
+function locationName(locationId: ResolveActionCommand['locationId']): string {
+  const names: Record<ResolveActionCommand['locationId'], string> = {
+    gallery: 'Galeria Principal',
+    security: 'Sala de Segurança',
+    laboratory: 'Laboratório de Restauração',
+    office: 'Escritório da Curadoria',
+    'service-corridor': 'Corredor de Serviço',
+  }
+  return names[locationId]
 }
 
 function clearConsumedFollowUpMark(
