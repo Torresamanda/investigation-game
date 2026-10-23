@@ -29,4 +29,20 @@ describe('game API session authorization', () => {
     const requestOptions = fetchMock.mock.calls[1]?.[1] as RequestInit
     expect(new Headers(requestOptions.headers).get('x-match-token')).toBe(token)
   })
+
+  it('removes the local session only after the match deletion succeeds', async () => {
+    const token = 'a'.repeat(64)
+    localStorage.setItem('cidade-das-brumas:match-session:match-1', token)
+    localStorage.setItem('cidade-das-brumas:current-match', 'match-1')
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await gameApi.deleteMatch('match-1')
+
+    expect(getMatchSession('match-1')).toBeNull()
+    expect(getCurrentMatch()).toBeNull()
+    expect(
+      new Headers((fetchMock.mock.calls[0]?.[1] as RequestInit).headers).get('x-match-token'),
+    ).toBe(token)
+  })
 })

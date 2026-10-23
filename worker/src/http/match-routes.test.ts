@@ -47,6 +47,15 @@ class InMemoryD1Database implements D1DatabaseConnection {
     if (query.startsWith('INSERT INTO match_sessions')) {
       this.sessions.set(String(values[0]), String(values[1]))
     }
+    if (query.startsWith('DELETE FROM match_sessions')) {
+      for (const [tokenHash, matchId] of this.sessions) {
+        if (matchId === String(values[0])) this.sessions.delete(tokenHash)
+      }
+    }
+    if (query.startsWith('DELETE FROM matches')) {
+      const deleted = this.matches.delete(String(values[0]))
+      return { meta: { changes: deleted ? 1 : 0 } }
+    }
     return { meta: { changes: 1 } }
   }
 }
@@ -117,6 +126,44 @@ describe('D1 match routes', () => {
     )
 
     expect(response.status).toBe(401)
+  })
+
+  it('deletes only the authorized match and revokes its session', async () => {
+    const database = new InMemoryD1Database()
+    const firstMatch = await createMatch(database)
+    const secondMatch = await createMatch(database)
+
+    const unauthorized = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${firstMatch.id}`, {
+        method: 'DELETE',
+        headers: authorizedHeaders(secondMatch.token),
+      }),
+      database,
+    )
+    const deleted = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${firstMatch.id}`, {
+        method: 'DELETE',
+        headers: authorizedHeaders(firstMatch.token),
+      }),
+      database,
+    )
+    const removed = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${firstMatch.id}`, {
+        headers: authorizedHeaders(firstMatch.token),
+      }),
+      database,
+    )
+    const retained = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${secondMatch.id}`, {
+        headers: authorizedHeaders(secondMatch.token),
+      }),
+      database,
+    )
+
+    expect(unauthorized.status).toBe(401)
+    expect(deleted.status).toBe(204)
+    expect(removed.status).toBe(401)
+    expect(retained.status).toBe(200)
   })
 
   it('validates protected conversation and journal requests after authorization', async () => {

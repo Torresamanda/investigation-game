@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
 import { PhArrowLeft, PhBookmarkSimple, PhMinus, PhPlus } from '../../../components/icons'
 defineProps<{ open: boolean; pinned: boolean; round: number; unreadCount?: number }>()
-const emit = defineEmits<{ enter: []; leave: []; toggle: [] }>()
+const emit = defineEmits<{ enter: []; leave: []; toggle: []; requestReturn: [] }>()
 const journalButton = ref<HTMLButtonElement | null>(null)
 defineExpose({ focusBookmark: () => journalButton.value?.focus() })
 </script>
@@ -11,14 +10,15 @@ defineExpose({ focusBookmark: () => journalButton.value?.focus() })
 <template>
   <header class="case-toolbar">
     <div class="case-title">
-      <RouterLink
+      <button
         class="back-link"
-        to="/"
+        type="button"
         aria-label="Retornar ao mundo"
         title="Abandonar a investigação e retornar ao mundo"
-        ><PhArrowLeft :size="18" weight="bold" aria-hidden="true" />
-        <span>Retornar ao mundo</span></RouterLink
+        @click="emit('requestReturn')"
       >
+        <PhArrowLeft :size="18" weight="bold" aria-hidden="true" /> <span>Retornar ao mundo</span>
+      </button>
       <div>
         <p class="eyebrow">Museu de História de Véspera · Caso 01</p>
         <h1>O Vazio na Vitrine</h1>

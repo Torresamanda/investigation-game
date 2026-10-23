@@ -18,6 +18,13 @@ export function getCurrentMatch(): string | null {
   return matchId && getMatchSession(matchId) ? matchId : null
 }
 
+export function clearMatchSession(matchId: string): void {
+  const storage = getStorage()
+  if (!storage) return
+  storage.removeItem(storageKey(matchId))
+  if (storage.getItem(currentMatchKey) === matchId) storage.removeItem(currentMatchKey)
+}
+
 function storageKey(matchId: string): string {
   return `${storageKeyPrefix}${matchId}`
 }

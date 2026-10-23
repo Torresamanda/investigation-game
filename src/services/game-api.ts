@@ -5,7 +5,12 @@ import type {
   LocationId,
   PersonId,
 } from '../../shared/domain/identifiers'
-import { getMatchSession, saveCurrentMatch, saveMatchSession } from './match-session'
+import {
+  clearMatchSession,
+  getMatchSession,
+  saveCurrentMatch,
+  saveMatchSession,
+} from './match-session'
 
 export type { MatchJournalEntry }
 export type RemoteMatch = PublicMatchDto
@@ -91,6 +96,21 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}`, {
       headers: matchSessionHeaders(matchId),
     })
+  },
+
+  async deleteMatch(matchId: string): Promise<void> {
+    const response = await sendRequest(`/api/matches/${encodePathSegment(matchId)}`, {
+      method: 'DELETE',
+      headers: matchSessionHeaders(matchId),
+    })
+    if (!response.ok) {
+      const error = (await response.json().catch(() => null)) as ApiError | null
+      throw new ApiRequestError(
+        error?.message ?? 'Não foi possível excluir a partida.',
+        response.status,
+      )
+    }
+    clearMatchSession(matchId)
   },
 
   async createMatch(activeInvestigatorId: InvestigatorId, supportInvestigatorId: InvestigatorId) {

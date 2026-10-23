@@ -57,4 +57,10 @@ export class D1MatchStore {
     if (result.meta.changes === 0) throw new MatchVersionConflictError()
     return savedMatch
   }
+
+  async delete(id: string): Promise<boolean> {
+    await this.database.prepare('DELETE FROM match_sessions WHERE match_id = ?').bind(id).run()
+    const result = await this.database.prepare('DELETE FROM matches WHERE id = ?').bind(id).run()
+    return result.meta.changes > 0
+  }
 }

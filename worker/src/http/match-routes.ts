@@ -32,6 +32,7 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
   }
   const matchId = url.pathname.match(/^\/api\/matches\/([^/]+)$/)?.[1]
   if (request.method === 'GET' && matchId) return getMatch(matchId, database)
+  if (request.method === 'DELETE' && matchId) return deleteMatch(matchId, database)
   const actionMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/actions$/)?.[1]
   if (request.method === 'POST' && actionMatch) return resolveAction(request, actionMatch, database)
   const moveMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/move$/)?.[1]
@@ -99,6 +100,19 @@ async function getMatch(id: string, database: D1DatabaseConnection): Promise<Res
     const match = await new D1MatchStore(database).findById(matchId)
     return match
       ? jsonResponse(MatchPresenter.toPublicDto(match))
+      : jsonResponse({ message: 'Partida não encontrada.' }, 404)
+  } catch {
+    return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
+  }
+}
+
+async function deleteMatch(id: string, database: D1DatabaseConnection): Promise<Response> {
+  const matchId = decodePathSegment(id)
+  if (!matchId) return jsonResponse({ message: 'Partida inválida.' }, 400)
+  try {
+    const deleted = await new D1MatchStore(database).delete(matchId)
+    return deleted
+      ? new Response(null, { status: 204 })
       : jsonResponse({ message: 'Partida não encontrada.' }, 404)
   } catch {
     return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
@@ -338,6 +352,7 @@ async function mutateMatch(
     repository.save(match)
     const updated = mutate(createWorkerMatchService(repository), matchId)
     const saved = await store.save(updated)
+    if (saved.status !== 'active') await store.delete(saved.id)
     return jsonResponse(MatchPresenter.toPublicDto(saved))
   } catch (error) {
     return matchErrorResponse(error, 'Não foi possível processar a requisição.')
