@@ -88,6 +88,36 @@ describe('CaseJournal', () => {
     expect(groups[3]!.text()).toContain('Conexão formal')
     expect(groups[3]!.text()).toContain('Exclusão de registros se relaciona a Retorno do cartão')
     expect(groups[0]!.text()).not.toContain('Conexão formal')
+    expect(view.text()).not.toContain('Nenhuma pista registrada.')
+    expect(view.text()).not.toContain('Nenhuma observação registrada.')
+    expect(view.text()).not.toContain('Nenhuma declaração registrada.')
+  })
+
+  it('remove estados vazios quando os registros chegam depois da abertura do diário', async () => {
+    const view = mount(CaseJournal, {
+      props: {
+        notes: '',
+        tab: 'clues',
+        hypotheses: [],
+        journalEntries: [],
+        journalConnections: [],
+        hasFreeConnection: false,
+        hasPreparedConnectionCard: false,
+        'onUpdate:notes': () => undefined,
+        'onUpdate:tab': () => undefined,
+      },
+      global: { stubs: { PhUserFocus: true, PhX: true } },
+    })
+
+    expect(view.text()).toContain('Nenhuma pista registrada.')
+    expect(view.text()).toContain('Nenhuma observação registrada.')
+    expect(view.text()).toContain('Nenhuma declaração registrada.')
+
+    await view.setProps({ journalEntries })
+
+    expect(view.text()).not.toContain('Nenhuma pista registrada.')
+    expect(view.text()).not.toContain('Nenhuma observação registrada.')
+    expect(view.text()).not.toContain('Nenhuma declaração registrada.')
   })
 
   it('inclui horários na cronologia somente quando aparecem nos registros descobertos', () => {

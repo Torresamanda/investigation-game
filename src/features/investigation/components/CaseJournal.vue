@@ -179,7 +179,8 @@ const tabs = [
           </ol>
           <p
             v-if="
-              !group.entries.length && !(group.title === 'Conexões' && formalConnections.length)
+              group.entries.length === 0 &&
+              (group.title !== 'Conexões' || formalConnections.length === 0)
             "
             class="muted"
           >
