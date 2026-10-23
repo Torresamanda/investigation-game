@@ -52,6 +52,7 @@ export const useInvestigationStore = defineStore('investigation', () => {
     prepareCard: match.prepareCard,
     clearPreparedCard: match.clearPreparedCard,
     createRemoteMatch: match.createRemoteMatch,
+    resumeRemoteMatch: match.resumeRemoteMatch,
     retryConnection: match.retryConnection,
     resolveAction: match.resolveAction,
     createJournalConnection: match.createJournalConnection,

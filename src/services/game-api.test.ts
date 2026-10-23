@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { gameApi } from './game-api'
-import { getMatchSession } from './match-session'
+import { getCurrentMatch, getMatchSession } from './match-session'
 
 describe('game API session authorization', () => {
   beforeEach(() => {
@@ -25,6 +25,7 @@ describe('game API session authorization', () => {
     await gameApi.getMatch('match-1')
 
     expect(getMatchSession('match-1')).toBe(token)
+    expect(getCurrentMatch()).toBe('match-1')
     const requestOptions = fetchMock.mock.calls[1]?.[1] as RequestInit
     expect(new Headers(requestOptions.headers).get('x-match-token')).toBe(token)
   })

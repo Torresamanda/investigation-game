@@ -167,6 +167,15 @@ export const useMatchStore = defineStore('match', () => {
     return remoteMatch.value
   }
 
+  async function resumeRemoteMatch(matchId: string): Promise<RemoteMatch> {
+    const restoredMatch = await performApiRequest(() => gameApi.getMatch(matchId))
+    remoteMatch.value = restoredMatch
+    investigatorId.value = restoredMatch.activeInvestigatorId
+    supportId.value = restoredMatch.supportInvestigatorId
+    preparedCardId.value = restoredMatch.preparedCardInstanceId
+    return restoredMatch
+  }
+
   async function retryConnection(): Promise<void> {
     if (remoteMatch.value) {
       remoteMatch.value = await performApiRequest(() => gameApi.getMatch(remoteMatch.value!.id))
@@ -317,6 +326,7 @@ export const useMatchStore = defineStore('match', () => {
     prepareCard,
     clearPreparedCard,
     createRemoteMatch,
+    resumeRemoteMatch,
     retryConnection,
     resolveAction,
     createJournalConnection,

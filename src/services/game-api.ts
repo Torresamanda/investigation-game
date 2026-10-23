@@ -5,7 +5,7 @@ import type {
   LocationId,
   PersonId,
 } from '../../shared/domain/identifiers'
-import { getMatchSession, saveMatchSession } from './match-session'
+import { getMatchSession, saveCurrentMatch, saveMatchSession } from './match-session'
 
 export type { MatchJournalEntry }
 export type RemoteMatch = PublicMatchDto
@@ -109,6 +109,7 @@ export const gameApi = {
     if (!token) throw new Error('A API não retornou uma sessão válida para a partida.')
     const match = (await response.json()) as RemoteMatch
     saveMatchSession(match.id, token)
+    saveCurrentMatch(match.id)
     return match
   },
 
