@@ -63,6 +63,21 @@
   padding: 10px;
   font-size: 12px;
 }
+.end-turn-confirmation {
+  margin: 4px 0 8px;
+  color: var(--paper);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.end-turn-confirmation-actions {
+  display: grid;
+  gap: 6px;
+}
+.end-turn-confirmation-actions button {
+  width: 100%;
+  padding: 10px;
+  font-size: 12px;
+}
 .accusation-control {
   margin-top: auto;
   padding-top: 8px;

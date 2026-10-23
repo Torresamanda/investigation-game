@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { InvestigationAction } from '../../../domain/game/action-points'
 import { journalStatusLabels, type InvestigationFeedback } from '../action-feedback'
 import { PhArrowRight } from '../../../components/icons'
 type VisibleInvestigationAction = Exclude<InvestigationAction, 'move' | 'card'>
 
-defineProps<{
+const props = defineProps<{
   availableActions: readonly InvestigationAction[]
   actionCosts: Readonly<Record<VisibleInvestigationAction, number>>
   feedback: InvestigationFeedback
   canEndTurn: boolean
+  hasUsableActionPoints: boolean
   canAccuse: boolean
   isRequestPending?: boolean
   round: number
@@ -24,6 +26,29 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
   { label: 'Analisar', action: 'analyse' },
   { label: 'Pesquisar', action: 'research' },
 ]
+
+const isEndTurnConfirmationOpen = ref(false)
+
+watch(
+  () => [props.round, props.canEndTurn, props.hasUsableActionPoints],
+  () => {
+    isEndTurnConfirmationOpen.value = false
+  },
+)
+
+function requestEndTurn() {
+  if (props.hasUsableActionPoints) {
+    isEndTurnConfirmationOpen.value = true
+    return
+  }
+
+  emit('endTurn')
+}
+
+function confirmEndTurn() {
+  isEndTurnConfirmationOpen.value = false
+  emit('endTurn')
+}
 </script>
 
 <template>
@@ -58,10 +83,27 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
       </span>
       <p class="feedback-result">{{ feedback.result }}</p>
     </div>
-    <button class="end-turn" :disabled="!canEndTurn || isRequestPending" @click="emit('endTurn')">
-      {{ round === 6 ? 'Encerrar missão' : 'Encerrar turno' }}
-      <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
-    </button>
+    <div class="end-turn-control">
+      <template v-if="isEndTurnConfirmationOpen">
+        <p class="end-turn-confirmation">Ainda há PA utilizáveis neste turno. Deseja encerrá-lo?</p>
+        <div class="end-turn-confirmation-actions">
+          <button type="button" @click="isEndTurnConfirmationOpen = false">
+            Continuar investigando
+          </button>
+          <button type="button" class="end-turn" @click="confirmEndTurn">Encerrar turno</button>
+        </div>
+      </template>
+      <button
+        v-else
+        type="button"
+        class="end-turn"
+        :disabled="!canEndTurn || isRequestPending"
+        @click="requestEndTurn"
+      >
+        {{ round === 6 ? 'Encerrar missão' : 'Encerrar turno' }}
+        <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
+      </button>
+    </div>
     <div class="accusation-control">
       <button
         :disabled="!canAccuse || isRequestPending"

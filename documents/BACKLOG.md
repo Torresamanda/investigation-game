@@ -31,14 +31,15 @@ Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, exec
    - Concluído: `17 · UX-01` → Exibir estado de conexão e recuperação da partida.
 
 5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
-   - Próxima: `05A · UX-06`, seguida de `05B · UX-07`, `05C · NOTIF-01`, `03A–03G`, `COOP`, `AUTH` e `OPS`.
+   - Concluído: `05A · UX-06`.
+   - Próxima: `05B · UX-07`, seguida de `05C · NOTIF-01`, `03A–03G`, `COOP`, `AUTH` e `OPS`.
 
 ### Prompt de Handoff para a Próxima IA
 
 ```text
 Leia AGENTS.md, documents/PROJECT_RULES.md, documents/COMMIT_CONVENTIONS.md e documents/BACKLOG.md.
 As tarefas prioritárias `14A · JOGO-07`, `16A · BUG-07`, `15 · INV-03` e `17 · UX-01` foram concluídas. Prossiga com a próxima tarefa listada no backlog, sem antecipar itens Pós-MVP:
-Próxima tarefa: `05A · UX-06` — Confirmar encerramento de turno com PA restantes. Leia a especificação atual no backlog antes de implementar.
+Próxima tarefa: `05B · UX-07` — Sinalizar descoberta de pista nova via Toast. Leia a especificação atual no backlog antes de implementar.
 Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commitar. Nunca faça git push.
 ```
 
@@ -52,7 +53,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
 
 ## P3 — Refinamentos de fluxo e feedback
 
-- [ ] **05A · UX-06 — Confirmar encerramento de turno com PA restantes (Confirmação Inline)** `[Pós-MVP] [Front] [Definição]`
+- [x] **05A · UX-06 — Confirmar encerramento de turno com PA restantes (Confirmação Inline)** `[Pós-MVP] [Front] [Definição]`
   - Ao encerrar o turno com PA utilizáveis, exibir confirmação *inline* no próprio botão (sem modal e sem sugerir o que investigar) com as opções `Continuar investigando` e `Encerrar turno`.
   - Não exibir confirmação se não houver PA aplicáveis ou se o turno já estiver esgotado.
   - Critério de aceite: cancelar preserva integralmente o estado; confirmar encerra uma única vez e avança a rodada quando aplicável.

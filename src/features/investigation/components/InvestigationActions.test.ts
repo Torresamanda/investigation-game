@@ -3,6 +3,44 @@ import { mount } from '@vue/test-utils'
 import InvestigationActions from './InvestigationActions.vue'
 
 describe('InvestigationActions', () => {
+  it('confirma inline apenas quando ainda há PA utilizáveis', async () => {
+    const view = mount(InvestigationActions, {
+      props: {
+        availableActions: ['examine'],
+        actionCosts: { examine: 2, converse: 2, analyse: 2, research: 2 },
+        feedback: {
+          target: 'Investigação',
+          cost: null,
+          cardName: null,
+          result: 'Aguardando decisão.',
+          resultType: 'status',
+          status: null,
+        },
+        canEndTurn: true,
+        hasUsableActionPoints: true,
+        canAccuse: false,
+        round: 1,
+      },
+    })
+
+    await view.get('.end-turn').trigger('click')
+    expect(view.emitted('endTurn')).toBeUndefined()
+    expect(view.get('.end-turn-confirmation').text()).toContain('PA utilizáveis')
+
+    await view.findAll('.end-turn-confirmation-actions button')[0]!.trigger('click')
+    expect(view.find('.end-turn-confirmation').exists()).toBe(false)
+    expect(view.emitted('endTurn')).toBeUndefined()
+
+    await view.get('.end-turn').trigger('click')
+    await view.findAll('.end-turn-confirmation-actions button')[1]!.trigger('click')
+    expect(view.emitted('endTurn')).toHaveLength(1)
+    expect(view.find('.end-turn-confirmation').exists()).toBe(false)
+
+    await view.setProps({ hasUsableActionPoints: false })
+    await view.get('.end-turn').trigger('click')
+    expect(view.emitted('endTurn')).toHaveLength(2)
+  })
+
   it('apresenta alvo, custo, carta e resultado em uma região acessível', () => {
     const view = mount(InvestigationActions, {
       props: {
@@ -17,6 +55,7 @@ describe('InvestigationActions', () => {
           status: 'indicio',
         },
         canEndTurn: true,
+        hasUsableActionPoints: false,
         canAccuse: false,
         round: 1,
       },
@@ -46,6 +85,7 @@ describe('InvestigationActions', () => {
           status: null,
         },
         canEndTurn: true,
+        hasUsableActionPoints: false,
         canAccuse: true,
         isRequestPending: true,
         round: 5,

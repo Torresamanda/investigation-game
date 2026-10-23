@@ -59,6 +59,34 @@ const actionCosts = computed(() => ({
   analyse: session.actionCost('analyse', location.value.id),
   research: session.actionCost('research', location.value.id),
 }))
+const hasUsableActionPoints = computed(() => {
+  const match = session.remoteMatch
+  if (!match || match.status !== 'active') return false
+
+  const hasAvailableInvestigationAction = (['examine', 'analyse', 'research'] as const).some(
+    (action) => session.canExecute(action, match.currentLocationId),
+  )
+  const hasAvailableConversation =
+    suspectProfiles.some((suspect) => suspect.locationId === match.currentLocationId) &&
+    session.canExecute('converse', match.currentLocationId)
+  const canPayForMovement =
+    match.hasUsedFreeMoveThisRound &&
+    match.actionPoints.general >= 1 &&
+    match.unlockedLocations.some((unlockedLocation) => unlockedLocation !== match.currentLocationId)
+  const canPayForJournalConnection =
+    confirmedClues.value.length >= 2 &&
+    match.actionPoints.general +
+      (match.actionPoints.specialtyPoint === 'research' ? match.actionPoints.specialty : 0) >=
+      1
+
+  return (
+    hasAvailableInvestigationAction ||
+    hasAvailableConversation ||
+    canPayForMovement ||
+    canPayForJournalConnection ||
+    (session.canAccuse && match.actionPoints.general >= 3)
+  )
+})
 const hasConfirmedRaulEvidence = computed(() =>
   session.journalEntries.some(
     (entry) =>
@@ -431,6 +459,7 @@ async function clearConversationCardPreparation() {
         :action-costs="actionCosts"
         :feedback="feedback"
         :can-end-turn="session.canEndTurn"
+        :has-usable-action-points="hasUsableActionPoints"
         :can-accuse="session.canAccuse"
         :round="session.round"
         @execute="executeSelectedAction"
