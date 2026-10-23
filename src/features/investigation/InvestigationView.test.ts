@@ -69,7 +69,7 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
-  it('bloqueia novas ações durante uma requisição sem inserir aviso transitório no layout', async () => {
+  it('bloqueia a interação sem alterar a aparência dos botões durante uma requisição', async () => {
     const session = useInvestigationStore()
     const view = createView()
     const layout = view.get('.investigation-layout').element
@@ -79,16 +79,9 @@ describe('fluxos da investigação', () => {
 
     expect(view.find('.connection-state').exists()).toBe(false)
     expect(view.get('.investigation-layout').element).toBe(layout)
-    expect(
-      view
-        .findAll('.action-grid button')
-        .every((button) => button.attributes('disabled') !== undefined),
-    ).toBe(true)
-    expect(
-      view
-        .findAll('.location-list button')
-        .every((button) => button.attributes('disabled') !== undefined),
-    ).toBe(true)
+    expect(view.get('main').attributes('inert')).toBeDefined()
+    expect(view.get('main').attributes('aria-busy')).toBe('true')
+    expect(view.findAll('.location-list button')[0]!.attributes('disabled')).toBeUndefined()
     view.unmount()
   })
 

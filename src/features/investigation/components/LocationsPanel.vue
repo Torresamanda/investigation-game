@@ -12,7 +12,7 @@ const props = defineProps<{
   moveCostLabel: string
   hasUsedSupportThisRound: boolean
   isSupportRequestPending: boolean
-  isRequestPending: boolean
+  isRequestPending?: boolean
   isConnected: boolean
 }>()
 const locationId = defineModel<LocationId>({ required: true })
