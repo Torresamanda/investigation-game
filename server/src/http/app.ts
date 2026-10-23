@@ -65,8 +65,36 @@ interface ResolveConversationBody {
   locationId?: unknown
 }
 
-export function createApp(service = new MatchService(new InMemoryMatchRepository())) {
+export interface ApiSecurityOptions {
+  readonly allowedOrigin?: string
+}
+
+const localFrontendOrigin = 'http://127.0.0.1:5173'
+
+export function createApp(
+  service = new MatchService(new InMemoryMatchRepository()),
+  options: ApiSecurityOptions = {},
+) {
   const app = Fastify({ logger: false, bodyLimit: 64 * 1024 })
+  const allowedOrigin = options.allowedOrigin ?? localFrontendOrigin
+
+  app.addHook('onRequest', async (request, reply) => {
+    reply.header('x-content-type-options', 'nosniff')
+    reply.header('x-frame-options', 'DENY')
+    reply.header('referrer-policy', 'no-referrer')
+
+    const origin = request.headers.origin
+    if (!origin) return
+    if (origin !== allowedOrigin) {
+      return reply.code(403).send({ message: 'Origem não autorizada.' })
+    }
+    reply.header('access-control-allow-origin', allowedOrigin)
+    reply.header('access-control-allow-methods', 'GET, POST, PUT, OPTIONS')
+    reply.header('access-control-allow-headers', 'content-type')
+    reply.header('vary', 'Origin')
+  })
+
+  app.options('/*', async (_request, reply) => reply.code(204).send())
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof DomainError) {
@@ -487,6 +515,5 @@ function sendMatchError(
 ) {
   if (error instanceof DomainError)
     return reply.code(error.statusCode).send({ message: error.message })
-  const message = error instanceof Error ? error.message : fallback
-  return reply.code(400).send({ message })
+  return reply.code(400).send({ message: fallback })
 }

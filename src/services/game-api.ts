@@ -37,6 +37,8 @@ interface ApiError {
   readonly message: string
 }
 
+const apiBaseUrl = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')
+
 export class ApiRequestError extends Error {
   constructor(
     message: string,
@@ -50,7 +52,7 @@ export class ApiRequestError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response
   try {
-    response = await fetch(path, {
+    response = await fetch(`${apiBaseUrl}${path}`, {
       ...init,
       headers: {
         ...(init?.body ? { 'content-type': 'application/json' } : {}),

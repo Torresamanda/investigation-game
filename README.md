@@ -59,6 +59,12 @@ npm run check
 
 Esse comando executa lint, checagem de formatação, testes, tipos do servidor e build da aplicação.
 
+### Configuração de ambiente
+
+Copie `.env.example` e preencha as variáveis no ambiente de execução. O servidor usa `PORT`, `DATABASE_PATH` e `ALLOWED_ORIGIN`; em produção, as duas últimas são obrigatórias. O build do cliente usa `VITE_API_URL` para apontar à API publicada.
+
+O cliente é gerado somente em `dist/`. A API não serve arquivos estáticos: publique `dist/` em uma hospedagem estática e execute o servidor como serviço separado, mantendo `server/` e `docs/` fora do ambiente público.
+
 ## Organização
 
 ```text

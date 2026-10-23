@@ -21,6 +21,34 @@ describe('API de partidas', () => {
     expect(response.json()).toEqual({ status: 'ok' })
   })
 
+  it('aceita apenas a origem configurada e responde ao preflight', async () => {
+    app = createApp(undefined, { allowedOrigin: 'https://cidade-das-brumas.example' })
+    const preflight = await app.inject({
+      method: 'OPTIONS',
+      url: '/api/matches',
+      headers: { origin: 'https://cidade-das-brumas.example' },
+    })
+    const blocked = await app.inject({
+      method: 'GET',
+      url: '/health',
+      headers: { origin: 'https://untrusted.example' },
+    })
+
+    expect(preflight.statusCode).toBe(204)
+    expect(preflight.headers['access-control-allow-origin']).toBe(
+      'https://cidade-das-brumas.example',
+    )
+    expect(blocked.statusCode).toBe(403)
+    expect(blocked.json()).toEqual({ message: 'Origem não autorizada.' })
+  })
+
+  it('não disponibiliza arquivos do código do servidor em rotas HTTP', async () => {
+    const response = await app.inject({ method: 'GET', url: '/server/src/main.ts' })
+
+    expect(response.statusCode).toBe(404)
+    expect(response.body).not.toContain('createApp')
+  })
+
   it('rejeita corpos nulos ou incompletos com 400 estruturado', async () => {
     const create = await app.inject({
       method: 'POST',
@@ -539,7 +567,7 @@ describe('API de partidas', () => {
       payload: { locationId: 'laboratory' },
     })
     expect(repeated.statusCode).toBe(400)
-    expect(repeated.json()).toEqual({ message: 'Esta pergunta já foi resolvida.' })
+    expect(repeated.json()).toEqual({ message: 'Não foi possível resolver a pergunta.' })
   })
 
   it('rejeita uma segunda pergunta no mesmo turno', async () => {
@@ -568,7 +596,7 @@ describe('API de partidas', () => {
     })
 
     expect(second.statusCode).toBe(400)
-    expect(second.json()).toEqual({ message: 'Você já fez uma pergunta neste turno.' })
+    expect(second.json()).toEqual({ message: 'Não foi possível resolver a pergunta.' })
 
     await app.inject({
       method: 'POST',
