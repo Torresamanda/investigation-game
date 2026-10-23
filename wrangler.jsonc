@@ -7,6 +7,7 @@
     {
       "binding": "MATCHES_DB",
       "database_name": "cidade-das-brumas",
+      "database_id": "b1bada25-0b05-47f8-a5b4-f163dd714c45",
     },
   ],
   "ratelimits": [
