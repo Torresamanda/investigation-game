@@ -6,6 +6,7 @@ import {
 } from '../../../server/src/application/match-service.js'
 import { DomainError, MatchNotFoundError } from '../../../server/src/domain/errors.js'
 import type { SoloMatch } from '../../../server/src/domain/match.js'
+import { isPersonId } from '../../../server/src/content/case01-conversations.js'
 import { MatchPresenter } from '../../../server/src/http/presenters/match-presenter.js'
 import { InMemoryMatchRepository } from '../../../server/src/infrastructure/persistence/in-memory-match-repository.js'
 import {
@@ -36,6 +37,26 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
   const preparedMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/prepared-card$/)?.[1]
   if (request.method === 'PUT' && preparedMatch)
     return prepareCard(request, preparedMatch, database)
+  const conversationMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/conversations\/([^/]+)$/)
+  if (request.method === 'GET' && conversationMatch)
+    return getConversationOptions(url, conversationMatch[1], conversationMatch[2], database)
+  const questionMatch = url.pathname.match(
+    /^\/api\/matches\/([^/]+)\/conversations\/([^/]+)\/questions\/([^/]+)$/,
+  )
+  if (request.method === 'POST' && questionMatch)
+    return resolveConversation(
+      request,
+      questionMatch[1],
+      questionMatch[2],
+      questionMatch[3],
+      database,
+    )
+  const connectionsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/connections$/)?.[1]
+  if (request.method === 'POST' && connectionsMatch)
+    return createJournalConnection(request, connectionsMatch, database)
+  const accusationMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/accuse$/)?.[1]
+  if (request.method === 'POST' && accusationMatch)
+    return accuseSuspect(request, accusationMatch, database)
   return jsonResponse({ message: 'Rota não encontrada.' }, 404)
 }
 
@@ -122,13 +143,108 @@ async function prepareCard(
   )
 }
 
+async function getConversationOptions(
+  url: URL,
+  id: string,
+  encodedPersonId: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const personId = decodePathSegment(encodedPersonId)
+  const locationId = url.searchParams.get('locationId')
+  if (!isPersonId(personId) || !isLocationId(locationId))
+    return jsonResponse({ message: 'Pessoa ou local inválido.' }, 400)
+  return readMatch(id, database, (service, matchId) =>
+    service.getConversationOptions(matchId, personId, locationId),
+  )
+}
+
+async function resolveConversation(
+  request: Request,
+  id: string,
+  encodedPersonId: string,
+  encodedQuestionId: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const personId = decodePathSegment(encodedPersonId)
+  const questionId = decodePathSegment(encodedQuestionId)
+  const locationId = (await readBody(request))?.locationId
+  if (!isPersonId(personId) || !isLocationId(locationId) || !isNonEmptyString(questionId))
+    return jsonResponse({ message: 'Pessoa, pergunta ou local inválido.' }, 400)
+  return mutateMatch(id, database, (service, matchId) =>
+    service.resolveConversation({ matchId, personId, questionId, locationId }),
+  )
+}
+
+async function createJournalConnection(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readBody(request)
+  const fromClueId = body?.fromClueId
+  const toClueId = body?.toClueId
+  if (!isNonEmptyString(fromClueId) || !isNonEmptyString(toClueId))
+    return jsonResponse({ message: 'Selecione duas pistas válidas.' }, 400)
+  return mutateMatch(id, database, (service, matchId) =>
+    service.createJournalConnection({ matchId, fromClueId, toClueId }),
+  )
+}
+
+async function accuseSuspect(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readBody(request)
+  const suspectId = body?.suspectId
+  const meansClueId = body?.meansClueId
+  const opportunityClueId = body?.opportunityClueId
+  const linkClueId = body?.linkClueId
+  if (
+    !isPersonId(suspectId) ||
+    !isNonEmptyString(meansClueId) ||
+    !isNonEmptyString(opportunityClueId) ||
+    !isNonEmptyString(linkClueId)
+  ) {
+    return jsonResponse({ message: 'Preencha um dossiê de acusação válido.' }, 400)
+  }
+  return mutateMatch(id, database, (service, matchId) =>
+    service.accuseSuspect({
+      matchId,
+      suspectId,
+      meansClueId,
+      opportunityClueId,
+      linkClueId,
+    }),
+  )
+}
+
+async function readMatch<T>(
+  id: string,
+  database: D1DatabaseConnection,
+  read: (service: MatchService, matchId: string) => T,
+): Promise<Response> {
+  try {
+    const matchId = decodePathSegment(id)
+    if (!matchId) return jsonResponse({ message: 'Partida inválida.' }, 400)
+    const match = await new D1MatchStore(database).findById(matchId)
+    if (!match) throw new MatchNotFoundError()
+    const repository = new InMemoryMatchRepository()
+    repository.save(match)
+    return jsonResponse(read(new MatchService(repository), matchId))
+  } catch (error) {
+    return matchErrorResponse(error, 'Não foi possível consultar a partida.')
+  }
+}
+
 async function mutateMatch(
   id: string,
   database: D1DatabaseConnection,
   mutate: (service: MatchService, matchId: string) => SoloMatch,
 ): Promise<Response> {
   try {
-    const matchId = decodeURIComponent(id)
+    const matchId = decodePathSegment(id)
+    if (!matchId) return jsonResponse({ message: 'Partida inválida.' }, 400)
     const store = new D1MatchStore(database)
     const match = await store.findById(matchId)
     if (!match) throw new MatchNotFoundError()
@@ -138,12 +254,28 @@ async function mutateMatch(
     const saved = await store.save(updated)
     return jsonResponse(MatchPresenter.toPublicDto(saved))
   } catch (error) {
-    if (error instanceof MatchVersionConflictError)
-      return jsonResponse({ message: error.message }, 409)
-    if (error instanceof DomainError)
-      return jsonResponse({ message: error.message }, error.statusCode)
-    return jsonResponse({ message: 'Não foi possível processar a requisição.' }, 500)
+    return matchErrorResponse(error, 'Não foi possível processar a requisição.')
   }
+}
+
+function matchErrorResponse(error: unknown, fallbackMessage: string): Response {
+  if (error instanceof MatchVersionConflictError)
+    return jsonResponse({ message: error.message }, 409)
+  if (error instanceof DomainError)
+    return jsonResponse({ message: error.message }, error.statusCode)
+  return jsonResponse({ message: fallbackMessage }, 500)
+}
+
+function decodePathSegment(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return ''
+  }
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && value.length <= 120
 }
 
 async function readBody(request: Request): Promise<Record<string, unknown> | undefined> {
