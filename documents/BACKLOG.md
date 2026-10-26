@@ -71,27 +71,27 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
 
 ## P3 — Ajustes de interface e conteúdo
 
-- [ ] **03A · UI-01 — Ajustar identificação do apoio de plantão** `[Pós-MVP] [Front]`
+- [x] **03A · UI-01 — Ajustar identificação do apoio de plantão** `[Pós-MVP] [Front]`
   - Posicionar o texto `Apoio de plantão` imediatamente acima do seletor de investigador.
   - Aplicar cursor `pointer` ao seletor e estados de foco consistentes com os demais controles.
   - Critério de aceite: o rótulo descreve claramente o seletor associado e o cursor comunica que o campo é interativo.
 
-- [ ] **03B · UI-02 — Reposicionar ação de retorno ao mundo** `[Pós-MVP] [Front]`
+- [x] **03B · UI-02 — Reposicionar ação de retorno ao mundo** `[Pós-MVP] [Front]`
   - Posicionar o botão `Retornar ao mundo` imediatamente acima de `Museu de História de Véspera · Caso 01`.
   - Preservar a confirmação de abandono prevista em UX-04.
   - Critério de aceite: a hierarquia visual separa a navegação de abandono do contexto do caso.
 
-- [ ] **03C · UI-03 — Exibir dificuldade do Caso 01 no mapa** `[Pós-MVP] [Front] [Definição]`
+- [x] **03C · UI-03 — Exibir dificuldade do Caso 01 no mapa** `[Pós-MVP] [Front] [Definição]`
   - Adicionar três estrelas ao resumo `Caso 01 · Introdução`, com uma estrela colorida para indicar dificuldade fácil.
   - Definir componente reutilizável para futuras classificações de caso.
   - Critério de aceite: a dificuldade é entendida sem depender apenas de cor e não interfere no resumo do caso.
 
-- [ ] **03D · UI-04 — Estilizar barras de rolagem** `[Pós-MVP] [Front]`
+- [x] **03D · UI-04 — Estilizar barras de rolagem** `[Pós-MVP] [Front]`
   - Aplicar cores, largura, trilho e indicador de rolagem coerentes com a identidade visual do jogo.
   - Cobrir navegadores baseados em WebKit e Firefox, preservando contraste e visibilidade do controle.
   - Critério de aceite: painéis com conteúdo rolável não exibem a barra padrão do navegador e continuam utilizáveis por mouse, toque e teclado.
 
-- [ ] **03E · UI-05 — Centralizar ações com ícone e texto** `[Pós-MVP] [Front]`
+- [x] **03E · UI-05 — Centralizar ações com ícone e texto** `[Pós-MVP] [Front]`
   - Centralizar horizontal e verticalmente ícone e rótulo nos botões `Encerrar turno` e `Retornar ao mundo`.
   - Preservar espaçamento legível, área clicável e alinhamento em desktop e celular.
   - Critério de aceite: ícone e texto formam um conjunto visualmente centralizado sem deslocamento em nenhum breakpoint suportado.
@@ -107,7 +107,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Garantir espaçamento claro entre classes, funções e blocos lógicos, nomenclatura alinhada ao domínio e importação de ícones exclusivamente via `src/components/icons/`.
   - Critério de aceite: não há duplicação de estilos base entre features, componentes genéricos não acessam stores diretamente e nenhum ícone é importado fora de `src/components/icons/`.
 
-- [ ] **06A · BUG-04 — Corrigir separação de título e conteúdo em observações** `[P3] [Front]`
+- [x] **06A · BUG-04 — Corrigir separação de título e conteúdo em observações** `[P3] [Front]`
   - Inserir separação visual e textual após `Nenhuma descoberta nova`, incluindo `:` antes do conteúdo da observação.
   - Critério de aceite: título e mensagem não aparecem unidos em interface, leitor de tela ou diário.
 
@@ -396,21 +396,29 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Associar limiares de pressão a efeitos mecânicos concretos (ex.: aumento de custo social em conversas ou bloqueio de favores institucionais).
   - Critério de aceite: a pressão da imprensa é visível na interface e altera dinamicamente as decisões de risco da equipe.
 
-- [ ] **33 · UX-08 — Unificar layout em Mesa Única de 3 Zonas com Painel Contextual Multipropósito (Sem Modais ou Drawers)** `[Pós-MVP] [Front]`
+- [x] **33 · UX-08 — Unificar layout em Mesa Única de 3 Zonas com Painel Contextual Multipropósito** `[Pós-MVP] [Front]`
   - Substituir o grid atual de 4/5 colunas (que espreme a tela ao abrir o Diário) por 3 zonas estáveis na mesma página (`Esquerda: Equipe, PA, Apoio e Locais` | `Centro: Cena, Ações e Mão de Cartas` | `Direita: Painel Contextual Multipropósito`).
-  - Eliminar modais/drawers flutuantes para `ConversationDialog.vue`, `AccusationDialog.vue` e `CardDetails.vue`, integrando `Pessoas & Conversa`, `Diário do Caso` e `Dossiê de Acusação` como abas que alternam *in-place* na coluna direita, permitindo preparar cartas sociais diretamente na mão principal e ler a resposta da conversa no próprio painel.
+  - Integrar `Pessoas & Conversa`, `Diário do Caso` e `Dossiê de Acusação` como abas que alternam *in-place* na coluna direita, permitindo preparar cartas sociais diretamente na mão principal e ler a resposta da conversa no próprio painel.
+  - Manter conversa e acusação integradas na página. Por decisão de produto posterior, detalhes de cartas e briefing de apresentação da delegada podem usar modal.
   - Garantir **zero dicas investigativas** em toda a interface (locais trancados exibem apenas `Área não descoberta` e perguntas bloqueadas não revelam qual pista ou local procurar).
-  - Critério de aceite: toda a partida ocorre em uma única tela sem sobreposições modais, sem encolhimento de colunas ao consultar o Diário e sem qualquer dica sobre onde/como investigar.
+  - Critério de aceite: a partida usa três zonas estáveis; conversa, Diário e Acusação alternam na coluna direita sem encolher as demais; não há dicas sobre onde/como investigar; modais ficam limitados a detalhes das cartas e ao briefing da delegada.
 
-- [ ] **34 · UX-09 — Separar visualmente Baralho Padrão e Múltiplas Cartas Temporárias/Apoio na bandeja da mão** `[Pós-MVP] [Front]`
+- [x] **34 · UX-09 — Separar visualmente Baralho Padrão e Múltiplas Cartas Temporárias/Apoio na bandeja da mão** `[Pós-MVP] [Front]`
   - Dividir `CardHand.vue` em dois grupos separados por divisória vertical e legenda clara: **Baralho do Investigador** (sempre 4 cartas regulares com indicação de reciclagem no turno) e **Cartas Temporárias & Extras** (acumuláveis em 2, 3 ou mais cartas ganhas na investigação ou via Apoio de Plantão, que permanecem fixas entre turnos até o uso).
   - Aplicar anatomia visual distinta em `InvestigationCard.vue` para cartas temporárias (borda tracejada turquesa `#70b99a`, selo `Temp` e rodapé `Fixa · Uso único`) e posicionar os controles de `Descartar` e `Cancelar` no cabeçalho da bandeja para nunca cobrir cartas quando a mão tiver 5+ cartas.
   - Critério de aceite: o jogador distingue imediatamente suas 4 cartas do baralho base de múltiplas cartas temporárias retidas na mão.
 
-- [ ] **35 · UX-10 — Criar Tour Guiado interativo de mecânica (Spotlight sem dicas do caso)** `[Pós-MVP] [Front] [Definição]`
+- [x] **35 · UX-10 — Criar Tour Guiado interativo de mecânica (Spotlight sem dicas do caso)** `[Pós-MVP] [Front] [Definição]`
   - Implementar um tour opcional de 5 passos com destaque visual (*spotlight*) sobre as zonas da Mesa Única: (1) Investigador, PA e Apoio, (2) Locais e Deslocamento, (3) Baralho Padrão vs. Cartas Temporárias, (4) Ações e Toasts do Diário, (5) Painel Contextual.
   - Explicar exclusivamente como operar a ferramenta, sem mencionar pistas, suspeitos ou caminhos de resolução do caso.
   - Critério de aceite: o jogador consegue iniciar, avançar, voltar e encerrar o tour a qualquer momento sem alterar o estado da partida e sem receber dicas de investigação.
+
+### Avaliação do documento de Mesa Única
+
+- Concluídos nesta evolução: `05A`, `05B`, `03A–03E`, `06A`, `33`, `34` e `35`.
+- `03G` permanece aberto: componentes e tokens compartilhados foram iniciados, mas ainda há estilos recorrentes específicos de feature para consolidar em `src/styles/` e componentes apresentacionais para extrair.
+- Pendências Pós-MVP fora do escopo já entregue: `05C` (serviço geral de notificações), `31` (conteúdo versionado de casos), `32` (pressão da imprensa), `27 · UX-02` (revisão responsiva), `28 · UX-03` (animação de entrada), `29 · UX-04` (confirmação inline de abandono) e `30 · UX-05` (animações de cartas).
+- O briefing da delegada já existe em modal; a transição animada prevista em `28 · UX-03` continua pendente.
 
 ## Bugs e refinamentos: estado e prioridade
 
@@ -431,18 +439,23 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Desabilitar controles ligados à API durante a requisição para evitar submissões repetidas.
   - Critério de aceite: o jogador entende o estado da conexão, recebe erro recuperável e pode continuar após a API responder novamente.
 
-- [ ] **36 · BUG-08 — Preservar cartas do Apoio de Plantão além da mão regular** `[P1] [Front] [Back]`
+- [x] **36 · BUG-08 — Preservar cartas do Apoio de Plantão além da mão regular** `[P1] [Front] [Back]`
   - Uma carta recebida do Apoio de Plantão deve ser tratada como carta extra na mão do investigador ativo: ela não ocupa uma das quatro vagas do baralho regular do investigador.
   - Ao descartar uma carta regular, recompor as quatro cartas regulares sem remover ou contar cartas de apoio; ao encerrar o turno, manter cartas de apoio não usadas na mão e renovar somente as quatro cartas regulares.
   - Cartas de apoio usadas ou descartadas continuam retornando ao descarte do investigador dono, com o custo original restaurado; cartas temporárias mantêm a mesma regra de permanência já definida para elas.
   - Critério de aceite: após acionar o apoio e manter a carta sem usá-la, o jogador inicia o turno seguinte com quatro cartas regulares mais a carta de apoio; descartar uma carta regular preserva a carta de apoio e recompõe somente a parte regular da mão.
 
-- [ ] **37 · CASO-09 — Desbloquear perguntas por evidência, não por rodada ou turno** `[P1] [Front] [Back] [Definição]`
+- [x] **37 · CASO-09 — Desbloquear perguntas por evidência, não por rodada ou turno** `[P1] [Front] [Back] [Definição]`
   - Remover bloqueios de disponibilidade baseados exclusivamente em rodada e o limite de uma pergunta por turno. O jogador pode fazer perguntas ainda não usadas enquanto tiver PA aplicáveis.
   - Manter cada pergunta como uso único e preservar o custo, as cartas preparadas e as demais validações autoritativas do servidor.
   - Perguntas que exigem uma pista ou declaração independente permanecem bloqueadas até que a evidência correspondente seja realmente obtida; avançar de turno ou de rodada, por si só, não as desbloqueia.
   - Atualizar os retornos públicos e a interface para comunicar somente o requisito de evidência já conhecido, sem revelar local, rodada futura ou caminho investigativo.
   - Critério de aceite: com PA suficientes, o jogador pode realizar mais de uma pergunta distinta no mesmo turno; uma pergunta sem evidência exigida permanece bloqueada no turno e nas rodadas seguintes até a pista ser encontrada; ela fica disponível imediatamente após a descoberta, independentemente da rodada.
+
+- [x] **38 · UI-07 — Atualizar a assinatura visual para Arquivos Limiar** `[P3] [Front]`
+  - Substituir a assinatura abaixo de `Agência de Investigação` por `Arquivos Limiar`, preservando a hierarquia tipográfica e a legibilidade nos breakpoints suportados.
+  - Padronizar os modais da aplicação no centro da tela, com padding e gap de 24 px para separar o conteúdo.
+  - Critério de aceite: o cabeçalho apresenta `Agência de Investigação` e `Arquivos Limiar`; os modais usam o mesmo alinhamento e espaçamento interno de 24 px.
 
 - [ ] **27 · UX-02 — Refinar o layout das cartas em resoluções menores** `[Pós-MVP] [P3] [Front]`
   - Confirmar legibilidade do selo de PA, botão de informação, título e moldura em notebook e celular, preservando o agrupamento entre Baralho Padrão e Cartas Temporárias.

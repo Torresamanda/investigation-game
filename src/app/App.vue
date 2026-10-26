@@ -16,7 +16,7 @@ const route = useRoute()
     <header class="app-header">
       <RouterLink class="brand" to="/">
         <PhDiamond class="brand-mark" :size="32" weight="bold" aria-hidden="true" />
-        <span><small>Agência de Investigações</small><strong>Cidade das Brumas</strong></span>
+        <span><small>Agência de Investigação</small><strong>Arquivos Limiar</strong></span>
       </RouterLink>
       <span class="agency-badge">Divisão de Crimes Patrimoniais</span>
     </header>

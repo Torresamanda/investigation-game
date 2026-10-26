@@ -34,12 +34,19 @@ onBeforeUnmount(() => dialog.value?.close?.())
     @pointerdown="trackPointer"
     @click="handleClick"
   >
-    <slot />
+    <div class="app-modal-content">
+      <slot />
+    </div>
   </dialog>
 </template>
 
 <style>
 .app-modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: fit-content;
+  display: grid;
   padding: 0;
   max-width: calc(100vw - 32px);
   max-height: calc(100dvh - 32px);
@@ -49,6 +56,14 @@ onBeforeUnmount(() => dialog.value?.close?.())
   color: var(--paper);
   overflow: auto;
 }
+
+.app-modal-content {
+  display: grid;
+  gap: 24px;
+  padding: 24px;
+  min-width: 0;
+}
+
 .app-modal::backdrop {
   background: #07121dd9;
 }

@@ -8,6 +8,8 @@ it('fecha por clique iniciado no fundo, mas não por clique ou arrasto iniciado 
     props: { labelledBy: 'title' },
     slots: { default: '<section><h2 id="title">Detalhes</h2></section>' },
   })
+  expect(view.get('.app-modal-content').text()).toBe('Detalhes')
+  expect(view.get('dialog').classes()).toContain('app-modal')
   view
     .get('section')
     .element.dispatchEvent(

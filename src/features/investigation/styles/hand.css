@@ -128,12 +128,18 @@
 .card-detail-layout {
   display: grid;
   grid-template-columns: 100px minmax(0, 1fr);
-  gap: 12px;
+  gap: 24px;
 }
 
 .card-detail-copy {
   position: relative;
-  padding-top: 12px;
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+
+.card-detail-copy > * {
+  margin: 0;
 }
 
 .card-detail-copy h2 {
