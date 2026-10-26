@@ -136,7 +136,7 @@
   }
 
   .rail-note {
-    display: none;
+    display: block;
   }
 }
 
