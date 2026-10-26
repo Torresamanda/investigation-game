@@ -29,7 +29,6 @@ import './investigation.css'
 const session = useInvestigationStore()
 const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigação.'))
 const cards = computed(() => session.hand)
-const journalTab = ref<'timeline' | 'clues' | 'connections' | 'notes'>('timeline')
 const panelMode = ref<'people' | 'journal' | 'accusation'>('people')
 const { tourStep, tourIndex, startTour, startTourOnFirstVisit, closeTour, stepTour } =
   useTableTour()
@@ -100,7 +99,6 @@ const { notifications, unreadCount, dismissNotification } = useTableNotification
 )
 
 function openDiscoveryInJournal(id: string) {
-  journalTab.value = 'clues'
   panelMode.value = 'journal'
   dismissNotification(id)
 }
@@ -290,7 +288,6 @@ function executeSelectedAction(action: InvestigationAction) {
           <CaseJournal
             v-show="panelMode === 'journal'"
             v-model:notes="session.notes"
-            v-model:tab="journalTab"
             :hypotheses="session.hypotheses"
             :journal-entries="session.journalEntries"
             :journal-connections="session.journalConnections"

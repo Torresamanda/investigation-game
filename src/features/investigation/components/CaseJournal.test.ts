@@ -51,11 +51,10 @@ const journalEntries = [
   },
 ]
 
-function mountJournal(tab: 'timeline' | 'clues' = 'clues') {
+function mountJournal() {
   return mount(CaseJournal, {
     props: {
       notes: '',
-      tab,
       hypotheses: [],
       journalEntries,
       journalConnections: [
@@ -64,7 +63,6 @@ function mountJournal(tab: 'timeline' | 'clues' = 'clues') {
       hasFreeConnection: true,
       hasPreparedConnectionCard: false,
       'onUpdate:notes': () => undefined,
-      'onUpdate:tab': () => undefined,
     },
     global: { stubs: { PhUserFocus: true, PhX: true } },
   })
@@ -77,65 +75,45 @@ describe('CaseJournal', () => {
     expect(view.find('.journal-close').exists()).toBe(false)
   })
 
-  it('separa pistas, observações, declarações e conexões com estado, origem e rodada', () => {
+  it('reúne pistas, observações, declarações e conexões em cartões com estado e origem', () => {
     const view = mountJournal()
-    const groups = view.findAll('.journal-group')
+    const records = view.findAll('.journal-record-list .journal-entry')
 
-    expect(groups.map((group) => group.find('h4').text())).toEqual([
-      'Pistas',
-      'Observações',
-      'Declarações',
-      'Conexões',
-    ])
-    expect(groups[0]!.text()).toContain('Confirmada')
-    expect(groups[0]!.text()).toContain('Sala de Segurança · Rodada 3')
-    expect(groups[1]!.text()).toContain('Sem nova descoberta')
-    expect(groups[2]!.text()).toContain('Contestável')
-    expect(groups[3]!.text()).toContain('Conexão formal')
-    expect(groups[3]!.text()).toContain('Exclusão de registros se relaciona a Retorno do cartão')
-    expect(groups[0]!.text()).not.toContain('Conexão formal')
-    expect(view.text()).not.toContain('Nenhuma pista registrada.')
-    expect(view.text()).not.toContain('Nenhuma observação registrada.')
-    expect(view.text()).not.toContain('Nenhuma declaração registrada.')
+    expect(view.find('.journal-tabs').exists()).toBe(false)
+    expect(records).toHaveLength(6)
+    expect(records[0]!.text()).toContain('Confirmada')
+    expect(records[0]!.text()).toContain('Sala de Segurança · Rodada 3')
+    expect(records[2]!.text()).toContain('Sem nova descoberta')
+    expect(records[3]!.text()).toContain('Contestável')
+    expect(records[5]!.text()).toContain('Exclusão de registros se relaciona a Retorno do cartão')
   })
 
-  it('remove estados vazios quando os registros chegam depois da abertura do diário', async () => {
+  it('substitui o estado vazio pelos registros quando eles chegam depois da abertura do diário', async () => {
     const view = mount(CaseJournal, {
       props: {
         notes: '',
-        tab: 'clues',
         hypotheses: [],
         journalEntries: [],
         journalConnections: [],
         hasFreeConnection: false,
         hasPreparedConnectionCard: false,
         'onUpdate:notes': () => undefined,
-        'onUpdate:tab': () => undefined,
       },
       global: { stubs: { PhUserFocus: true, PhX: true } },
     })
 
-    expect(view.text()).toContain('Nenhuma pista registrada.')
-    expect(view.text()).toContain('Nenhuma observação registrada.')
-    expect(view.text()).toContain('Nenhuma declaração registrada.')
+    expect(view.text()).toContain('Nenhum registro no diário ainda.')
 
     await view.setProps({ journalEntries })
 
-    expect(view.text()).not.toContain('Nenhuma pista registrada.')
-    expect(view.text()).not.toContain('Nenhuma observação registrada.')
-    expect(view.text()).not.toContain('Nenhuma declaração registrada.')
+    expect(view.text()).not.toContain('Nenhum registro no diário ainda.')
   })
 
-  it('inclui horários na cronologia somente quando aparecem nos registros descobertos', () => {
-    const view = mountJournal('timeline')
+  it('mantém cada registro legível sem uma navegação secundária', () => {
+    const view = mountJournal()
 
     expect(view.text()).toContain('22h13')
     expect(view.text()).toContain('22h16')
-    expect(view.findAll('.timeline-entry').map((entry) => entry.find('strong').text())).toEqual([
-      '22h13',
-      '22h14',
-      '22h16',
-      '22h21',
-    ])
+    expect(view.get('.journal-details').text()).toContain('Criar conexão formal')
   })
 })

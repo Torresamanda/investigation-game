@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run cloudflare:dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:client": "vite --host 127.0.0.1 --port 5173",
+    "dev:api": "wrangler dev --port 8787",
     "worker:check": "tsc --project worker/tsconfig.json",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
