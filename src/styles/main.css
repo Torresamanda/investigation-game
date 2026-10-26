@@ -42,6 +42,8 @@ select {
 }
 button {
   cursor: pointer;
+  min-height: 44px;
+  padding: 10px 16px;
   transition:
     border-color 0.15s,
     background 0.15s;

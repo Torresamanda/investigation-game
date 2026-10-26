@@ -102,7 +102,9 @@
   right: 8px;
   display: grid;
   place-items: center;
-  padding: 4px;
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
   border-radius: 50%;
   background: var(--ink);
 }
