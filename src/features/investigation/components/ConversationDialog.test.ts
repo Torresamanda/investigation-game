@@ -3,17 +3,31 @@ import { describe, expect, it } from 'vitest'
 import ConversationDialog from './ConversationDialog.vue'
 
 describe('ConversationDialog', () => {
-  it('mostra as perguntas e informa seus custos antes de resolver uma delas', async () => {
+  it('retorna ao perfil sem encerrar o painel contextual', async () => {
     const view = mount(ConversationDialog, {
       props: {
-        pointsLabel: '5 PA gerais',
-        conversationCards: [],
-        preparedCardId: null,
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
-          questionLimitReached: false,
+          questions: [],
+        },
+      },
+    })
+
+    const backButton = view.get('.conversation-back')
+    expect(backButton.text()).toContain('Perfil')
+    await backButton.trigger('click')
+    expect(view.emitted('close')).toEqual([[]])
+  })
+
+  it('mostra as perguntas e informa seus custos antes de resolver uma delas', async () => {
+    const view = mount(ConversationDialog, {
+      props: {
+        conversation: {
+          personId: 'marta',
+          personName: 'Marta Lobo',
+          locationId: 'laboratory',
           questions: [
             {
               id: 'technical-assessment',
@@ -37,7 +51,7 @@ describe('ConversationDialog', () => {
     })
 
     expect(view.text()).toContain('Marta Lobo')
-    expect(view.text()).toContain('5 PA gerais')
+    expect(view.find('.conversation-person-portrait').exists()).toBe(true)
     expect(view.text()).toContain('Apuração')
     expect(view.text()).toContain('Contexto')
     expect(view.findAll('.conversation-questions button').map((button) => button.text())).toEqual([
@@ -49,17 +63,13 @@ describe('ConversationDialog', () => {
     expect(view.emitted('resolve')).toEqual([['davi-interest']])
   })
 
-  it('explica quando a pergunta do turno já foi usada', () => {
+  it('explica o bloqueio por evidência sem revelar qual evidência falta', () => {
     const view = mount(ConversationDialog, {
       props: {
-        pointsLabel: '3 PA gerais',
-        conversationCards: [],
-        preparedCardId: null,
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
-          questionLimitReached: true,
           questions: [
             {
               id: 'davi-interest',
@@ -74,52 +84,26 @@ describe('ConversationDialog', () => {
       },
     })
 
-    expect(view.text()).toContain('já fez uma pergunta neste turno')
     expect(view.text()).toContain('Diálogo bloqueado: evidência necessária')
     expect(view.text()).not.toContain('Examine a fechadura')
     expect(view.get('.conversation-questions button').attributes('disabled')).toBeDefined()
   })
 
-  it('oferece a Pausa Calculada depois da primeira pergunta do turno', async () => {
+  it('exibe a resposta inline e prepara cartas somente na mão principal', () => {
     const view = mount(ConversationDialog, {
       props: {
-        pointsLabel: '2 PA gerais',
-        preparedCardId: null,
-        conversationCards: [
-          {
-            id: 'pocket-recorder',
-            name: 'Gravador de Bolso',
-            cost: 1,
-            image: '',
-            effect: '',
-            context: '',
-            compatibleActions: ['converse'],
-            instanceId: 'isadora:pocket-recorder:1',
-          },
-          {
-            id: 'calculated-pause',
-            name: 'Pausa Calculada',
-            cost: 0,
-            image: '',
-            effect: '',
-            context: '',
-            compatibleActions: ['converse'],
-            instanceId: 'isadora:calculated-pause:1',
-          },
-        ],
+        answer: 'Declaração recém-colhida.',
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
-          questionLimitReached: true,
           questions: [],
         },
       },
     })
-
-    expect(view.text()).toContain('Pausa Calculada')
-    expect(view.text()).not.toContain('Gravador de Bolso')
-    await view.get('.conversation-cards button').trigger('click')
-    expect(view.emitted('prepareCard')).toEqual([['isadora:calculated-pause:1']])
+    expect(view.get('.conversation-answer').text()).toContain('Declaração recém-colhida.')
+    expect(view.text()).toContain('Declaração registrada no diário')
+    expect(view.find('.conversation-cards').exists()).toBe(false)
+    expect(view.find('[aria-modal]').exists()).toBe(false)
   })
 })

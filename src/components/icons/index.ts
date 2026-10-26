@@ -1,7 +1,9 @@
 export {
+  PhStar,
   PhArrowLeft,
   PhArrowRight,
   PhBookmarkSimple,
+  PhBookOpenText,
   PhDiamond,
   PhImageSquare,
   PhInfo,

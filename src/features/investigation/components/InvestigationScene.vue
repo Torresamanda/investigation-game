@@ -8,7 +8,6 @@ import {
 } from '../../../content/case01'
 const props = defineProps<{
   location: CaseLocation
-  hasConfirmedRaulEvidence: boolean
   round: number
 }>()
 const suspectAtCurrentLocation = computed(() =>
@@ -19,15 +18,10 @@ const locationNumber = computed(() =>
 )
 const locationCount = computed(() => String(locations.length).padStart(2, '0'))
 const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpenings[0])
-const roundOpeningMessage = computed(() =>
-  props.round === 4 && props.hasConfirmedRaulEvidence
-    ? '“As evidências confirmadas já permitem questionar Raul sobre a rota de segurança.”'
-    : roundOpening.value.message,
-)
 </script>
 
 <template>
-  <section class="panel scene-panel" aria-label="Local e abertura da rodada">
+  <section class="scene-panel" aria-label="Local e abertura da rodada">
     <div class="section-heading">
       <div>
         <p class="eyebrow">Local em observação</p>
@@ -37,15 +31,15 @@ const roundOpeningMessage = computed(() =>
     </div>
     <div class="scene-art-frame">
       <img class="scene-art" :src="location.artwork" :alt="`Cenário: ${location.name}`" />
+      <p class="scene-description">{{ location.detail }}</p>
       <p v-if="suspectAtCurrentLocation" class="scene-presence" role="status">
         {{ suspectAtCurrentLocation.name }} está aqui
       </p>
-    </div>
-    <p class="scene-description">{{ location.detail }}</p>
-    <div class="narrator">
-      <p class="eyebrow">{{ roundOpening.speaker }}</p>
-      <p>{{ roundOpeningMessage }}</p>
-      <small>{{ roundOpening.event }}</small>
+      <div class="narrator">
+        <p class="eyebrow">{{ roundOpening.speaker }}</p>
+        <p>{{ roundOpening.message }}</p>
+        <small v-if="round !== 1 && round !== 3">{{ roundOpening.event }}</small>
+      </div>
     </div>
   </section>
 </template>

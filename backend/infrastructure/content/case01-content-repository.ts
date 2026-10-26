@@ -62,8 +62,8 @@ export class Case01ContentRepository implements CaseContentRepository {
     return resolveConversationOutcome(personId, questionId, match)
   }
 
-  getConversationReward(personId: PersonId, questionId: string, round: number) {
-    return getConversationReward(personId, questionId, round)
+  getConversationReward(personId: PersonId, questionId: string) {
+    return getConversationReward(personId, questionId)
   }
 
   resolveAction(

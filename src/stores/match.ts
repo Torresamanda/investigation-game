@@ -12,9 +12,12 @@ import {
   type RemoteMatch,
 } from '../services/game-api'
 import { clearMatchSession } from '../services/match-session'
+import { hasSeenIntroduction, markIntroductionSeen } from '../services/onboarding-preferences'
 
 export interface HandCard extends CardDefinition {
   readonly instanceId: string
+  readonly temporary?: boolean
+  readonly ownerId?: InvestigatorId
 }
 
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error'
@@ -22,7 +25,7 @@ export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error'
 export const useMatchStore = defineStore('match', () => {
   const investigatorId = ref<InvestigatorId | null>(null)
   const supportId = ref<InvestigatorId | null>(null)
-  const introductionSeen = ref(false)
+  const introductionSeen = ref(hasSeenIntroduction())
   const remoteMatch = ref<RemoteMatch | null>(null)
   const preparedCardId = ref<string | null>(null)
   const connectionState = ref<ConnectionState>('idle')
@@ -62,7 +65,17 @@ export const useMatchStore = defineStore('match', () => {
     if (!remoteHand) return []
     return remoteHand.flatMap((card) => {
       const definition = getCardDefinition(card.definitionId)
-      return definition ? [{ ...definition, cost: card.cost, instanceId: card.instanceId }] : []
+      return definition
+        ? [
+            {
+              ...definition,
+              cost: card.cost,
+              instanceId: card.instanceId,
+              temporary: card.temporary,
+              ownerId: card.ownerId,
+            },
+          ]
+        : []
     })
   })
   const round = computed(() => remoteMatch.value?.round ?? 1)
@@ -114,7 +127,6 @@ export const useMatchStore = defineStore('match', () => {
     if (active === support) throw new Error('O apoio deve ser outro investigador.')
     investigatorId.value = active
     supportId.value = support
-    introductionSeen.value = false
     remoteMatch.value = null
     preparedCardId.value = null
     connectionState.value = 'idle'
@@ -306,11 +318,15 @@ export const useMatchStore = defineStore('match', () => {
   function abandonInvestigation(): void {
     investigatorId.value = null
     supportId.value = null
-    introductionSeen.value = false
     remoteMatch.value = null
     preparedCardId.value = null
     connectionState.value = 'idle'
     connectionError.value = null
+  }
+
+  function markIntroductionAsSeen(): void {
+    introductionSeen.value = true
+    markIntroductionSeen()
   }
 
   return {
@@ -354,5 +370,6 @@ export const useMatchStore = defineStore('match', () => {
     resolveConversation,
     startInvestigation,
     abandonInvestigation,
+    markIntroductionAsSeen,
   }
 })

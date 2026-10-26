@@ -7,7 +7,7 @@ type DiscoveryMatchState = Pick<
 
 export interface DiscoveryNotification {
   readonly id: string
-  readonly kind: 'clue' | 'statement' | 'temporary-card'
+  readonly kind: 'clue' | 'statement' | 'temporary-card' | 'observation' | 'support-card'
   readonly message: string
 }
 
@@ -19,7 +19,7 @@ export function findNewDiscoveries(
 
   const previousEntryIds = new Set(previous.journalEntries.map((entry) => entry.id))
   const entries = current.journalEntries.flatMap((entry): DiscoveryNotification[] => {
-    if (previousEntryIds.has(entry.id) || entry.type === 'observation') return []
+    if (previousEntryIds.has(entry.id)) return []
 
     return [
       {
@@ -28,7 +28,9 @@ export function findNewDiscoveries(
         message:
           entry.type === 'clue'
             ? 'Uma nova pista foi registrada no Diário.'
-            : 'Uma nova declaração foi registrada no Diário.',
+            : entry.type === 'statement'
+              ? 'Uma nova declaração foi registrada no Diário.'
+              : 'Nenhuma descoberta nova: observação registrada no Diário.',
       },
     ]
   })
@@ -39,12 +41,15 @@ export function findNewDiscoveries(
   )
   const cards = (current.decks[activeInvestigatorId]?.hand ?? []).flatMap(
     (card): DiscoveryNotification[] =>
-      card.temporary && !previousCardIds.has(card.instanceId)
+      (card.temporary || card.ownerId !== activeInvestigatorId) &&
+      !previousCardIds.has(card.instanceId)
         ? [
             {
               id: `card:${card.instanceId}`,
-              kind: 'temporary-card',
-              message: 'Uma carta temporária foi adicionada à sua mão.',
+              kind: card.temporary ? 'temporary-card' : 'support-card',
+              message: card.temporary
+                ? 'Uma carta temporária foi adicionada à sua mão.'
+                : 'Uma carta de apoio foi adicionada à sua mão.',
             },
           ]
         : [],

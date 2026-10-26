@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { PhArrowLeft, PhBookmarkSimple, PhMinus, PhPlus } from '../../../components/icons'
-defineProps<{ open: boolean; pinned: boolean; round: number; unreadCount?: number }>()
-const emit = defineEmits<{ enter: []; leave: []; toggle: []; requestReturn: [] }>()
-const journalButton = ref<HTMLButtonElement | null>(null)
-defineExpose({ focusBookmark: () => journalButton.value?.focus() })
+import { PhArrowLeft, PhBookOpenText } from '../../../components/icons'
+
+defineProps<{ round: number }>()
+
+const emit = defineEmits<{ requestReturn: []; requestTour: [] }>()
 </script>
 
 <template>
@@ -28,26 +27,9 @@ defineExpose({ focusBookmark: () => journalButton.value?.focus() })
       <div class="round-indicator">
         <small>Rodada</small><strong>{{ String(round).padStart(2, '0') }} <span>/ 06</span></strong>
       </div>
-      <button
-        ref="journalButton"
-        class="journal-bookmark"
-        :class="{ pinned: pinned }"
-        :aria-expanded="open"
-        aria-controls="case-journal"
-        @mouseenter="emit('enter')"
-        @mouseleave="emit('leave')"
-        @click="emit('toggle')"
-      >
-        <PhBookmarkSimple :size="18" weight="bold" aria-hidden="true" /> Diário
-        <span
-          v-if="unreadCount"
-          class="journal-unread-count"
-          :aria-label="`${unreadCount} itens não lidos`"
-        >
-          {{ unreadCount }}
-        </span>
-        <PhMinus v-if="open" :size="16" weight="bold" aria-hidden="true" />
-        <PhPlus v-else :size="16" weight="bold" aria-hidden="true" />
+      <button class="tour-trigger" type="button" @click="emit('requestTour')">
+        <PhBookOpenText :size="15" aria-hidden="true" />
+        <span>Como funciona a investigação?</span>
       </button>
     </div>
   </header>

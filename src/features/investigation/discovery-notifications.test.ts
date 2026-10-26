@@ -54,6 +54,7 @@ it('notifica pistas, declarações e cartas temporárias novas sem destacar obse
           {
             instanceId: 'temporary-1',
             definitionId: 'guest-list',
+            ownerId: 'livia',
             cost: 0,
             compatibleActions: ['research'],
             temporary: true,
@@ -66,6 +67,7 @@ it('notifica pistas, declarações e cartas temporárias novas sem destacar obse
   }
 
   expect(findNewDiscoveries(previous, current).map((discovery) => discovery.kind)).toEqual([
+    'observation',
     'clue',
     'statement',
     'temporary-card',

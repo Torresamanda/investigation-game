@@ -1,146 +1,238 @@
 .investigation-shell {
-  height: 100dvh;
-  display: grid;
-  grid-template-rows: 64px minmax(0, 1fr);
+  min-height: 100dvh;
 }
-.investigation-shell .app-header {
-  min-height: 0;
-  padding: 8px 24px;
-}
-.investigation-shell .brand-mark {
-  font-size: 32px;
-}
-.investigation-shell .brand strong {
-  font-size: 21px;
-}
+
 .investigation-page {
-  min-height: 0;
   width: 100%;
-  padding: 12px 20px 16px;
+  margin: auto;
+  padding: var(--space-3) var(--space-4);
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--space-3);
 }
+
 .investigation-layout {
   display: grid;
-  grid-template-columns:
-    clamp(180px, 14vw, 220px)
-    minmax(250px, 1fr)
-    clamp(290px, 23vw, 360px)
-    clamp(290px, 23vw, 360px);
-  grid-template-rows: minmax(190px, 1fr) clamp(245px, 30dvh, 285px);
-  grid-template-areas:
-    'locations scene suspects actions'
-    'locations hand suspects actions';
-  gap: 12px;
-  min-height: 0;
-  --hand-height: clamp(220px, 29dvh, 270px);
-}
-.journal-is-open .investigation-layout {
-  grid-template-columns:
-    clamp(180px, 13vw, 210px) minmax(300px, 1fr) clamp(270px, 21vw, 340px)
-    clamp(270px, 21vw, 340px) clamp(270px, 21vw, 340px);
-  grid-template-areas:
-    'locations scene suspects actions journal'
-    'locations hand suspects actions journal';
-}
-.panel {
-  padding: 16px;
-  background: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  grid-template-columns: 270px minmax(380px, 1fr) 390px;
+  align-items: stretch;
+  gap: var(--space-3);
   min-width: 0;
+}
+
+.center-zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.contextual-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding-inline-end: var(--space-3);
+}
+
+.contextual-content {
+  flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  max-height: calc(100dvh - 240px);
 }
-@media (min-width: 1101px) and (max-height: 780px) {
-  .investigation-page {
-    padding-top: 8px;
-    padding-bottom: 10px;
-    gap: 6px;
-  }
+
+.contextual-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ink-deep);
+}
+
+.mode-tabs button {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.contextual-panel .panel {
+  padding: 0;
+  border: 0;
+}
+
+.contextual-panel .suspect-section {
+  min-height: 0;
+  overflow: visible;
+  gap: 12px;
+}
+
+.contextual-panel .suspect-roster {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: none;
+  overflow: visible;
+  padding-inline-end: 0;
+}
+
+.contextual-panel .suspect-profile {
+  flex: 1 1 auto;
+  min-height: 200px;
+}
+
+.contextual-panel .suspect-section {
+  height: 100%;
+}
+
+.scene-investigation-panel {
+  display: grid;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.scene-investigation-panel .scene-art-frame {
+  height: 150px;
+  flex: none;
+}
+
+.center-zone .action-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.center-zone .accusation-control {
+  display: none;
+}
+
+.case-toolbar .case-title {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+@media (max-width: 1180px) {
   .investigation-layout {
-    grid-template-rows: minmax(170px, 1fr) 210px;
-    gap: 10px;
-    --hand-height: 195px;
+    grid-template-columns: 240px minmax(0, 1fr);
   }
-  .panel {
-    padding: 12px;
+
+  .contextual-panel {
+    grid-column: 1 / -1;
   }
-}
-@media (min-width: 1101px) and (max-width: 1400px) {
-  .journal-is-open .investigation-layout {
-    grid-template-columns: minmax(160px, 0.28fr) minmax(0, 1fr);
-    grid-template-rows: auto minmax(260px, auto) auto 260px auto;
-    grid-template-areas:
-      'journal journal'
-      'locations scene'
-      'locations suspects'
-      'locations hand'
-      'locations actions';
+
+  .contextual-content {
+    max-height: 650px;
   }
 }
-@media (max-width: 1100px) {
-  .investigation-shell {
-    height: auto;
-    min-height: 100dvh;
-    grid-template-rows: 64px auto;
+
+@media (max-width: 760px) {
+  .investigation-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .investigation-layout,
-  .journal-is-open .investigation-layout {
-    grid-template-columns: minmax(160px, 0.28fr) minmax(0, 1fr);
-    grid-template-rows: minmax(260px, auto) minmax(300px, auto) 260px auto;
-    grid-template-areas:
-      'locations scene'
-      'locations suspects'
-      'locations hand'
-      'locations actions';
-    --hand-height: 240px;
-  }
-  .journal-is-open .investigation-layout {
-    grid-template-rows: auto minmax(260px, auto) minmax(300px, auto) 260px auto;
-    grid-template-areas:
-      'journal journal'
-      'locations scene'
-      'locations suspects'
-      'locations hand'
-      'locations actions';
-  }
-}
-@media (max-width: 650px) {
-  .investigation-shell {
-    grid-template-rows: auto auto;
-  }
-  .investigation-shell .app-header {
-    padding: 12px 16px;
-  }
-  .investigation-shell .agency-badge {
-    display: none;
-  }
+
   .investigation-page {
     padding: 12px;
   }
-  .investigation-layout,
-  .journal-is-open .investigation-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(260px, 50vh) auto 240px auto;
-    grid-template-areas:
-      'locations'
-      'scene'
-      'suspects'
-      'hand'
-      'actions';
+
+  .center-zone .action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .journal-is-open .investigation-layout {
-    grid-template-rows: auto auto minmax(260px, 50vh) auto 240px auto;
-    grid-template-areas:
-      'journal'
-      'locations'
-      'scene'
-      'suspects'
-      'hand'
-      'actions';
+}
+
+@media (min-width: 1181px) {
+  .investigation-shell {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
-  .panel {
-    width: 100%;
+
+  .investigation-page {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
   }
+
+  .investigation-layout {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .center-zone,
+  .contextual-content {
+    min-height: 0;
+    max-height: none;
+  }
+
+  .locations-panel {
+    min-height: 0;
+    max-height: none;
+  }
+
+  .center-zone > * {
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 950px) {
+  .investigation-page {
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .investigation-layout {
+    gap: var(--space-2);
+  }
+
+  .contextual-panel {
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .scene-investigation-panel {
+    gap: var(--space-1);
+    padding: var(--space-2);
+  }
+
+  .scene-investigation-panel .scene-art-frame {
+    height: 180px;
+  }
+
+  .hand-panel {
+    padding: var(--space-2);
+    flex: 1 1 auto;
+  }
+}
+
+.conversation-answer {
+  border-left: 3px solid var(--gold);
+  background: var(--ink-deep);
+  padding: 12px;
+  font-size: 12px;
+}
+
+.center-zone .scene-description {
+  margin: 0;
+}
+
+.center-zone .narrator {
+  padding: 8px 10px;
+}
+
+.center-zone .narrator p {
+  font-size: 12px;
+  margin: 0;
+}
+
+.center-zone .investigation-controls h3 {
+  margin-bottom: 8px;
+}
+
+.center-zone .investigation-controls .eyebrow {
+  margin-bottom: 4px;
 }

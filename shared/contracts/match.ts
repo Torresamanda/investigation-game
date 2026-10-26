@@ -64,6 +64,7 @@ export interface PublicMatchDto {
           readonly hand: readonly {
             readonly instanceId: string
             readonly definitionId: string
+            readonly ownerId: InvestigatorId
             readonly cost: 0 | 1 | 2
             readonly compatibleActions: readonly string[]
             readonly temporary?: boolean

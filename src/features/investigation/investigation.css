@@ -20,30 +20,5 @@
 }
 .connection-state button {
   margin-left: auto;
-  padding: 0.45rem 0.75rem;
-}
-.discovery-toast {
-  position: fixed;
-  z-index: 25;
-  top: 76px;
-  right: 20px;
-  width: min(320px, calc(100vw - 32px));
-  padding: 14px;
-  border: 1px solid var(--gold);
-  border-radius: 10px;
-  background: var(--ink);
-  box-shadow: 0 12px 30px #0008;
-}
-.discovery-toast p {
-  margin: 6px 0 12px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.discovery-toast-actions {
-  display: flex;
-  gap: 8px;
-}
-.discovery-toast-actions button {
-  padding: 7px 9px;
-  font-size: 12px;
+  padding: 8px 12px;
 }

@@ -126,9 +126,14 @@ export function refreshHandForTurn(
   deck: MatchDeck,
   handSize: number,
   nextRandomInt: (maxExclusive: number) => number,
+  ownerId?: InvestigatorId,
 ): MatchDeck {
-  const temporaryCards = deck.hand.filter((card) => card.temporary)
-  const regularHandCards = deck.hand.filter((card) => !card.temporary)
+  const temporaryCards = deck.hand.filter(
+    (card) => card.temporary || (ownerId !== undefined && card.ownerId !== ownerId),
+  )
+  const regularHandCards = deck.hand.filter(
+    (card) => !card.temporary && (ownerId === undefined || card.ownerId === ownerId),
+  )
   const refreshedDeck = drawToHand(
     {
       drawPile: shuffle([...deck.drawPile, ...regularHandCards], nextRandomInt),

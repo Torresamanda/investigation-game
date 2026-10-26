@@ -15,7 +15,7 @@ const props = defineProps<{
   isRequestPending?: boolean
 }>()
 
-const emit = defineEmits<{ close: []; accuse: [submission: AccusationSubmission] }>()
+const emit = defineEmits<{ accuse: [submission: AccusationSubmission] }>()
 const suspectId = ref<PersonId | ''>('')
 const meansClueId = ref('')
 const opportunityClueId = ref('')
@@ -44,18 +44,12 @@ function submitAccusation() {
 </script>
 
 <template>
-  <section
-    class="accusation-dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="accusation-title"
-  >
+  <section class="accusation-dialog" aria-labelledby="accusation-title">
     <header class="accusation-dialog-heading">
       <div>
         <p class="eyebrow">Dossiê final · Rodada 5 ou 6</p>
         <h2 id="accusation-title">Apresentar acusação</h2>
       </div>
-      <button type="button" aria-label="Fechar acusação" @click="emit('close')">Fechar</button>
     </header>
 
     <p class="accusation-dialog-help">

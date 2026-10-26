@@ -2,7 +2,8 @@
 import { locations, type CaseLocation, type Suspect } from '../../../content/case01'
 import { getPortrait } from '../../../content/portraits'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
-const props = defineProps<{ person: Suspect; location: CaseLocation }>()
+const props = defineProps<{ person: Suspect; location: CaseLocation; canConverse: boolean }>()
+const emit = defineEmits<{ converse: [] }>()
 const isPresent = () => props.person.locationId === props.location.id
 const personLocation = () =>
   locations.find((location) => location.id === props.person.locationId)?.name ?? 'outro local'
@@ -18,12 +19,25 @@ const personLocation = () =>
     />
     <div class="suspect-profile-content">
       <div class="suspect-profile-heading">
-        <p class="eyebrow">Pessoa de interesse</p>
-        <h3>{{ person.name }}</h3>
-        <p class="suspect-role">{{ person.role }}</p>
-        <p class="suspect-presence" :class="{ 'suspect-presence--absent': !isPresent() }">
-          {{ isPresent() ? 'Presente neste local' : `Ausente · presente em ${personLocation()}` }}
-        </p>
+        <div class="suspect-profile-title-row">
+          <div>
+            <p class="eyebrow">Pessoa de interesse</p>
+            <h3>{{ person.name }}</h3>
+            <p class="suspect-role">{{ person.role }}</p>
+            <p class="suspect-presence" :class="{ 'suspect-presence--absent': !isPresent() }">
+              {{
+                isPresent() ? 'Presente neste local' : `Ausente · presente em ${personLocation()}`
+              }}
+            </p>
+          </div>
+          <button
+            class="suspect-conversation-trigger"
+            :disabled="!canConverse"
+            @click="emit('converse')"
+          >
+            Conversar
+          </button>
+        </div>
       </div>
       <p class="personality-label">Postura e personalidade</p>
       <p class="suspect-personality">{{ person.personality }}</p>

@@ -37,7 +37,6 @@ export interface ConversationOptions {
   readonly personId: PersonId
   readonly personName: string
   readonly locationId: LocationId
-  readonly questionLimitReached: boolean
   readonly questions: readonly (Omit<ConversationQuestionContent, 'cost'> & {
     readonly cost: number
     readonly canResolve: boolean
@@ -104,7 +103,9 @@ export class MatchService {
     assertCurrentLocation(match, locationId)
     this.assertPersonAvailability(personId, locationId)
     const conversation = this.caseContentRepository.getConversation(personId)
-    const questionLimitReached = match.resolvedKeys.includes(conversationTurnKey(match, personId))
+    const hasAskedQuestionThisTurn = match.resolvedKeys.includes(
+      conversationTurnKey(match, personId),
+    )
     const preparedCard = match.preparedCardInstanceId
       ? match.decks[match.activeInvestigatorId].hand.find(
           (card) => card.instanceId === match.preparedCardInstanceId,
@@ -112,12 +113,11 @@ export class MatchService {
       : undefined
     const bonusQuestion =
       hasConversationBonus(match, personId) ||
-      (questionLimitReached && preparedCard?.definitionId === 'calculated-pause')
+      (hasAskedQuestionThisTurn && preparedCard?.definitionId === 'calculated-pause')
     return {
       personId,
       personName: conversation.personName,
       locationId,
-      questionLimitReached: questionLimitReached && !bonusQuestion,
       questions: conversation.questions
         .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
         .map(({ id, text, cost, approach }) => {
@@ -140,7 +140,6 @@ export class MatchService {
             approach,
             isEvidenceBlocked: Boolean(blockedReason),
             canResolve:
-              (!questionLimitReached || bonusQuestion) &&
               !blockedReason &&
               canPayAction(match.actionPoints, {
                 action: 'converse',

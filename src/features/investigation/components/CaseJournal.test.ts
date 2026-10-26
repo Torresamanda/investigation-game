@@ -71,6 +71,12 @@ function mountJournal(tab: 'timeline' | 'clues' = 'clues') {
 }
 
 describe('CaseJournal', () => {
+  it('mantém o diário aberto pela aba contextual, sem um botão de fechar redundante', () => {
+    const view = mountJournal()
+
+    expect(view.find('.journal-close').exists()).toBe(false)
+  })
+
   it('separa pistas, observações, declarações e conexões com estado, origem e rodada', () => {
     const view = mountJournal()
     const groups = view.findAll('.journal-group')

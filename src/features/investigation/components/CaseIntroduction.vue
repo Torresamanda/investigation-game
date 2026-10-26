@@ -46,7 +46,6 @@ const emit = defineEmits<{ close: [] }>()
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 24px;
-  padding: 24px;
 }
 .briefing-layout > .character-portrait {
   width: 100%;
@@ -57,6 +56,17 @@ const emit = defineEmits<{ close: [] }>()
 .briefing-copy h2 {
   font-size: 32px;
 }
+
+.briefing-copy {
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+
+.briefing-copy > * {
+  margin: 0;
+}
+
 .briefing-copy h3 {
   font-size: 20px;
   color: var(--gold);
@@ -68,13 +78,10 @@ const emit = defineEmits<{ close: [] }>()
 }
 .briefing-copy .button-primary {
   width: 100%;
-  margin-top: 24px;
 }
 @media (max-width: 650px) {
   .briefing-layout {
     grid-template-columns: 1fr;
-    padding: 20px;
-    gap: 16px;
   }
   .briefing-layout > .character-portrait {
     height: 130px;

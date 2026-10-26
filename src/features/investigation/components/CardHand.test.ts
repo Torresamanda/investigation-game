@@ -52,6 +52,7 @@ describe('artes por investigador', () => {
 
     await view.findAll('.card-information')[0]!.trigger('click')
     expect(showModal).toHaveBeenCalledOnce()
+    expect(view.find('dialog').exists()).toBe(true)
     expect(view.get('.card-details').text()).toContain('Durante Examinar um local.')
     expect(view.get('.card-details').text()).toContain('Somente no turno do dono.')
     await view.get('.card-detail-close').trigger('click')
@@ -111,4 +112,35 @@ describe('artes por investigador', () => {
     expect(view.get('.discard-card').attributes('aria-label')).toBe('Descartar carta')
     expect(view.find('.discard-label').exists()).toBe(false)
   })
+})
+
+it('separa várias temporárias e apoio sem sobrepor controles às cartas', () => {
+  const regular = getInvestigatorCards('livia').map((card, index) => ({
+    ...card,
+    instanceId: 'regular-' + index,
+    ownerId: 'livia' as const,
+  }))
+  const extras = [
+    { ...regular[0]!, instanceId: 'temporary-1', temporary: true },
+    { ...regular[1]!, instanceId: 'temporary-2', temporary: true },
+    { ...regular[2]!, instanceId: 'support-1', ownerId: 'rafael' as const },
+  ]
+  const view = mount(CardHand, {
+    props: {
+      cards: [...regular, ...extras],
+      ownerId: 'livia',
+      ownerLabel: 'Lívia',
+      preparedCardId: 'temporary-1',
+      canDiscardPreparedCard: true,
+    },
+  })
+  const groups = view.findAll('.card-group')
+  expect(groups[0]!.findAll('.investigation-card')).toHaveLength(4)
+  expect(groups[1]!.findAll('.investigation-card')).toHaveLength(3)
+  expect(groups[1]!.text()).toContain('Temp')
+  expect(groups[1]!.text()).toContain('Apoio')
+  expect(groups[1]!.findAll('.investigation-card-shell--extra')).toHaveLength(3)
+  expect(view.get('.hand-heading .hand-actions').text()).toContain('Descartar carta')
+  expect(view.find('.clear-prepared').exists()).toBe(false)
+  expect(view.find('.hand-groups .hand-actions').exists()).toBe(false)
 })

@@ -11,14 +11,12 @@ const props = defineProps<{
   feedback: InvestigationFeedback
   canEndTurn: boolean
   hasUsableActionPoints: boolean
-  canAccuse: boolean
   isRequestPending?: boolean
   round: number
 }>()
 const emit = defineEmits<{
   execute: [action: InvestigationAction]
   endTurn: []
-  accuse: []
 }>()
 const actions: readonly { label: string; action: VisibleInvestigationAction }[] = [
   { label: 'Examinar', action: 'examine' },
@@ -52,9 +50,8 @@ function confirmEndTurn() {
 </script>
 
 <template>
-  <section class="panel investigation-controls" aria-label="Seção de investigação">
+  <section class="investigation-controls" aria-label="Seção de investigação">
     <div>
-      <p class="eyebrow">Decisão do investigador</p>
       <h3>Como deseja investigar?</h3>
     </div>
     <div class="action-grid">
@@ -67,7 +64,6 @@ function confirmEndTurn() {
         {{ item.label }}<small>{{ actionCosts[item.action] }} PA</small>
       </button>
     </div>
-    <p class="help-text">O custo será descontado dos PA disponíveis neste turno.</p>
     <div class="feedback" role="status" aria-live="polite" aria-atomic="true">
       <p class="feedback-heading">
         <strong>{{ feedback.target }}</strong>
@@ -103,18 +99,6 @@ function confirmEndTurn() {
         {{ round === 6 ? 'Encerrar missão' : 'Encerrar turno' }}
         <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
       </button>
-    </div>
-    <div class="accusation-control">
-      <button
-        :disabled="!canAccuse || isRequestPending"
-        aria-describedby="accusation-help"
-        @click="emit('accuse')"
-      >
-        {{ canAccuse ? 'Apresentar acusação' : 'Acusação bloqueada' }}
-      </button>
-      <p id="accusation-help" class="help-text">
-        Disponível nas Rodadas 5 e 6. No modo solo, exige 3 PA gerais.
-      </p>
     </div>
   </section>
 </template>

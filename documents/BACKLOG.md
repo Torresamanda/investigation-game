@@ -1,48 +1,55 @@
-# Backlog do MVP — Cidade das Brumas
+# Backlog de Produto e Plataforma — Cidade das Brumas
 
-Legenda: **P0** bloqueia uma partida consistente; **P1** implementa a mecânica principal do Caso 01 e correções que podem alterar seu resultado; **P2** prepara cooperação, segurança e entrega; **P3** reúne refinamentos de interface; **`[Pós-MVP]`** identifica evoluções estruturais de UI/UX (Mesa Única), notificações e escala planejadas para depois do lançamento do MVP. A numeração de dois dígitos define a ordem de execução recomendada dentro de cada prioridade; sufixos em letra entram depois do número-base e antes do próximo número. Tags: `[Front]` interface e experiência, `[Back]` API e regras autoritativas, `[Definição]` conteúdo ou decisão de design necessária antes da implementação, `[Pós-MVP]` evolução pós-lançamento do MVP.
+## Escopo e fonte de verdade
 
-> Regra de prioridade: uma tarefa que implementa ou protege a mecânica do jogo vem antes de qualquer refinamento visual. A interface deve comunicar regras já funcionais; refinamentos de layout, animação e apresentação ficam para depois da mecânica principal.
+Este backlog contém somente estabilidade, infraestrutura, cooperação e refinamentos visuais. Todo o ciclo de investigação — pistas, conexões, hipóteses, operações, PA, cartas, pressão e balanceamento — é planejado exclusivamente em [GAMEPLAY_REDESIGN_BACKLOG.md](GAMEPLAY_REDESIGN_BACKLOG.md).
 
-## Ordem de Execução Recomendada para a Próxima IA
+Não duplicar regras de gameplay neste arquivo. Antes de iniciar uma tarefa, ler `AGENTS.md`, `PROJECT_RULES.md`, este documento e, para qualquer mudança de partida, o backlog de redesign.
 
-Para evitar *softlocks*, travamentos de baralho ou retrabalho arquitetural, execute as próximas tarefas pendentes exatamente nesta sequência:
+## Ordem de execução
 
-1. **Fundação, Arquitetura e Anti-Desincronização (`P0` / `P1` Base):**
-   - Concluído: `01A · ARQ-01`, `04A · SEC-03`, `04B · ARQ-02`, `23B · SEC-04`, `18 · BUG-03` e `03F · ARQ-03`.
+1. Restaurar a suíte de testes verde.
+2. Executar o redesign de gameplay na ordem definida no seu backlog.
+3. Retomar refinamentos dependentes de regras consolidadas.
+4. Implementar cooperação sobre o motor de hipóteses e operações.
 
-2. **Prevenção de *Softlocks* em Diálogos e Cartas (`P1` Conversas e Baralho):**
-   - Concluído: `12A · CASO-08`, `13 · CASO-03`, `04C · JOGO-05` e `04D · BUG-06`.
-   - A virada de turno recolhe e embaralha as cartas não usadas e distribui uma mão nova de exatamente quatro cartas; as cartas usadas continuam no descarte.
+## Tarefas ativas
 
-3. **Motor do Caso 01, Economia de PA e Investigadores (`P1` Core Loop):**
-   - Concluído: `07 · CASO-04` (descobertas cumulativas por local/rodada) e `08 · CASO-05` (deslocamento e desbloqueio do Corredor de Serviço).
-   - Concluído: `10 · INV-01` (passivas de Lívia, Rafael, Isadora e Otávio; custo e viabilidade refletidos na interface).
-   - Concluído: `09 · CASO-06` + `09A · BUG-05` (eventos aplicados no servidor e abertura da Rodada 4 condicionada às evidências confirmadas no diário).
-   - Concluído: `14 · INV-02` (rotas investigativas alternativas e efeitos de cartas).
-   - Concluído: `14A · JOGO-07` (efeitos contextuais das cartas por local e validações sem spoilers).
+- [ ] **39 · TEST-01 — Restaurar a suíte de verificação verde** `[Front] [Test]`
+  - Corrigir o timeout em `src/app/router.test.ts`.
+  - Critério de aceite: `npm run check` conclui sem falhas, warnings ou timeouts.
 
-   - Concluído: `16A · BUG-07` (correções do playtest end-to-end) e `15 · INV-03` (Apoio de Plantão no modo solo).
+- [ ] **03G · UI-06 — Consolidar componentes e estilos compartilhados** `[Front]`
+  - Executar depois de `GD-09` e `GD-10`.
+  - Critério de aceite: estilos base não se repetem, componentes de UI não acessam stores e ícones seguem centralizados.
 
-4. **Diário, Conexões e Acusação (`P1` Fechamento do Caso):**
-   - Concluído: `05 · DIARIO-01` + `06 · DIARIO-03` → Separar categorias do diário e melhorar feedback de ação/alvo.
-   - Concluído: `16 · DIARIO-02` → Conexões formais no diário (1 PA base; grátis 1x na Rodada 5 ou via cartas; hipóteses livres a 0 PA).
-   - Concluído: `19 · CASO-07` → Acusação e desfechos nas Rodadas 5 e 6 (dossiê validado pelo servidor; 3 PA gerais no modo solo; Rodada 6 encerra a partida sem vitória).
-   - Concluído: `17 · UX-01` → Exibir estado de conexão e recuperação da partida.
+- [ ] **27 · UX-02 — Ajustar cartas em telas menores** `[Front]`
+  - Critério de aceite: a mão permanece legível e operável em todos os breakpoints suportados.
 
-5. **UX, Refinamentos Visuais e Cooperação (`P2` / `P3`):**
-   - Concluído: `05A · UX-06`.
-   - Concluído: `05B · UX-07`.
-   - Próxima: `05C · NOTIF-01`, seguida de `03A–03G`, `COOP`, `AUTH` e `OPS`.
+- [ ] **28 · UX-03 — Animar a entrada na investigação** `[Front]`
+  - Critério de aceite: a transição respeita redução de movimento e não bloqueia a interação.
 
-### Prompt de Handoff para a Próxima IA
+- [ ] **30 · UX-05 — Animar descarte e embaralhamento de cartas** `[Front] [Back]`
+  - Depende de `GD-03`.
+  - Critério de aceite: a animação ocorre após confirmação do servidor e reflete o estado autoritativo.
 
-```text
-Leia AGENTS.md, documents/PROJECT_RULES.md, documents/COMMIT_CONVENTIONS.md e documents/BACKLOG.md.
-As tarefas prioritárias `14A · JOGO-07`, `16A · BUG-07`, `15 · INV-03` e `17 · UX-01` foram concluídas. Prossiga com a próxima tarefa listada no backlog, sem antecipar itens Pós-MVP:
-Próxima tarefa: `05C · NOTIF-01` — Criar serviço geral de notificações do jogo. Leia a especificação atual no backlog antes de implementar.
-Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commitar. Nunca faça git push.
-```
+- [ ] **24 · COOP-01 — Criar salas para dupla fixa** `[Front] [Back] [Definição]`
+  - Depende de `GD-05` a `GD-07`.
+  - Critério de aceite: cada participante controla apenas seu turno e baralho; hipóteses e operações são compartilhadas.
+
+- [ ] **25 · COOP-02 — Sincronização em tempo real** `[Front] [Back]`
+  - Depende de `COOP-01`.
+  - Critério de aceite: ações confirmadas, diário, hipóteses e operações atualizam sem recarregar a página.
+
+## Itens movidos para o backlog de redesign
+
+- `05C · NOTIF-01` → `GD-11A`.
+- `31 · CONTEUDO-01` → `GD-13A`.
+- `32 · JOGO-06` → `GD-17`.
+
+## Histórico
+
+As antigas tarefas concluídas abaixo registram a evolução do MVP. Elas não determinam trabalho futuro. As tarefas de acusação e conexões do MVP serão substituídas pelo redesign quando seus itens forem implementados.
 
 ## P0 — Fundação visual transversal
 
@@ -54,44 +61,41 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
 
 ## P3 — Refinamentos de fluxo e feedback
 
-- [x] **05A · UX-06 — Confirmar encerramento de turno com PA restantes (Confirmação Inline)** `[Pós-MVP] [Front] [Definição]`
+- [x] **05A · UX-06 — Confirmar encerramento de turno com PA restantes (Confirmação Inline)** `[Front] [Definição]`
   - Ao encerrar o turno com PA utilizáveis, exibir confirmação *inline* no próprio botão (sem modal e sem sugerir o que investigar) com as opções `Continuar investigando` e `Encerrar turno`.
   - Não exibir confirmação se não houver PA aplicáveis ou se o turno já estiver esgotado.
   - Critério de aceite: cancelar preserva integralmente o estado; confirmar encerra uma única vez e avança a rodada quando aplicável.
 
-- [x] **05B · UX-07 — Sinalizar descoberta de pista nova via Toast** `[Pós-MVP] [Front] [Back]`
+- [x] **05B · UX-07 — Sinalizar descoberta de pista nova via Toast** `[Front] [Back]`
   - Quando a API registrar uma pista, declaração ou carta temporária, exibir um *toast* não-bloqueante no canto superior direito (ex.: `"Uma nova pista foi encontrada e registrada no diário"`) com contador de itens não lidos na aba `Diário` e atalho `Abrir no Diário`.
   - Manter observações sem nova descoberta (`observation`) com visual discreto, sem o destaque de pista inédita.
   - Critério de aceite: uma descoberta mostra confirmação visual imediata e atalho para consulta na mesma página; uma observação sem nova pista não usa o mesmo destaque.
 
-- [ ] **05C · NOTIF-01 — Criar serviço geral de notificações do jogo** `[Pós-MVP] [Front] [Back] [Definição]`
-  - Definir eventos de notificação para descoberta, recebimento de carta temporária, atualização de cronologia, falha de ação e eventos de rodada.
-  - Criar contrato de API e serviço no backend que gere notificações para a partida; o frontend apenas as apresenta em *toasts* e marca como vistas.
-  - Critério de aceite: uma mesma notificação pode ser exibida de modo consistente para todos os participantes da partida cooperativa.
+- Movido: `05C · NOTIF-01` → `GD-11A`.
 
 ## P3 — Ajustes de interface e conteúdo
 
-- [ ] **03A · UI-01 — Ajustar identificação do apoio de plantão** `[Pós-MVP] [Front]`
+- [x] **03A · UI-01 — Ajustar identificação do apoio de plantão** `[Front]`
   - Posicionar o texto `Apoio de plantão` imediatamente acima do seletor de investigador.
   - Aplicar cursor `pointer` ao seletor e estados de foco consistentes com os demais controles.
   - Critério de aceite: o rótulo descreve claramente o seletor associado e o cursor comunica que o campo é interativo.
 
-- [ ] **03B · UI-02 — Reposicionar ação de retorno ao mundo** `[Pós-MVP] [Front]`
+- [x] **03B · UI-02 — Reposicionar ação de retorno ao mundo** `[Front]`
   - Posicionar o botão `Retornar ao mundo` imediatamente acima de `Museu de História de Véspera · Caso 01`.
   - Preservar a confirmação de abandono prevista em UX-04.
   - Critério de aceite: a hierarquia visual separa a navegação de abandono do contexto do caso.
 
-- [ ] **03C · UI-03 — Exibir dificuldade do Caso 01 no mapa** `[Pós-MVP] [Front] [Definição]`
+- [x] **03C · UI-03 — Exibir dificuldade do Caso 01 no mapa** `[Front] [Definição]`
   - Adicionar três estrelas ao resumo `Caso 01 · Introdução`, com uma estrela colorida para indicar dificuldade fácil.
   - Definir componente reutilizável para futuras classificações de caso.
   - Critério de aceite: a dificuldade é entendida sem depender apenas de cor e não interfere no resumo do caso.
 
-- [ ] **03D · UI-04 — Estilizar barras de rolagem** `[Pós-MVP] [Front]`
+- [x] **03D · UI-04 — Estilizar barras de rolagem** `[Front]`
   - Aplicar cores, largura, trilho e indicador de rolagem coerentes com a identidade visual do jogo.
   - Cobrir navegadores baseados em WebKit e Firefox, preservando contraste e visibilidade do controle.
   - Critério de aceite: painéis com conteúdo rolável não exibem a barra padrão do navegador e continuam utilizáveis por mouse, toque e teclado.
 
-- [ ] **03E · UI-05 — Centralizar ações com ícone e texto** `[Pós-MVP] [Front]`
+- [x] **03E · UI-05 — Centralizar ações com ícone e texto** `[Front]`
   - Centralizar horizontal e verticalmente ícone e rótulo nos botões `Encerrar turno` e `Retornar ao mundo`.
   - Preservar espaçamento legível, área clicável e alinhamento em desktop e celular.
   - Critério de aceite: ícone e texto formam um conjunto visualmente centralizado sem deslocamento em nenhum breakpoint suportado.
@@ -101,13 +105,9 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Remover o efeito colateral `abandonInvestigation()` do hook global `router.afterEach` em `src/app/router.ts`, acionando o abandono apenas por ação explícita do jogador.
   - Critério de aceite: cada store e composable possui responsabilidade única e o roteador cuida apenas de navegação e guardas de acesso.
 
-- [ ] **03G · UI-06 — Componentizar elementos repetidos e externalizar classes CSS compartilhadas** `[Pós-MVP] [P3] [Front]`
-  - Extrair padrões visuais recorrentes (cabeçalhos de seção com `eyebrow` e título, botões com ícone, badges de PA e itens de lista do diário) para componentes apresentacionais puros (`props`/`emit`) em `src/components/ui/`.
-  - Externalizar e centralizar classes CSS repetidas (painéis, botões, badges, tipografia auxiliar e cabeçalhos) e tokens (`:root`) em `src/styles/`, deixando em `src/features/<feature>/styles/` apenas o layout específico da tela.
-  - Garantir espaçamento claro entre classes, funções e blocos lógicos, nomenclatura alinhada ao domínio e importação de ícones exclusivamente via `src/components/icons/`.
-  - Critério de aceite: não há duplicação de estilos base entre features, componentes genéricos não acessam stores diretamente e nenhum ícone é importado fora de `src/components/icons/`.
+- Ativa na lista consolidada: `03G · UI-06`.
 
-- [ ] **06A · BUG-04 — Corrigir separação de título e conteúdo em observações** `[P3] [Front]`
+- [x] **06A · BUG-04 — Corrigir separação de título e conteúdo em observações** `[P3] [Front]`
   - Inserir separação visual e textual após `Nenhuma descoberta nova`, incluindo `:` antes do conteúdo da observação.
   - Critério de aceite: título e mensagem não aparecem unidos em interface, leitor de tela ou diário.
 
@@ -324,13 +324,7 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
 
 ## P2 — Cooperação, segurança e entrega
 
-- [ ] **24 · COOP-01 — Criar salas para dupla fixa** `[Front] [Back] [Definição]`
-  - Criar, entrar e abandonar sala; limitar a dois investigadores fixos por partida.
-  - Critério de aceite: cada jogador controla apenas o próprio turno e o próprio baralho.
-
-- [ ] **25 · COOP-02 — Sincronização em tempo real** `[Front] [Back]`
-  - Adicionar WebSocket para atualizar ações, diário, turno e estado da sala.
-  - Critério de aceite: o segundo jogador vê uma ação concluída sem recarregar a página.
+- Ativas na lista consolidada: `24 · COOP-01` e `25 · COOP-02`.
 
 - [x] **22 · AUTH-01 — Autenticação leve** `[Back] [Definição]`
   - Implementada sessão anônima por partida com token opaco; uma conta opcional só será avaliada se houver persistência entre dispositivos.
@@ -373,44 +367,40 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Remover o adaptador legado Node/Fastify/SQLite e suas dependências locais.
   - Critério de aceite: o navegador não consegue baixar arquivos de `backend/` ou `docs/private/`, e uma falha de API não revela detalhes internos.
 
-- [x] **27 · DATA-01 — Gerenciar retenção e exclusão de partidas concluídas** `[Pós-MVP] [Front] [Back]`
+- [x] **27 · DATA-01 — Gerenciar retenção e exclusão de partidas concluídas** `[Front] [Back]`
   - Excluir automaticamente partidas após vitória ou derrota; no abandono, exigir confirmação antes da remoção.
   - Remover no servidor a partida e sua sessão de autorização associada; no cliente, apagar o token e a referência local da partida.
   - A retenção automática permanece como avaliação futura (por exemplo, 30 dias), sem apagar partidas ativas ou em andamento.
   - Critério de aceite: uma partida excluída não pode mais ser retomada nem consultada pela API, e a exclusão não afeta outras partidas.
 
-## Pós-MVP — Escala de conteúdo e redesign de UI/UX (Mesa Única)
+## Histórico — Escala de conteúdo e mesa única
 
-> Wireframe interativo de referência para as evoluções Pós-MVP de UI/UX: [`wireframes/tela-investigacao-mesa-unica.html`](../wireframes/tela-investigacao-mesa-unica.html)
+> Wireframe interativo de referência: [`wireframes/tela-investigacao-mesa-unica.html`](../wireframes/tela-investigacao-mesa-unica.html)
 
-- [ ] **31 · CONTEUDO-01 — Externalizar diálogos e resultados dos casos** `[Pós-MVP] [Back] [Definição]`
-  - Substituir definições narrativas codificadas no servidor por uma camada de conteúdo versionada e validada, sem disponibilizar o catálogo completo ao cliente.
-  - Começar com arquivos estruturados privados em `backend/content/cases/<caso>/` (por exemplo, diálogos, condições e resultados), validados por schema e testes de compilação de conteúdo.
-  - Publicar versões aprovadas desse conteúdo em tabelas próprias do D1, com versão, status de publicação e possibilidade de reversão.
-  - Introduzir um CMS/headless CMS somente se a edição por pessoas não técnicas ou o fluxo editorial justificar a complexidade; ele deve publicar para a mesma camada de banco, nunca diretamente para o navegador.
-  - Definir uma interface de repositório de conteúdo no servidor para que o motor consulte diálogos, perguntas e variantes sem depender do formato de origem.
-  - Critério de aceite: um novo caso pode ser adicionado ou uma conversa pode ser corrigida por uma nova versão de conteúdo, sem alteração do motor; a API continua entregando apenas opções e resultados já desbloqueados.
+- Movidos: `31 · CONTEUDO-01` → `GD-13A`; `32 · JOGO-06` → `GD-17`.
 
-- [ ] **32 · JOGO-06 — Medidor global de Pressão da Imprensa** `[Pós-MVP] [Front] [Back] [Definição]`
-  - Implementar um medidor de pressão externa/imprensa que sobe com eventos de rodada, ações ruidosas ou cartas de risco (como `Lista de Convidados`).
-  - Associar limiares de pressão a efeitos mecânicos concretos (ex.: aumento de custo social em conversas ou bloqueio de favores institucionais).
-  - Critério de aceite: a pressão da imprensa é visível na interface e altera dinamicamente as decisões de risco da equipe.
-
-- [ ] **33 · UX-08 — Unificar layout em Mesa Única de 3 Zonas com Painel Contextual Multipropósito (Sem Modais ou Drawers)** `[Pós-MVP] [Front]`
+- [x] **33 · UX-08 — Unificar layout em Mesa Única de 3 Zonas com Painel Contextual Multipropósito** `[Front]`
   - Substituir o grid atual de 4/5 colunas (que espreme a tela ao abrir o Diário) por 3 zonas estáveis na mesma página (`Esquerda: Equipe, PA, Apoio e Locais` | `Centro: Cena, Ações e Mão de Cartas` | `Direita: Painel Contextual Multipropósito`).
-  - Eliminar modais/drawers flutuantes para `ConversationDialog.vue`, `AccusationDialog.vue` e `CardDetails.vue`, integrando `Pessoas & Conversa`, `Diário do Caso` e `Dossiê de Acusação` como abas que alternam *in-place* na coluna direita, permitindo preparar cartas sociais diretamente na mão principal e ler a resposta da conversa no próprio painel.
+  - Integrar `Pessoas & Conversa`, `Diário do Caso` e `Dossiê de Acusação` como abas que alternam *in-place* na coluna direita, permitindo preparar cartas sociais diretamente na mão principal e ler a resposta da conversa no próprio painel.
+  - Manter conversa e acusação integradas na página. Por decisão de produto posterior, detalhes de cartas e briefing de apresentação da delegada podem usar modal.
   - Garantir **zero dicas investigativas** em toda a interface (locais trancados exibem apenas `Área não descoberta` e perguntas bloqueadas não revelam qual pista ou local procurar).
-  - Critério de aceite: toda a partida ocorre em uma única tela sem sobreposições modais, sem encolhimento de colunas ao consultar o Diário e sem qualquer dica sobre onde/como investigar.
+  - Critério de aceite: a partida usa três zonas estáveis; conversa, Diário e Acusação alternam na coluna direita sem encolher as demais; não há dicas sobre onde/como investigar; modais ficam limitados a detalhes das cartas e ao briefing da delegada.
 
-- [ ] **34 · UX-09 — Separar visualmente Baralho Padrão e Múltiplas Cartas Temporárias/Apoio na bandeja da mão** `[Pós-MVP] [Front]`
+- [x] **34 · UX-09 — Separar visualmente Baralho Padrão e Múltiplas Cartas Temporárias/Apoio na bandeja da mão** `[Front]`
   - Dividir `CardHand.vue` em dois grupos separados por divisória vertical e legenda clara: **Baralho do Investigador** (sempre 4 cartas regulares com indicação de reciclagem no turno) e **Cartas Temporárias & Extras** (acumuláveis em 2, 3 ou mais cartas ganhas na investigação ou via Apoio de Plantão, que permanecem fixas entre turnos até o uso).
   - Aplicar anatomia visual distinta em `InvestigationCard.vue` para cartas temporárias (borda tracejada turquesa `#70b99a`, selo `Temp` e rodapé `Fixa · Uso único`) e posicionar os controles de `Descartar` e `Cancelar` no cabeçalho da bandeja para nunca cobrir cartas quando a mão tiver 5+ cartas.
   - Critério de aceite: o jogador distingue imediatamente suas 4 cartas do baralho base de múltiplas cartas temporárias retidas na mão.
 
-- [ ] **35 · UX-10 — Criar Tour Guiado interativo de mecânica (Spotlight sem dicas do caso)** `[Pós-MVP] [Front] [Definição]`
+- [x] **35 · UX-10 — Criar Tour Guiado interativo de mecânica (Spotlight sem dicas do caso)** `[Front] [Definição]`
   - Implementar um tour opcional de 5 passos com destaque visual (*spotlight*) sobre as zonas da Mesa Única: (1) Investigador, PA e Apoio, (2) Locais e Deslocamento, (3) Baralho Padrão vs. Cartas Temporárias, (4) Ações e Toasts do Diário, (5) Painel Contextual.
   - Explicar exclusivamente como operar a ferramenta, sem mencionar pistas, suspeitos ou caminhos de resolução do caso.
   - Critério de aceite: o jogador consegue iniciar, avançar, voltar e encerrar o tour a qualquer momento sem alterar o estado da partida e sem receber dicas de investigação.
+
+### Avaliação do documento de Mesa Única
+
+- Concluídos nesta evolução: `05A`, `05B`, `03A–03E`, `06A`, `33`, `34` e `35`.
+- `03G` permanece aberto: componentes e tokens compartilhados foram iniciados, mas ainda há estilos recorrentes específicos de feature para consolidar em `src/styles/` e componentes apresentacionais para extrair.
+- Itens pendentes foram consolidados na lista ativa ou movidos para o backlog de redesign.
 
 ## Bugs e refinamentos: estado e prioridade
 
@@ -431,34 +421,28 @@ Siga rigorosamente Clean Architecture, TDD e rode `npm run check` antes de commi
   - Desabilitar controles ligados à API durante a requisição para evitar submissões repetidas.
   - Critério de aceite: o jogador entende o estado da conexão, recebe erro recuperável e pode continuar após a API responder novamente.
 
-- [ ] **36 · BUG-08 — Preservar cartas do Apoio de Plantão além da mão regular** `[P1] [Front] [Back]`
+- [x] **36 · BUG-08 — Preservar cartas do Apoio de Plantão além da mão regular** `[P1] [Front] [Back]`
   - Uma carta recebida do Apoio de Plantão deve ser tratada como carta extra na mão do investigador ativo: ela não ocupa uma das quatro vagas do baralho regular do investigador.
   - Ao descartar uma carta regular, recompor as quatro cartas regulares sem remover ou contar cartas de apoio; ao encerrar o turno, manter cartas de apoio não usadas na mão e renovar somente as quatro cartas regulares.
   - Cartas de apoio usadas ou descartadas continuam retornando ao descarte do investigador dono, com o custo original restaurado; cartas temporárias mantêm a mesma regra de permanência já definida para elas.
   - Critério de aceite: após acionar o apoio e manter a carta sem usá-la, o jogador inicia o turno seguinte com quatro cartas regulares mais a carta de apoio; descartar uma carta regular preserva a carta de apoio e recompõe somente a parte regular da mão.
 
-- [ ] **37 · CASO-09 — Desbloquear perguntas por evidência, não por rodada ou turno** `[P1] [Front] [Back] [Definição]`
+- [x] **37 · CASO-09 — Desbloquear perguntas por evidência, não por rodada ou turno** `[P1] [Front] [Back] [Definição]`
   - Remover bloqueios de disponibilidade baseados exclusivamente em rodada e o limite de uma pergunta por turno. O jogador pode fazer perguntas ainda não usadas enquanto tiver PA aplicáveis.
   - Manter cada pergunta como uso único e preservar o custo, as cartas preparadas e as demais validações autoritativas do servidor.
   - Perguntas que exigem uma pista ou declaração independente permanecem bloqueadas até que a evidência correspondente seja realmente obtida; avançar de turno ou de rodada, por si só, não as desbloqueia.
   - Atualizar os retornos públicos e a interface para comunicar somente o requisito de evidência já conhecido, sem revelar local, rodada futura ou caminho investigativo.
   - Critério de aceite: com PA suficientes, o jogador pode realizar mais de uma pergunta distinta no mesmo turno; uma pergunta sem evidência exigida permanece bloqueada no turno e nas rodadas seguintes até a pista ser encontrada; ela fica disponível imediatamente após a descoberta, independentemente da rodada.
 
-- [ ] **27 · UX-02 — Refinar o layout das cartas em resoluções menores** `[Pós-MVP] [P3] [Front]`
-  - Confirmar legibilidade do selo de PA, botão de informação, título e moldura em notebook e celular, preservando o agrupamento entre Baralho Padrão e Cartas Temporárias.
-  - Critério de aceite: os controles não se sobrepõem em nenhum breakpoint suportado, mesmo com 5 ou mais cartas na mão.
+- [x] **38 · UI-07 — Atualizar a assinatura visual para Arquivos Limiar** `[P3] [Front]`
+  - Substituir a assinatura abaixo de `Agência de Investigação` por `Arquivos Limiar`, preservando a hierarquia tipográfica e a legibilidade nos breakpoints suportados.
+  - Padronizar os modais da aplicação no centro da tela, com padding e gap de 24 px para separar o conteúdo.
+  - Critério de aceite: o cabeçalho apresenta `Agência de Investigação` e `Arquivos Limiar`; os modais usam o mesmo alinhamento e espaçamento interno de 24 px.
 
-- [ ] **28 · UX-03 — Animar entrada na investigação** `[Pós-MVP] [P3] [Front]`
-  - Criar transição entre a seleção da missão, o briefing de Sofia e a abertura do museu.
-  - Respeitar preferência de redução de movimento e não bloquear a interação após a animação.
-  - Critério de aceite: ao iniciar uma missão, a passagem pelo briefing comunica a entrada no caso sem causar recarregamento ou salto de layout.
+- Ativas na lista consolidada: `27 · UX-02` e `28 · UX-03`.
 
-- [ ] **29 · UX-04 — Confirmar abandono da partida (Confirmação Inline)** `[Pós-MVP] [P3] [Front]`
+- [x] **29 · UX-04 — Confirmar abandono da partida (Confirmação Inline)** `[Front]`
   - Ao acionar `Retornar ao mundo`, exibir confirmação *inline* no cabeçalho explicando que a partida atual será abandonada, oferecendo `Continuar investigando` e `Abandonar partida` (sem abrir modal).
   - Critério de aceite: cancelar mantém o estado intacto; confirmar limpa a partida e retorna ao mapa de mundos.
 
-- [ ] **30 · UX-05 — Animar descarte e embaralhamento de cartas** `[Pós-MVP] [P3] [Front] [Back]`
-  - Ao usar uma carta, animá-la da mão para a pilha de descarte somente depois da confirmação do servidor.
-  - Quando o baralho se esgotar, mostrar o descarte sendo reunido, embaralhado e retornando como baralho de compra.
-  - Sincronizar as animações com os eventos reais de compra, descarte e reciclagem do motor; respeitar redução de movimento.
-  - Critério de aceite: a carta não desaparece antes da ação ser aceita, e o número de cartas na mão, compra e descarte permanece correto durante e após a animação.
+- Ativa na lista consolidada: `30 · UX-05`.

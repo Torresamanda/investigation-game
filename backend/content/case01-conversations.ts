@@ -160,7 +160,7 @@ export function isPersonAvailableAtLocation(personId: PersonId, locationId: Loca
 export function getConversationBlockReason(
   personId: PersonId,
   questionId: string,
-  context: { readonly round: number; readonly resolvedKeys: readonly string[] },
+  context: { readonly resolvedKeys: readonly string[] },
 ): string | undefined {
   if (
     (personId === 'helena' && questionId === 'institutional-access') ||
@@ -172,27 +172,24 @@ export function getConversationBlockReason(
   }
 
   if (personId === 'raul' && questionId === 'power-failure') {
-    return context.round >= 3
+    return context.resolvedKeys.includes('security-initial-report')
       ? undefined
       : 'Encontre um registro técnico que sustente a falha de energia.'
   }
 
   if (personId === 'davi' && questionId === 'message') {
-    return context.round >= 2
+    return context.resolvedKeys.includes('e2-confirmed')
       ? undefined
       : 'Encontre uma evidência que relacione a mensagem ao desaparecimento.'
   }
 
-  if (personId === 'davi' && questionId === 'collectors') {
-    return context.round >= 2
+  if (
+    (personId === 'davi' && questionId === 'collectors') ||
+    (personId === 'raul' && questionId === 'security-procedure')
+  ) {
+    return context.resolvedKeys.includes('security-log-gap')
       ? undefined
-      : 'Encontre uma evidência que justifique o acesso à Lista de Convidados.'
-  }
-
-  if (personId === 'raul' && questionId === 'security-procedure') {
-    return context.round >= 2
-      ? undefined
-      : 'Encontre uma evidência que justifique o acesso ao Mapa de Rondas.'
+      : 'Encontre um registro independente da sala de segurança.'
   }
 
   return undefined
@@ -221,7 +218,7 @@ export function resolveConversationOutcome(
   }
 
   if (personId === 'raul' && questionId === 'power-failure') {
-    return context.round >= 3
+    return context.resolvedKeys.includes('security-initial-report')
       ? {
           status: 'contestable',
           content:
@@ -235,7 +232,7 @@ export function resolveConversationOutcome(
   }
 
   if (personId === 'davi' && questionId === 'message') {
-    return context.round >= 2
+    return context.resolvedKeys.includes('e2-confirmed')
       ? {
           status: 'contestable',
           content:
@@ -268,11 +265,10 @@ export function resolveConversationOutcome(
 export function getConversationReward(
   personId: PersonId,
   questionId: string,
-  round: number,
 ): ConversationReward | undefined {
   if (personId === 'helena' && questionId === 'insurance-review') return 'curator-agenda'
   if (personId === 'marta' && questionId === 'technical-assessment') return 'treatment-sheet'
-  if (personId === 'davi' && questionId === 'collectors' && round >= 2) return 'guest-list'
-  if (personId === 'raul' && questionId === 'security-procedure' && round >= 2) return 'patrol-map'
+  if (personId === 'davi' && questionId === 'collectors') return 'guest-list'
+  if (personId === 'raul' && questionId === 'security-procedure') return 'patrol-map'
   return undefined
 }

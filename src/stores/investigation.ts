@@ -75,6 +75,7 @@ export const useInvestigationStore = defineStore('investigation', () => {
     mission,
     startInvestigation,
     abandonInvestigation,
+    markIntroductionAsSeen: match.markIntroductionAsSeen,
     executeBasicAction: (action?: InvestigationAction) => {
       void action
       return false

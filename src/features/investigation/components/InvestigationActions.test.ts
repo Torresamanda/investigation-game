@@ -18,7 +18,6 @@ describe('InvestigationActions', () => {
         },
         canEndTurn: true,
         hasUsableActionPoints: true,
-        canAccuse: false,
         round: 1,
       },
     })
@@ -56,7 +55,6 @@ describe('InvestigationActions', () => {
         },
         canEndTurn: true,
         hasUsableActionPoints: false,
-        canAccuse: false,
         round: 1,
       },
       global: { stubs: { PhArrowRight: true } },
@@ -71,7 +69,7 @@ describe('InvestigationActions', () => {
     expect(feedback.text()).toContain('Vestígio no pedestal')
   })
 
-  it('desabilita ações, turno e acusação enquanto espera o servidor', () => {
+  it('desabilita ações e turno enquanto espera o servidor', () => {
     const view = mount(InvestigationActions, {
       props: {
         availableActions: ['examine', 'research'],
@@ -86,7 +84,6 @@ describe('InvestigationActions', () => {
         },
         canEndTurn: true,
         hasUsableActionPoints: false,
-        canAccuse: true,
         isRequestPending: true,
         round: 5,
       },
@@ -99,6 +96,6 @@ describe('InvestigationActions', () => {
         .every((button) => button.attributes('disabled') !== undefined),
     ).toBe(true)
     expect(view.get('.end-turn').attributes('disabled')).toBeDefined()
-    expect(view.get('.accusation-control button').attributes('disabled')).toBeDefined()
+    expect(view.find('.accusation-control').exists()).toBe(false)
   })
 })

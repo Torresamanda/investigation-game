@@ -1,55 +1,55 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ConversationOptions } from '../../../services/game-api'
-import type { HandCard } from '../../../stores/investigation'
+import { PhArrowLeft } from '../../../components/icons'
+import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
+import { getPortrait } from '../../../content/portraits'
+import { suspectProfiles } from '../../../content/case01'
 
 const props = defineProps<{
   conversation: ConversationOptions
-  pointsLabel: string
-  conversationCards: readonly HandCard[]
-  preparedCardId: string | null
+  answer?: string
   isRequestPending?: boolean
 }>()
 
-const emit = defineEmits<{
-  close: []
-  resolve: [questionId: string]
-  prepareCard: [instanceId: string]
-  clearPreparedCard: []
-}>()
-
-const availableConversationCards = computed(() =>
-  props.conversationCards.filter(
-    (card) =>
-      card.compatibleActions.includes('converse') &&
-      (!props.conversation.questionLimitReached || card.id === 'calculated-pause'),
-  ),
+const emit = defineEmits<{ close: []; resolve: [questionId: string] }>()
+const conversationPerson = computed(() =>
+  suspectProfiles.find((person) => person.id === props.conversation.personId),
 )
 </script>
 
 <template>
-  <section
-    class="conversation-dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="conversation-title"
-  >
+  <section class="conversation-dialog" aria-labelledby="conversation-title">
     <header>
-      <div>
-        <p class="eyebrow">Conversa em andamento</p>
-        <h2 id="conversation-title">{{ conversation.personName }}</h2>
-        <p class="conversation-points">Disponível: {{ pointsLabel }}</p>
+      <div class="conversation-heading">
+        <CharacterPortrait
+          v-if="conversationPerson"
+          class="conversation-person-portrait"
+          :name="conversationPerson.name"
+          :initials="conversationPerson.initials"
+          :image="getPortrait('suspects', conversationPerson.portrait)"
+        />
+        <div>
+          <p class="eyebrow">Conversa em andamento</p>
+          <h2 id="conversation-title">{{ conversation.personName }}</h2>
+        </div>
       </div>
-      <button class="conversation-close" aria-label="Fechar conversa" @click="emit('close')">
-        Fechar
+
+      <button class="conversation-back" @click="emit('close')">
+        <PhArrowLeft :size="16" weight="bold" aria-hidden="true" />
+        <span>Perfil</span>
       </button>
     </header>
-    <p v-if="conversation.questionLimitReached" class="conversation-help">
-      Você já fez uma pergunta neste turno. Encerre o turno para continuar a conversa.
+
+    <div v-if="answer" class="conversation-answer" role="status">
+      <strong>Declaração registrada no diário</strong>
+      <p>{{ answer }}</p>
+    </div>
+
+    <p v-if="conversation.questions.length" class="conversation-help">
+      Escolha uma pergunta. Para usar uma carta social, basta prepará-la na sua mão ao lado.
     </p>
-    <p v-else-if="conversation.questions.length" class="conversation-help">
-      Escolha uma pergunta. O custo será confirmado pelo motor da investigação.
-    </p>
+
     <div v-if="conversation.questions.length" class="conversation-questions">
       <button
         v-for="question in conversation.questions"
@@ -66,31 +66,14 @@ const availableConversationCards = computed(() =>
                 : 'Contexto'
           }}</small
           >{{ question.text }}
+
           <small v-if="question.isEvidenceBlocked" class="conversation-blocked"
             >Diálogo bloqueado: evidência necessária</small
           ></span
         ><small>{{ question.cost }} PA</small>
       </button>
     </div>
+
     <p v-else class="conversation-help">Todas as perguntas desta conversa já foram registradas.</p>
-    <section v-if="availableConversationCards.length" class="conversation-cards">
-      <p class="conversation-help">Cartas para esta conversa</p>
-      <div>
-        <button
-          v-for="card in availableConversationCards"
-          :key="card.instanceId"
-          type="button"
-          :aria-pressed="preparedCardId === card.instanceId"
-          :disabled="isRequestPending"
-          @click="
-            preparedCardId === card.instanceId
-              ? emit('clearPreparedCard')
-              : emit('prepareCard', card.instanceId)
-          "
-        >
-          {{ card.name }} · {{ card.cost }} PA
-        </button>
-      </div>
-    </section>
   </section>
 </template>

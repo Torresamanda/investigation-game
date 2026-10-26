@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import SectionHeading from '../../../components/ui/SectionHeading.vue'
 import { computed, ref } from 'vue'
-import { locations, suspectProfiles, type LocationId } from '../../../content/case01'
+import { locations, type LocationId } from '../../../content/case01'
 import type { MatchJournalEntry } from '../../../services/game-api'
-import { PhUserFocus, PhX } from '../../../components/icons'
 import { journalStatusLabels } from '../action-feedback'
 const notes = defineModel<string>('notes', { required: true })
 const props = defineProps<{
@@ -13,12 +13,11 @@ const props = defineProps<{
   hasPreparedConnectionCard: boolean
   isRequestPending?: boolean
 }>()
-const tab = defineModel<'timeline' | 'clues' | 'suspects' | 'notes'>('tab', { required: true })
+const tab = defineModel<'timeline' | 'clues' | 'connections' | 'notes'>('tab', { required: true })
 const emit = defineEmits<{
   enter: []
   leave: []
   pin: []
-  close: []
   save: []
   createConnection: [fromClueId: string, toClueId: string]
 }>()
@@ -103,7 +102,7 @@ function createConnection() {
 const tabs = [
   { id: 'timeline', name: 'Cronologia' },
   { id: 'clues', name: 'Pistas' },
-  { id: 'suspects', name: 'Suspeitos' },
+  { id: 'connections', name: 'Conexões' },
   { id: 'notes', name: 'Hipóteses' },
 ] as const
 </script>
@@ -118,13 +117,7 @@ const tabs = [
     @focusin="emit('pin')"
   >
     <header class="journal-heading">
-      <div>
-        <p class="eyebrow">Memória da investigação</p>
-        <h2>Diário do caso</h2>
-      </div>
-      <button class="journal-close" aria-label="Fechar diário" @click="emit('close')">
-        <PhX :size="18" weight="bold" aria-hidden="true" />
-      </button>
+      <SectionHeading title="Diário do caso" eyebrow="Memória da investigação" />
     </header>
     <div class="journal-tabs" role="group" aria-label="Seções do diário">
       <button
@@ -155,7 +148,9 @@ const tabs = [
           <ol v-if="group.entries.length" class="hypothesis-list">
             <li v-for="entry in group.entries" :key="entry.id" class="journal-entry">
               <div class="journal-entry-heading">
-                <strong>{{ entry.title }}</strong>
+                <strong>{{
+                  entry.title === 'Nenhuma descoberta nova' ? entry.title + ':' : entry.title
+                }}</strong>
                 <span class="journal-status" :class="`journal-status--${entry.status}`">{{
                   statusLabel(entry)
                 }}</span>
@@ -193,12 +188,16 @@ const tabs = [
           >
             {{ group.empty }}
           </p>
-        </section>
-        <form
-          v-if="tab === 'clues'"
-          class="journal-connection-form"
-          @submit.prevent="createConnection"
-        >
+        </section> </template
+      ><template v-else-if="tab === 'connections'">
+        <h3>Conexões formais</h3>
+        <ol class="hypothesis-list">
+          <li v-for="connection in formalConnections" :key="connection.id" class="journal-entry">
+            <strong>{{ connection.fromTitle }} se relaciona a {{ connection.toTitle }}</strong>
+            <small class="journal-entry-meta">Rodada {{ connection.round }}</small>
+          </li>
+        </ol>
+        <form class="journal-connection-form" @submit.prevent="createConnection">
           <h4>Criar conexão formal</h4>
           <p class="muted">
             Relacionar pistas custa 1 PA.
@@ -244,14 +243,7 @@ const tabs = [
                 : 'Criar conexão · 1 PA'
             }}
           </button>
-        </form> </template
-      ><template v-else-if="tab === 'suspects'"
-        ><h3>Pessoas de interesse</h3>
-        <ul class="suspect-list">
-          <li v-for="person in suspectProfiles" :key="person.id">
-            <PhUserFocus :size="16" aria-hidden="true" /> {{ person.name }}
-          </li>
-        </ul></template
+        </form></template
       ><template v-else
         ><h3>Hipóteses da equipe</h3>
         <p class="muted">Perguntas e anotações livres. Não contam como provas confirmadas.</p>
