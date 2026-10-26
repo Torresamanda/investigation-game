@@ -37,6 +37,7 @@ export const MatchPresenter = {
       journalConnections: match.journalConnections,
       hypotheses: (match.hypotheses ?? []).map((hypothesis) => ({
         status: hypothesis.status,
+        evidenceEntryIds: [...new Set(hypothesis.evidence.map((evidence) => evidence.entryId))],
         coveredAxes: [...new Set(hypothesis.evidence.map((evidence) => evidence.axis))],
         coherentConnectionCount: hypothesis.connectionIds.length,
       })),

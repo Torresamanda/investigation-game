@@ -83,6 +83,7 @@ describe('createInvestigationHypothesis', () => {
     expect(publicMatch.hypotheses).toEqual([
       {
         status: 'sustained',
+        evidenceEntryIds: ['means', 'opportunity', 'link'],
         coveredAxes: ['means', 'opportunity', 'link'],
         coherentConnectionCount: 2,
       },

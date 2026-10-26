@@ -289,6 +289,7 @@ function executeSelectedAction(action: InvestigationAction) {
             v-show="panelMode === 'journal'"
             v-model:notes="session.notes"
             :hypotheses="session.hypotheses"
+            :hypothesis-progress="session.remoteMatch?.hypotheses ?? []"
             :journal-entries="session.journalEntries"
             :journal-connections="session.journalConnections"
             :has-free-connection="hasFreeJournalConnection"

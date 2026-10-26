@@ -116,7 +116,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 
 ### P2 — Interface, comunicação e experiência
 
-- [ ] **GD-09 — Criar painel de hipóteses no mural** `[Front]`
+- [x] **GD-09 — Criar painel de hipóteses no mural** `[Front]`
   - Mostrar progresso por linhas de raciocínio e evidências já conhecidas, sem barras de “culpado correto” ou indicação do próximo local.
   - Diferenciar claramente hipótese livre, hipótese plausível e hipótese sustentada.
   - Critério de aceite: um jogador entende por que sua teoria ganhou ou perdeu força sem receber solução pronta.

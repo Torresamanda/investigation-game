@@ -33,6 +33,7 @@ export interface MatchJournalConnection {
 
 export interface MatchHypothesisProgress {
   readonly status: 'inquiry' | 'plausible' | 'sustained' | 'contested' | 'discarded'
+  readonly evidenceEntryIds: readonly string[]
   readonly coveredAxes: readonly ('means' | 'opportunity' | 'link')[]
   readonly coherentConnectionCount: number
 }

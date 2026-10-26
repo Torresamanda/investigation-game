@@ -2,10 +2,12 @@
 import { computed, ref } from 'vue'
 import { locations, type LocationId } from '../../../content/case01'
 import type { MatchJournalEntry } from '../../../services/game-api'
+import type { MatchHypothesisProgress } from '../../../../shared/contracts/match'
 import { journalStatusLabels } from '../action-feedback'
 const notes = defineModel<string>('notes', { required: true })
 const props = defineProps<{
   hypotheses: readonly { id: number; text: string }[]
+  hypothesisProgress?: readonly MatchHypothesisProgress[]
   journalEntries: readonly MatchJournalEntry[]
   journalConnections: readonly { id: string; fromClueId: string; toClueId: string; round: number }[]
   hasFreeConnection: boolean
@@ -41,6 +43,22 @@ const locationNames = Object.fromEntries(
 function statusLabel(entry: MatchJournalEntry): string {
   return journalStatusLabels[entry.status]
 }
+
+function hypothesisStatusLabel(status: MatchHypothesisProgress['status']): string {
+  return {
+    inquiry: 'Em apuração',
+    plausible: 'Plausível',
+    sustained: 'Sustentada',
+    contested: 'Contestada',
+    discarded: 'Descartada',
+  }[status]
+}
+
+function hypothesisEvidenceTitles(hypothesis: MatchHypothesisProgress): string[] {
+  return hypothesis.evidenceEntryIds
+    .map((entryId) => props.journalEntries.find((entry) => entry.id === entryId)?.title)
+    .filter((title): title is string => Boolean(title))
+}
 function save() {
   if (!notes.value.trim()) return
   emit('save')
@@ -64,6 +82,22 @@ function createConnection() {
     <header class="journal-heading">
       <h2>Diário do caso</h2>
     </header>
+    <section v-if="hypothesisProgress?.length" class="journal-hypothesis-progress">
+      <h3>Linhas de raciocínio</h3>
+      <article v-for="(hypothesis, index) in hypothesisProgress" :key="index" class="journal-entry">
+        <header class="journal-entry-heading">
+          <strong>Linha de raciocínio {{ index + 1 }}</strong>
+          <span class="journal-status">{{ hypothesisStatusLabel(hypothesis.status) }}</span>
+        </header>
+        <p>
+          {{ hypothesis.coveredAxes.length }} aspecto(s) investigativo(s) confirmado(s) ·
+          {{ hypothesis.coherentConnectionCount }} conexão(ões) coerente(s)
+        </p>
+        <ul v-if="hypothesisEvidenceTitles(hypothesis).length" class="hypothesis-evidence-list">
+          <li v-for="title in hypothesisEvidenceTitles(hypothesis)" :key="title">{{ title }}</li>
+        </ul>
+      </article>
+    </section>
     <div class="journal-record-list" aria-live="polite">
       <article
         v-for="entry in journalEntries"
@@ -98,7 +132,10 @@ function createConnection() {
         </header>
         <small class="journal-entry-meta">Rodada {{ connection.round }}</small>
       </article>
-      <p v-if="!journalEntries.length && !formalConnections.length" class="journal-empty-state">
+      <p
+        v-if="!journalEntries.length && !formalConnections.length && !hypothesisProgress?.length"
+        class="journal-empty-state"
+      >
         Nenhum registro no diário ainda.
       </p>
     </div>

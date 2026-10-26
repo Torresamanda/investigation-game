@@ -116,4 +116,25 @@ describe('CaseJournal', () => {
     expect(view.text()).toContain('22h16')
     expect(view.get('.journal-details').text()).toContain('Criar conexão formal')
   })
+
+  it('mostra progresso de hipótese sem indicar a evidência ou o local que falta', async () => {
+    const view = mountJournal()
+
+    await view.setProps({
+      hypothesisProgress: [
+        {
+          status: 'plausible',
+          evidenceEntryIds: ['clue-13'],
+          coveredAxes: ['means', 'link'],
+          coherentConnectionCount: 1,
+        },
+      ],
+    })
+
+    expect(view.text()).toContain('Linha de raciocínio 1')
+    expect(view.text()).toContain('Plausível')
+    expect(view.text()).toContain('2 aspecto(s) investigativo(s) confirmado(s)')
+    expect(view.text()).toContain('Exclusão de registros')
+    expect(view.text()).not.toContain('Oportunidade')
+  })
 })
