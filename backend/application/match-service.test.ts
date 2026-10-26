@@ -839,8 +839,12 @@ describe('MatchService', () => {
       isEvidenceBlocked: true,
     })
 
-    const matchAtLaterRound = { ...repository.findById(match.id)!, round: 6 }
-    repository.save(matchAtLaterRound)
+    let matchAtLaterRound = repository.findById(match.id)!
+    for (let turn = 0; turn < 5; turn++) {
+      matchAtLaterRound = service.endTurn(match.id)
+    }
+
+    expect(matchAtLaterRound.round).toBe(6)
     expect(
       service
         .getConversationOptions(match.id, 'raul', 'security')
