@@ -69,6 +69,8 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding-inline-end: 16px;
+  scrollbar-gutter: stable;
 }
 
 .suspect-tile {
@@ -78,7 +80,7 @@
   row-gap: 3px;
   align-content: start;
   align-items: center;
-  padding: 10px 8px;
+  padding: 8px;
   text-align: left;
 }
 
@@ -149,6 +151,8 @@
   min-height: 0;
   align-self: stretch;
   overflow-y: auto;
+  padding-inline-end: 16px;
+  scrollbar-gutter: stable;
 }
 
 .suspect-role {
@@ -187,6 +191,17 @@
   min-width: 0;
 }
 
+.conversation-close {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 8px;
+}
+
 .conversation-dialog header {
   display: flex;
   justify-content: space-between;
@@ -212,7 +227,7 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px;
+  padding: 8px 16px;
   text-align: left;
 }
 
@@ -271,7 +286,7 @@
 
 @media (min-width: 1101px) and (max-height: 780px) {
   .suspect-tile {
-    padding: 8px 6px;
+    padding: 8px;
   }
   .suspect-name {
     font-size: 11px;

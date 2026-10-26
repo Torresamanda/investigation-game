@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ConversationOptions } from '../../../services/game-api'
+import { PhX } from '../../../components/icons'
 
 defineProps<{
   conversation: ConversationOptions
@@ -26,7 +27,7 @@ const emit = defineEmits<{ close: []; resolve: [questionId: string] }>()
       </div>
 
       <button class="conversation-close" aria-label="Fechar conversa" @click="emit('close')">
-        Fechar
+        <PhX :size="18" weight="bold" aria-hidden="true" />
       </button>
     </header>
 

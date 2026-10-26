@@ -18,7 +18,9 @@ const route = useRoute()
         <PhDiamond class="brand-mark" :size="32" weight="bold" aria-hidden="true" />
         <span><small>Agência de Investigação</small><strong>Arquivos Limiar</strong></span>
       </RouterLink>
-      <span class="agency-badge">Divisão de Crimes Patrimoniais</span>
+      <div class="header-context">
+        <span class="agency-badge">Divisão de Crimes Patrimoniais</span>
+      </div>
     </header>
     <RouterView />
   </div>

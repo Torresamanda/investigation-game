@@ -3,6 +3,24 @@ import { describe, expect, it } from 'vitest'
 import ConversationDialog from './ConversationDialog.vue'
 
 describe('ConversationDialog', () => {
+  it('fecha a conversa com um botão de ícone acessível', () => {
+    const view = mount(ConversationDialog, {
+      props: {
+        pointsLabel: '2 PA gerais',
+        conversation: {
+          personId: 'marta',
+          personName: 'Marta Lobo',
+          locationId: 'laboratory',
+          questions: [],
+        },
+      },
+    })
+
+    const closeButton = view.get('.conversation-close')
+    expect(closeButton.attributes('aria-label')).toBe('Fechar conversa')
+    expect(closeButton.text()).toBe('')
+  })
+
   it('mostra as perguntas e informa seus custos antes de resolver uma delas', async () => {
     const view = mount(ConversationDialog, {
       props: {

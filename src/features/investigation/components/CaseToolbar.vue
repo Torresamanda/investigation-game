@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { PhArrowLeft, PhBookOpenText } from '../../../components/icons'
+import { PhArrowLeft } from '../../../components/icons'
 
 defineProps<{ round: number }>()
 
-const emit = defineEmits<{ requestReturn: []; startTour: [] }>()
+const emit = defineEmits<{ requestReturn: [] }>()
 </script>
 
 <template>
@@ -27,10 +27,6 @@ const emit = defineEmits<{ requestReturn: []; startTour: [] }>()
       <div class="round-indicator">
         <small>Rodada</small><strong>{{ String(round).padStart(2, '0') }} <span>/ 06</span></strong>
       </div>
-      <button class="tour-trigger" type="button" @click="emit('startTour')">
-        <PhBookOpenText :size="17" aria-hidden="true" />
-        <span>Como funciona a investigação?</span>
-      </button>
     </div>
   </header>
 </template>

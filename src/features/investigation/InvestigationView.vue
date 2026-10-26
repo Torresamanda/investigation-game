@@ -18,6 +18,7 @@ import ConversationDialog from './components/ConversationDialog.vue'
 import AccusationDialog from './components/AccusationDialog.vue'
 import AppToast from '../../components/ui/AppToast.vue'
 import { statusFeedback } from './action-feedback'
+import { PhBookOpenText } from '../../components/icons'
 import { useTableContext } from './composables/useTableContext'
 import { useTableConversation } from './composables/useTableConversation'
 import { useTableHand } from './composables/useTableHand'
@@ -171,11 +172,13 @@ function executeSelectedAction(action: InvestigationAction) {
         }}
       </button>
     </div>
-    <CaseToolbar
-      :round="session.round"
-      @request-return="requestReturnToWorld"
-      @start-tour="startTour"
-    />
+    <CaseToolbar :round="session.round" @request-return="requestReturnToWorld" />
+    <Teleport to=".header-context">
+      <button class="tour-trigger" type="button" @click="startTour">
+        <PhBookOpenText :size="17" aria-hidden="true" />
+        <span>Como funciona a investigação?</span>
+      </button>
+    </Teleport>
     <section
       v-if="showDeletionConfirmation"
       class="panel delete-match-dialog"
@@ -243,7 +246,7 @@ function executeSelectedAction(action: InvestigationAction) {
             Pessoas
           </button>
           <button
-            class="journal-bookmark"
+            class="journal-mode-tab"
             :aria-pressed="panelMode === 'journal'"
             @click="panelMode = 'journal'"
           >

@@ -9,10 +9,15 @@ describe('fluxos da investigação', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     localStorage.clear()
+    document.body.innerHTML =
+      '<header class="app-header"><div class="header-context"></div></header>'
     setActivePinia(createPinia())
     useInvestigationStore().startInvestigation('livia', 'rafael')
   })
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
   const createView = () =>
     mount(InvestigationView, {
       attachTo: document.body,
@@ -36,7 +41,7 @@ describe('fluxos da investigação', () => {
     expect(layout.find('.scene-panel .suspect-section').exists()).toBe(false)
     expect(layout.find('.scene-panel .investigation-controls').exists()).toBe(false)
 
-    await view.get('.journal-bookmark').trigger('click')
+    await view.get('.journal-mode-tab').trigger('click')
     expect(layout.find('.journal-panel').exists()).toBe(true)
     view.unmount()
   })
@@ -103,7 +108,7 @@ describe('fluxos da investigação', () => {
 
   it('exibe conexões na terceira seção do diário', async () => {
     const view = createView()
-    await view.get('.journal-bookmark').trigger('click')
+    await view.get('.journal-mode-tab').trigger('click')
     await view.findAll('.journal-tabs button')[2]!.trigger('click')
     expect(view.get('.journal-connection-form').text()).toContain('Criar conexão formal')
     view.unmount()
@@ -155,14 +160,14 @@ describe('fluxos da investigação', () => {
 
   it('salva a anotação e a exibe imediatamente nas hipóteses, sem permitir texto vazio', async () => {
     const view = createView()
-    await view.get('.journal-bookmark').trigger('click')
+    await view.get('.journal-mode-tab').trigger('click')
     expect(view.get('.save-note').attributes('disabled')).toBeDefined()
     await view.get('#notes').setValue('  Conferir os horários do museu  ')
     await view.get('.journal-notes').trigger('submit')
     expect(view.get('.hypothesis-list').text()).toContain('Conferir os horários do museu')
     expect((view.get('#notes').element as HTMLTextAreaElement).value).toBe('')
     await view.get('.journal-close').trigger('click')
-    await view.get('.journal-bookmark').trigger('click')
+    await view.get('.journal-mode-tab').trigger('click')
     expect(view.get('.hypothesis-list').text()).toContain('Conferir os horários do museu')
     view.unmount()
   })
@@ -185,7 +190,11 @@ describe('fluxos da investigação', () => {
     const secondView = createView()
     expect(secondView.find('.case-introduction').exists()).toBe(false)
     expect(secondView.find('.tour-popover').exists()).toBe(false)
-    await secondView.get('.tour-trigger').trigger('click')
+    expect(document.querySelector('.header-context .tour-trigger')).not.toBeNull()
+    expect(secondView.find('.case-tools .tour-trigger').exists()).toBe(false)
+    await document
+      .querySelector('.header-context .tour-trigger')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(secondView.get('.tour-popover').text()).toContain('Passo 1 de 5')
     secondView.unmount()
   })
@@ -195,7 +204,7 @@ describe('fluxos da investigação', () => {
     const zones = view.get('.investigation-layout').element.children
     expect(zones).toHaveLength(3)
     const center = zones[1]
-    const bookmark = view.get('.journal-bookmark')
+    const bookmark = view.get('.journal-mode-tab')
     expect(view.get('#case-journal').isVisible()).toBe(false)
     await bookmark.trigger('mouseenter')
     expect(view.get('#case-journal').isVisible()).toBe(false)

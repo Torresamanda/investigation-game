@@ -4,6 +4,7 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding-inline-end: 16px;
 }
 
 .investigation-controls h3 {
@@ -19,7 +20,7 @@
 
 .action-grid button {
   text-align: left;
-  padding: 12px;
+  padding: 8px 16px;
   font-size: 13px;
 }
 
@@ -69,7 +70,7 @@
 .end-turn {
   width: 100%;
   margin-top: 4px;
-  padding: 10px;
+  padding: 8px 16px;
   font-size: 12px;
 }
 
@@ -87,7 +88,7 @@
 
 .end-turn-confirmation-actions button {
   width: 100%;
-  padding: 10px;
+  padding: 8px 16px;
   font-size: 12px;
 }
 
@@ -99,7 +100,7 @@
 .accusation-control button {
   width: 100%;
   font-size: 12px;
-  padding: 10px;
+  padding: 8px 16px;
 }
 
 .accusation-control .button-primary {

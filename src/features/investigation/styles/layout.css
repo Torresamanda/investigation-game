@@ -41,6 +41,8 @@
   min-width: 0;
   overflow: auto;
   max-height: calc(100dvh - 240px);
+  padding-inline-end: 16px;
+  scrollbar-gutter: stable;
 }
 
 .mode-tabs {
@@ -50,7 +52,7 @@
 }
 
 .mode-tabs button {
-  padding: 8px 4px;
+  padding: 8px 16px;
   font-size: 12px;
 }
 
@@ -147,9 +149,15 @@
   }
 
   .center-zone,
-  .locations-panel,
   .contextual-content {
     overflow-y: auto;
+    min-height: 0;
+    max-height: none;
+    scrollbar-gutter: stable;
+    padding-inline-end: 16px;
+  }
+
+  .locations-panel {
     min-height: 0;
     max-height: none;
     scrollbar-gutter: stable;

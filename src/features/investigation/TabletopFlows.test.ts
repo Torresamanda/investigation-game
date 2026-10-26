@@ -12,11 +12,13 @@ import type { ConversationOptions, MatchJournalEntry } from '../../services/game
 beforeEach(() => {
   vi.useFakeTimers()
   setActivePinia(createPinia())
+  document.body.innerHTML = '<header class="app-header"><div class="header-context"></div></header>'
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
   vi.useRealTimers()
+  document.body.innerHTML = ''
 })
 
 function setupTable() {
@@ -120,7 +122,10 @@ it('mantém o dossiê dentro do painel e permite percorrer o tour sem alterar a 
   expect(view.get('.contextual-panel .accusation-dialog').isVisible()).toBe(true)
   expect(view.find('[aria-modal]').exists()).toBe(false)
   const beforeTour = JSON.stringify(session.remoteMatch)
-  await view.findAll('.case-tools button')[0]!.trigger('click')
+  document
+    .querySelector('.header-context .tour-trigger')
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await view.vm.$nextTick()
   for (let step = 1; step <= 5; step++) {
     expect(view.get('.tour-popover').text()).toContain(`Passo ${step} de 5`)
     expect(view.findAll('.tour-highlight')).toHaveLength(1)
