@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CaseDifficulty from '../../components/ui/CaseDifficulty.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { InvestigatorId } from '../../content/investigators'
@@ -47,6 +48,7 @@ async function start() {
       />
       <section class="mission-summary">
         <p class="eyebrow">Caso 01 · Introdução</p>
+        <CaseDifficulty :level="1" label="Fácil" />
         <h3>O Vazio na Vitrine</h3>
         <p class="muted">
           O Astrolábio de Navor desapareceu de uma vitrine intacta durante sete minutos de apagão.

@@ -1,4 +1,5 @@
 export {
+  PhStar,
   PhArrowLeft,
   PhArrowRight,
   PhBookmarkSimple,
