@@ -55,7 +55,7 @@ Esse comando executa lint, checagem de formatação, testes, tipos do Worker e b
 
 ### Configuração local
 
-O desenvolvimento integrado usa D1 local pelo Wrangler e não exige arquivo `.env`. Opcionalmente, `VITE_API_URL` pode apontar o build do cliente para uma API externa.
+O desenvolvimento integrado inicia o Vite em `http://127.0.0.1:5173` com atualização imediata da interface e o Worker local em `http://127.0.0.1:8787`. Requisições para `/api` feitas pelo Vite são encaminhadas automaticamente ao Worker, que usa D1 local e não exige arquivo `.env`. Opcionalmente, `VITE_API_URL` pode apontar o build do cliente para uma API externa.
 
 ### Produção no Cloudflare
 
