@@ -194,7 +194,7 @@ describe('MatchService', () => {
     expect(connected.decks.rafael.discardPile).toContainEqual(heldSupportCard)
   })
 
-  it('aciona o apoio uma vez por rodada e devolve cartas sem uso ao baralho de origem', () => {
+  it('aciona o apoio uma vez por rodada e retém cartas extras sem uso', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository)
     const match = service.createSoloMatch({
@@ -226,13 +226,15 @@ describe('MatchService', () => {
 
     const nextRound = service.endTurn(match.id)
     expect(nextRound.hasUsedSupportThisRound).toBe(false)
-    expect(nextRound.decks.livia.hand.filter((card) => !card.temporary)).toHaveLength(4)
-    expect(nextRound.decks.rafael.drawPile).toContainEqual(
-      expect.objectContaining({ instanceId: supportCard.instanceId, cost: 1 }),
-    )
     expect(
-      nextRound.decks.rafael.drawPile.find((card) => card.instanceId === supportCard.instanceId),
-    ).not.toHaveProperty('originalCost')
+      nextRound.decks.livia.hand.filter((card) => !card.temporary && card.ownerId === 'livia'),
+    ).toHaveLength(4)
+    expect(nextRound.decks.livia.hand).toContainEqual(receivedCard)
+    expect(nextRound.decks.rafael.drawPile).toHaveLength(0)
+    const regularCard = nextRound.decks.livia.hand.find((card) => card.ownerId === 'livia')!
+    const afterDiscard = service.discardCard(match.id, regularCard.instanceId)
+    expect(afterDiscard.decks.livia.hand.filter((card) => card.ownerId === 'livia')).toHaveLength(4)
+    expect(afterDiscard.decks.livia.hand).toContainEqual(receivedCard)
   })
 
   it('restaura o custo original de uma carta do apoio ao usá-la no Diário', () => {

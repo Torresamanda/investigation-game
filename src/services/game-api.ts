@@ -25,7 +25,7 @@ export interface ConversationQuestion {
 }
 
 export interface ConversationOptions {
-  readonly personId: string
+  readonly personId: PersonId
   readonly personName: string
   readonly locationId: LocationId
   readonly questionLimitReached: boolean

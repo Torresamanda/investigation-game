@@ -15,6 +15,8 @@ import { clearMatchSession } from '../services/match-session'
 
 export interface HandCard extends CardDefinition {
   readonly instanceId: string
+  readonly temporary?: boolean
+  readonly ownerId?: InvestigatorId
 }
 
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error'
@@ -62,7 +64,17 @@ export const useMatchStore = defineStore('match', () => {
     if (!remoteHand) return []
     return remoteHand.flatMap((card) => {
       const definition = getCardDefinition(card.definitionId)
-      return definition ? [{ ...definition, cost: card.cost, instanceId: card.instanceId }] : []
+      return definition
+        ? [
+            {
+              ...definition,
+              cost: card.cost,
+              instanceId: card.instanceId,
+              temporary: card.temporary,
+              ownerId: card.ownerId,
+            },
+          ]
+        : []
     })
   })
   const round = computed(() => remoteMatch.value?.round ?? 1)

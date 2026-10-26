@@ -23,10 +23,14 @@ export class DiscardCardUseCase {
     if (!card) throw new DomainError('A carta precisa estar na mão do investigador.')
     const ownerDeck = match.decks[card.ownerId]
     const discarded = recycleCardFromHand(holderDeck, ownerDeck, instanceId)
-    const temporaryCards = discarded.holderDeck.hand.filter((handCard) => handCard.temporary)
+    const temporaryCards = discarded.holderDeck.hand.filter(
+      (handCard) => handCard.temporary || handCard.ownerId !== match.activeInvestigatorId,
+    )
     const regularDeck = {
       ...discarded.holderDeck,
-      hand: discarded.holderDeck.hand.filter((handCard) => !handCard.temporary),
+      hand: discarded.holderDeck.hand.filter(
+        (handCard) => !handCard.temporary && handCard.ownerId === match.activeInvestigatorId,
+      ),
     }
     const replenishedRegularDeck = drawToHand(regularDeck, INITIAL_HAND_SIZE, (maxExclusive) =>
       this.randomGenerator.nextInt(maxExclusive),

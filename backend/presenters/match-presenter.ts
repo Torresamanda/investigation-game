@@ -55,6 +55,7 @@ function toPublicCard(card: MatchCard) {
   return {
     instanceId: card.instanceId,
     definitionId: card.definitionId,
+    ownerId: card.ownerId,
     cost: card.cost,
     compatibleActions: card.compatibleActions,
     ...(card.temporary ? { temporary: true } : {}),
