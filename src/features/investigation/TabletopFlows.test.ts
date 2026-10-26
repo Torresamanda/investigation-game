@@ -138,9 +138,7 @@ it('mantém o dossiê dentro do painel e permite percorrer o tour sem alterar a 
   expect(view.get('.contextual-panel .accusation-dialog').isVisible()).toBe(true)
   expect(view.find('[aria-modal]').exists()).toBe(false)
   const beforeTour = JSON.stringify(session.remoteMatch)
-  document
-    .querySelector('.header-context .tour-trigger')
-    ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await view.get('.case-tools .tour-trigger').trigger('click')
   await view.vm.$nextTick()
   for (let step = 1; step <= 5; step++) {
     expect(view.get('.tour-popover').text()).toContain(`Passo ${step} de 5`)

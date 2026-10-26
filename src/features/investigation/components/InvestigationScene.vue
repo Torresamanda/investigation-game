@@ -21,7 +21,7 @@ const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpeni
 </script>
 
 <template>
-  <section class="panel scene-panel" aria-label="Local e abertura da rodada">
+  <section class="scene-panel" aria-label="Local e abertura da rodada">
     <div class="section-heading">
       <div>
         <p class="eyebrow">Local em observação</p>
@@ -31,15 +31,15 @@ const roundOpening = computed(() => roundOpenings[props.round - 1] ?? roundOpeni
     </div>
     <div class="scene-art-frame">
       <img class="scene-art" :src="location.artwork" :alt="`Cenário: ${location.name}`" />
+      <p class="scene-description">{{ location.detail }}</p>
       <p v-if="suspectAtCurrentLocation" class="scene-presence" role="status">
         {{ suspectAtCurrentLocation.name }} está aqui
       </p>
-    </div>
-    <p class="scene-description">{{ location.detail }}</p>
-    <div class="narrator">
-      <p class="eyebrow">{{ roundOpening.speaker }}</p>
-      <p>{{ roundOpening.message }}</p>
-      <small v-if="round !== 1 && round !== 3">{{ roundOpening.event }}</small>
+      <div class="narrator">
+        <p class="eyebrow">{{ roundOpening.speaker }}</p>
+        <p>{{ roundOpening.message }}</p>
+        <small v-if="round !== 1 && round !== 3">{{ roundOpening.event }}</small>
+      </div>
     </div>
   </section>
 </template>

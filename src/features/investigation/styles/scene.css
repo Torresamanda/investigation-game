@@ -1,7 +1,7 @@
 .scene-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   overflow: hidden;
 }
 
@@ -20,23 +20,26 @@
 }
 
 .scene-panel h2 {
-  font-size: 24px;
-  margin: 0 0 12px;
+  font-size: 22px;
+  margin: 0;
 }
 
 .scene-art-frame {
-  flex: 1 1 auto;
-  min-height: 80px;
+  height: 150px;
   position: relative;
+  overflow: hidden;
+  border: 1px solid #c79a5366;
+  border-radius: 8px;
+  background: var(--ink-deep);
 }
 
 .scene-panel .scene-art {
   height: 100%;
   width: 100%;
   object-fit: cover;
-  border: 1px solid #c79a5355;
-  border-radius: 8px;
   margin: 0;
+  opacity: 0.42;
+  filter: saturate(0.75) contrast(0.9);
 }
 
 .scene-presence {
@@ -54,23 +57,34 @@
 }
 
 .scene-description {
-  margin: 8px 0;
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #09131fe6;
   font-size: 12px;
-  color: #adc3d0;
+  color: var(--paper);
   line-height: 1.5;
 }
 
 .narrator {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  max-width: min(520px, calc(100% - 160px));
   border-left: 2px solid var(--gold);
-  background: #0c1c2b;
-  padding: 12px;
+  border-radius: 0 6px 6px 0;
+  background: #09131feb;
+  padding: 8px 12px;
 }
 
 .narrator p:not(.eyebrow) {
   font:
-    15px/1.4 Georgia,
+    14px/1.4 Georgia,
     serif;
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .narrator small {
@@ -80,21 +94,46 @@
   line-height: 1.4;
 }
 
-@media (min-width: 1101px) and (max-height: 780px) {
-  .narrator {
-    padding: 8px;
-  }
-  .narrator p:not(.eyebrow) {
-    font-size: 13px;
-    margin: 4px 0;
-  }
-  .narrator small {
-    font-size: 10px;
+@media (max-width: 1100px) {
+  .scene-art-frame {
+    height: 180px;
   }
 }
 
-@media (max-width: 1100px) {
-  .scene-art-frame {
-    min-height: 140px;
+@media (min-width: 1181px) and (max-height: 950px) {
+  .scene-panel {
+    gap: 8px;
+  }
+
+  .scene-panel h2 {
+    font-size: 21px;
+  }
+
+  .scene-description {
+    top: 10px;
+    left: 10px;
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .scene-presence {
+    right: 10px;
+    bottom: 10px;
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  .narrator {
+    bottom: 10px;
+    left: 10px;
+    padding: 6px 10px;
+  }
+
+  .narrator p:not(.eyebrow) {
+    font-size: 13px;
+  }
+
+  .narrator small {
+    display: none;
   }
 }

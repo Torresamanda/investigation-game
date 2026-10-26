@@ -19,7 +19,6 @@ import AccusationDialog from './components/AccusationDialog.vue'
 import AppToast from '../../components/ui/AppToast.vue'
 import AppModal from '../../components/ui/AppModal.vue'
 import { statusFeedback } from './action-feedback'
-import { PhBookOpenText } from '../../components/icons'
 import { useTableContext } from './composables/useTableContext'
 import { useTableConversation } from './composables/useTableConversation'
 import { useTableHand } from './composables/useTableHand'
@@ -173,13 +172,11 @@ function executeSelectedAction(action: InvestigationAction) {
         }}
       </button>
     </div>
-    <CaseToolbar :round="session.round" @request-return="requestReturnToWorld" />
-    <Teleport to=".header-context">
-      <button class="tour-trigger" type="button" @click="startTour">
-        <PhBookOpenText :size="17" aria-hidden="true" />
-        <span>Como funciona a investigação?</span>
-      </button>
-    </Teleport>
+    <CaseToolbar
+      :round="session.round"
+      @request-return="requestReturnToWorld"
+      @request-tour="startTour"
+    />
     <AppModal
       v-if="showDeletionConfirmation"
       class="delete-match-dialog"
@@ -214,18 +211,23 @@ function executeSelectedAction(action: InvestigationAction) {
         @request-support="requestSupportCard"
       />
       <div class="center-zone">
-        <InvestigationScene :location="location" :round="session.round" />
-        <InvestigationActions
-          :class="{ 'tour-highlight': tourStep?.target === 'actions' }"
-          :available-actions="availableActions"
-          :action-costs="actionCosts"
-          :feedback="feedback"
-          :can-end-turn="session.canEndTurn"
-          :has-usable-action-points="hasUsableActionPoints"
-          :round="session.round"
-          @execute="executeSelectedAction"
-          @end-turn="endTurn"
-        />
+        <section
+          class="panel scene-investigation-panel"
+          aria-label="Cena e decisões da investigação"
+        >
+          <InvestigationScene :location="location" :round="session.round" />
+          <InvestigationActions
+            :class="{ 'tour-highlight': tourStep?.target === 'actions' }"
+            :available-actions="availableActions"
+            :action-costs="actionCosts"
+            :feedback="feedback"
+            :can-end-turn="session.canEndTurn"
+            :has-usable-action-points="hasUsableActionPoints"
+            :round="session.round"
+            @execute="executeSelectedAction"
+            @end-turn="endTurn"
+          />
+        </section>
         <CardHand
           :cards="cards"
           :owner-label="session.investigator?.name ?? ''"

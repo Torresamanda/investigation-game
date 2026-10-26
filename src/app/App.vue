@@ -13,7 +13,7 @@ const route = useRoute()
     }"
   >
     <a class="skip-link" href="#main">Pular para o conteúdo</a>
-    <header class="app-header">
+    <header v-if="route.name !== 'investigation'" class="app-header">
       <RouterLink class="brand" to="/">
         <PhDiamond class="brand-mark" :size="32" weight="bold" aria-hidden="true" />
         <span><small>Agência de Investigação</small><strong>Arquivos Limiar</strong></span>

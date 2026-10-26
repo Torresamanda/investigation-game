@@ -50,9 +50,8 @@ function confirmEndTurn() {
 </script>
 
 <template>
-  <section class="panel investigation-controls" aria-label="Seção de investigação">
+  <section class="investigation-controls" aria-label="Seção de investigação">
     <div>
-      <p class="eyebrow">Decisão do investigador</p>
       <h3>Como deseja investigar?</h3>
     </div>
     <div class="action-grid">
@@ -65,7 +64,6 @@ function confirmEndTurn() {
         {{ item.label }}<small>{{ actionCosts[item.action] }} PA</small>
       </button>
     </div>
-    <p class="help-text">O custo será descontado dos PA disponíveis neste turno.</p>
     <div class="feedback" role="status" aria-live="polite" aria-atomic="true">
       <p class="feedback-heading">
         <strong>{{ feedback.target }}</strong>

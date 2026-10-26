@@ -330,6 +330,47 @@
   }
 }
 
+@media (min-width: 1181px) and (max-height: 950px) {
+  .suspects-heading h3 {
+    font-size: 17px;
+  }
+
+  .suspect-roster {
+    gap: 6px;
+  }
+
+  .suspect-tile {
+    padding: 8px;
+  }
+
+  .suspect-profile {
+    grid-template-columns: 78px minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .suspect-profile-heading {
+    margin-bottom: 8px;
+  }
+
+  .suspect-profile h3 {
+    font-size: 18px;
+  }
+
+  .suspect-role,
+  .suspect-introduction {
+    font-size: 11px;
+  }
+
+  .suspect-introduction {
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+
+  .suspect-personality {
+    margin-bottom: 6px;
+  }
+}
+
 @media (max-width: 1100px) {
   .suspect-profile {
     grid-template-columns: clamp(92px, 10vw, 108px) minmax(0, 1fr);
