@@ -28,7 +28,7 @@ describe('InvestigationScene', () => {
     })
 
     expect(view.get('.narrator').text()).not.toContain('Raul')
-    await view.setProps({ hasConfirmedRaulEvidence: true })
-    expect(view.get('.narrator').text()).toContain('questionar Raul')
+    await view.setProps({ round: 3 })
+    expect(view.get('.narrator').text()).not.toContain('porta de serviço')
   })
 })

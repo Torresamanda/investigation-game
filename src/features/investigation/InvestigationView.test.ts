@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { routerKey } from 'vue-router'
 import InvestigationView from './InvestigationView.vue'
 import { useInvestigationStore } from '../../stores/investigation'
 
@@ -13,7 +14,11 @@ describe('fluxos da investigação', () => {
   afterEach(() => vi.useRealTimers())
   const createView = () =>
     mount(InvestigationView, {
-      global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } },
+      attachTo: document.body,
+      global: {
+        provide: { [routerKey as symbol]: { push: vi.fn() } },
+        stubs: { RouterLink: { template: '<a><slot /></a>' } },
+      },
     })
 
   it('organiza cenário, personagens, mão e investigação em seções independentes', async () => {
@@ -95,15 +100,11 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
-  it('preserva a seção do diário ao recolher e mantém os mesmos suspeitos do tabuleiro', async () => {
+  it('exibe conexões na terceira seção do diário', async () => {
     const view = createView()
     await view.get('.journal-bookmark').trigger('click')
     await view.findAll('.journal-tabs button')[2]!.trigger('click')
-    const names = view.findAll('.suspect-name').map((item) => item.text())
-    expect(view.findAll('.suspect-list li').map((item) => item.text().trim())).toEqual(names)
-    await view.get('.journal-close').trigger('click')
-    await view.get('.journal-bookmark').trigger('click')
-    expect(view.findAll('.suspect-list li')).toHaveLength(4)
+    expect(view.get('.journal-connection-form').text()).toContain('Criar conexão formal')
     view.unmount()
   })
 
@@ -174,31 +175,24 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
-  it('abre no hover e fecha ao sair sem permanecer fixado', async () => {
+  it('alterna o painel por abas sem hover, modal ou alteração das zonas', async () => {
     const view = createView()
+    const zones = view.get('.investigation-layout').element.children
+    expect(zones).toHaveLength(3)
+    const center = zones[1]
     const bookmark = view.get('.journal-bookmark')
-    expect(view.find('#case-journal').exists()).toBe(false)
+    expect(view.get('#case-journal').isVisible()).toBe(false)
     await bookmark.trigger('mouseenter')
-    expect(bookmark.attributes('aria-expanded')).toBe('true')
-    await bookmark.trigger('mouseleave')
-    await vi.advanceTimersByTimeAsync(200)
-    expect(view.find('#case-journal').exists()).toBe(false)
-    view.unmount()
-  })
-
-  it('fixa por clique, preserva notas ao fechar e permite sair por Escape', async () => {
-    const view = createView()
-    await view.get('.journal-bookmark').trigger('click')
+    expect(view.get('#case-journal').isVisible()).toBe(false)
+    await bookmark.trigger('click')
+    expect(view.get('#case-journal').isVisible()).toBe(true)
     await view.get('#notes').setValue('Revisar a cronologia')
-    await view.get('#case-journal').trigger('mouseleave')
-    await vi.advanceTimersByTimeAsync(200)
-    expect(view.find('#case-journal').exists()).toBe(true)
-    await view.get('.journal-close').trigger('click')
-    expect(view.find('#case-journal').exists()).toBe(false)
-    await view.get('.journal-bookmark').trigger('click')
+    await view.get('.mode-tabs button').trigger('click')
+    expect(view.get('#case-journal').isVisible()).toBe(false)
+    await bookmark.trigger('click')
     expect((view.get('#notes').element as HTMLTextAreaElement).value).toBe('Revisar a cronologia')
-    await view.get('main').trigger('keydown', { key: 'Escape' })
-    expect(view.find('#case-journal').exists()).toBe(false)
+    expect(zones[1]).toBe(center)
+    expect(view.find('[aria-modal]').exists()).toBe(false)
     view.unmount()
   })
 })

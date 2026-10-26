@@ -7,8 +7,6 @@ describe('ConversationDialog', () => {
     const view = mount(ConversationDialog, {
       props: {
         pointsLabel: '5 PA gerais',
-        conversationCards: [],
-        preparedCardId: null,
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
@@ -53,8 +51,6 @@ describe('ConversationDialog', () => {
     const view = mount(ConversationDialog, {
       props: {
         pointsLabel: '3 PA gerais',
-        conversationCards: [],
-        preparedCardId: null,
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
@@ -80,33 +76,11 @@ describe('ConversationDialog', () => {
     expect(view.get('.conversation-questions button').attributes('disabled')).toBeDefined()
   })
 
-  it('oferece a Pausa Calculada depois da primeira pergunta do turno', async () => {
+  it('exibe a resposta inline e prepara cartas somente na mão principal', () => {
     const view = mount(ConversationDialog, {
       props: {
         pointsLabel: '2 PA gerais',
-        preparedCardId: null,
-        conversationCards: [
-          {
-            id: 'pocket-recorder',
-            name: 'Gravador de Bolso',
-            cost: 1,
-            image: '',
-            effect: '',
-            context: '',
-            compatibleActions: ['converse'],
-            instanceId: 'isadora:pocket-recorder:1',
-          },
-          {
-            id: 'calculated-pause',
-            name: 'Pausa Calculada',
-            cost: 0,
-            image: '',
-            effect: '',
-            context: '',
-            compatibleActions: ['converse'],
-            instanceId: 'isadora:calculated-pause:1',
-          },
-        ],
+        answer: 'Declaração recém-colhida.',
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
@@ -116,10 +90,9 @@ describe('ConversationDialog', () => {
         },
       },
     })
-
-    expect(view.text()).toContain('Pausa Calculada')
-    expect(view.text()).not.toContain('Gravador de Bolso')
-    await view.get('.conversation-cards button').trigger('click')
-    expect(view.emitted('prepareCard')).toEqual([['isadora:calculated-pause:1']])
+    expect(view.get('.conversation-answer').text()).toContain('Declaração recém-colhida.')
+    expect(view.text()).toContain('mão principal')
+    expect(view.find('.conversation-cards').exists()).toBe(false)
+    expect(view.find('[aria-modal]').exists()).toBe(false)
   })
 })
