@@ -5,6 +5,7 @@ import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 import { getPortrait } from '../../../content/portraits'
 const emit = defineEmits<{ select: []; requestSupport: [] }>()
 const props = defineProps<{
+  tourTarget?: string
   investigator?: Investigator
   support?: Investigator
   pointsLabel: string
@@ -24,7 +25,7 @@ function selectLocation(id: LocationId) {
 
 <template>
   <aside class="panel locations-panel">
-    <div class="investigator-overview">
+    <div class="investigator-overview" :class="{ 'tour-highlight': tourTarget === 'investigator' }">
       <p class="eyebrow">Seu turno · Solo</p>
       <CharacterPortrait
         v-if="investigator"
@@ -53,7 +54,7 @@ function selectLocation(id: LocationId) {
         {{ `Acionar apoio (${support?.name ?? 'indisponível'}) · 1x por rodada` }}
       </button>
     </div>
-    <div class="museum-navigation">
+    <div class="museum-navigation" :class="{ 'tour-highlight': tourTarget === 'locations' }">
       <h3>Locais do museu</h3>
       <nav class="location-list" aria-label="Locais">
         <button
@@ -63,8 +64,14 @@ function selectLocation(id: LocationId) {
           :disabled="!props.unlockedLocations.includes(item.id) || props.isRequestPending"
           @click="selectLocation(item.id)"
         >
-          {{ item.name }}
-          <small v-if="locationId !== item.id">{{ moveCostLabel }}</small>
+          {{ props.unlockedLocations.includes(item.id) ? item.name : 'Área não descoberta' }}
+          <small>{{
+            !props.unlockedLocations.includes(item.id)
+              ? 'Bloqueado'
+              : locationId === item.id
+                ? 'Local atual'
+                : moveCostLabel
+          }}</small>
         </button>
       </nav>
     </div>

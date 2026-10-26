@@ -4,7 +4,9 @@ import { suspectProfiles, type CaseLocation, type SuspectId } from '../../../con
 import SuspectProfile from './SuspectProfile.vue'
 import SuspectRoster from './SuspectRoster.vue'
 
-const props = defineProps<{ location: CaseLocation }>()
+const props = defineProps<{ location: CaseLocation; isConversing?: boolean }>()
+const emit = defineEmits<{ converse: [] }>()
+
 const selectedSuspectId = defineModel<SuspectId | null>({ required: true })
 const selectedSuspect = computed(() =>
   suspectProfiles.find((person) => person.id === selectedSuspectId.value),
@@ -19,10 +21,18 @@ const selectedSuspect = computed(() =>
   >
     <SuspectRoster v-model="selectedSuspectId" />
     <SuspectProfile
-      v-if="selectedSuspect"
+      v-if="selectedSuspect && !isConversing"
       class="suspect-section-profile"
       :person="selectedSuspect"
       :location="props.location"
     />
+    <button
+      v-if="selectedSuspect && !isConversing"
+      :disabled="selectedSuspect.locationId !== location.id"
+      @click="emit('converse')"
+    >
+      Conversar
+    </button>
+    <slot />
   </section>
 </template>

@@ -44,12 +44,7 @@ function submitAccusation() {
 </script>
 
 <template>
-  <section
-    class="accusation-dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="accusation-title"
-  >
+  <section class="accusation-dialog" aria-labelledby="accusation-title">
     <header class="accusation-dialog-heading">
       <div>
         <p class="eyebrow">Dossiê final · Rodada 5 ou 6</p>

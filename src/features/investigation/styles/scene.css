@@ -1,30 +1,35 @@
 .scene-panel {
-  grid-area: scene;
   display: flex;
   flex-direction: column;
   gap: 8px;
   overflow: hidden;
 }
+
 .scene-panel .section-heading {
   gap: 8px;
 }
+
 .scene-panel .section-heading > span {
   font-size: 11px;
   white-space: nowrap;
 }
+
 .scene-panel .eyebrow {
   font-size: 9px;
   margin: 0 0 4px;
 }
+
 .scene-panel h2 {
   font-size: 24px;
   margin: 0 0 12px;
 }
+
 .scene-art-frame {
   flex: 1 1 auto;
   min-height: 80px;
   position: relative;
 }
+
 .scene-panel .scene-art {
   height: 100%;
   width: 100%;
@@ -33,6 +38,7 @@
   border-radius: 8px;
   margin: 0;
 }
+
 .scene-presence {
   position: absolute;
   right: 12px;
@@ -46,29 +52,34 @@
   font-size: 11px;
   font-weight: 700;
 }
+
 .scene-description {
   margin: 8px 0;
   font-size: 12px;
   color: #adc3d0;
   line-height: 1.5;
 }
+
 .narrator {
   border-left: 2px solid var(--gold);
   background: #0c1c2b;
   padding: 12px;
 }
+
 .narrator p:not(.eyebrow) {
   font:
     15px/1.4 Georgia,
     serif;
   margin: 8px 0;
 }
+
 .narrator small {
   display: block;
   color: #a9bfcd;
   font-size: 11px;
   line-height: 1.4;
 }
+
 @media (min-width: 1101px) and (max-height: 780px) {
   .narrator {
     padding: 8px;
@@ -81,6 +92,7 @@
     font-size: 10px;
   }
 }
+
 @media (max-width: 1100px) {
   .scene-art-frame {
     min-height: 140px;
