@@ -39,6 +39,24 @@
   gap: 16px;
 }
 
+.tour-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--muted);
+  background: transparent;
+  border-color: transparent;
+  font-size: 12px;
+}
+
+.tour-trigger:hover:not(:disabled) {
+  color: var(--paper);
+  background: #193347;
+}
+
 .round-indicator {
   display: flex;
   align-items: center;

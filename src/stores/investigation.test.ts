@@ -4,7 +4,10 @@ import { useInvestigationStore } from './investigation'
 import { gameApi, type RemoteMatch } from '../services/game-api'
 
 describe('seleção da prévia solo', () => {
-  beforeEach(() => setActivePinia(createPinia()))
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
 
   it('mantém investigador e apoio distintos e limpa notas da tentativa anterior', () => {
     const store = useInvestigationStore()
@@ -22,20 +25,28 @@ describe('seleção da prévia solo', () => {
     expect(store.investigatorId).toBeNull()
   })
 
-  it('limpa rascunhos, hipóteses e introdução ao abandonar e permite uma investigação do zero', () => {
+  it('mantém a introdução vista ao abandonar e iniciar outra investigação', () => {
     const store = useInvestigationStore()
     store.startInvestigation('livia', 'rafael')
     store.notes = 'Uma hipótese'
     expect(store.saveNote()).toBe(true)
     store.notes = 'Rascunho'
-    store.introductionSeen = true
+    store.markIntroductionAsSeen()
     store.abandonInvestigation()
     expect(store.investigatorId).toBeNull()
     expect(store.notes).toBe('')
     expect(store.hypotheses).toEqual([])
     store.startInvestigation('isadora', 'otavio')
-    expect(store.introductionSeen).toBe(false)
+    expect(store.introductionSeen).toBe(true)
     expect(store.hypotheses).toEqual([])
+  })
+
+  it('recupera a introdução vista após recriar o estado da partida', () => {
+    const store = useInvestigationStore()
+    store.markIntroductionAsSeen()
+    setActivePinia(createPinia())
+
+    expect(useInvestigationStore().introductionSeen).toBe(true)
   })
 
   it('não salva hipóteses vazias ou além do limite', () => {

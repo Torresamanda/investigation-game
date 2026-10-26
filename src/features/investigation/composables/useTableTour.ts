@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { hasSeenTableTour, markTableTourSeen } from '../../../services/onboarding-preferences'
 
 const steps = [
   {
@@ -38,9 +39,18 @@ export type TableTourStep = (typeof steps)[number]
 export function useTableTour() {
   const tourIndex = ref(-1)
   const tourStep = computed(() => steps[tourIndex.value])
+  const hasShownFirstTour = ref(hasSeenTableTour())
 
   function startTour() {
     tourIndex.value = 0
+    if (!hasShownFirstTour.value) {
+      markTableTourSeen()
+      hasShownFirstTour.value = true
+    }
+  }
+
+  function startTourOnFirstVisit() {
+    if (!hasShownFirstTour.value) startTour()
   }
 
   function closeTour() {
@@ -52,5 +62,5 @@ export function useTableTour() {
     tourIndex.value = next >= steps.length ? -1 : Math.max(0, next)
   }
 
-  return { tourIndex, tourStep, startTour, closeTour, stepTour }
+  return { tourIndex, tourStep, startTour, startTourOnFirstVisit, closeTour, stepTour }
 }

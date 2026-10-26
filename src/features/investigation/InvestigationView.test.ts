@@ -8,6 +8,7 @@ import { useInvestigationStore } from '../../stores/investigation'
 describe('fluxos da investigação', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    localStorage.clear()
     setActivePinia(createPinia())
     useInvestigationStore().startInvestigation('livia', 'rafael')
   })
@@ -172,7 +173,21 @@ describe('fluxos da investigação', () => {
     await view.get('.case-introduction .button-primary').trigger('click')
     expect(view.find('.case-introduction').exists()).toBe(false)
     expect(useInvestigationStore().introductionSeen).toBe(true)
+    expect(view.get('.tour-popover').text()).toContain('Passo 1 de 5')
     view.unmount()
+  })
+
+  it('não repete a introdução nem o tour após a primeira entrada e permite reabrir pelo botão', async () => {
+    const firstView = createView()
+    await firstView.get('.case-introduction .button-primary').trigger('click')
+    firstView.unmount()
+
+    const secondView = createView()
+    expect(secondView.find('.case-introduction').exists()).toBe(false)
+    expect(secondView.find('.tour-popover').exists()).toBe(false)
+    await secondView.get('.tour-trigger').trigger('click')
+    expect(secondView.get('.tour-popover').text()).toContain('Passo 1 de 5')
+    secondView.unmount()
   })
 
   it('alterna o painel por abas sem hover, modal ou alteração das zonas', async () => {

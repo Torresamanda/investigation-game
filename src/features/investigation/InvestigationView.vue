@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { suspectProfiles } from '../../content/case01'
 import { useInvestigationStore } from '../../stores/investigation'
 import type { InvestigationAction } from '../../domain/game/action-points'
@@ -30,7 +30,17 @@ const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigaÃ§Ã
 const cards = computed(() => session.hand)
 const journalTab = ref<'timeline' | 'clues' | 'connections' | 'notes'>('timeline')
 const panelMode = ref<'people' | 'journal' | 'accusation'>('people')
-const { tourStep, tourIndex, startTour, closeTour, stepTour } = useTableTour()
+const { tourStep, tourIndex, startTour, startTourOnFirstVisit, closeTour, stepTour } =
+  useTableTour()
+
+onMounted(() => {
+  if (session.introductionSeen) startTourOnFirstVisit()
+})
+
+function closeIntroduction() {
+  session.markIntroductionAsSeen()
+  startTourOnFirstVisit()
+}
 
 const {
   locationId,
@@ -298,7 +308,7 @@ function executeSelectedAction(action: InvestigationAction) {
         </div>
       </aside>
     </div>
-    <CaseIntroduction v-if="!session.introductionSeen" @close="session.introductionSeen = true" />
+    <CaseIntroduction v-if="!session.introductionSeen" @close="closeIntroduction" />
     <div class="toast-stack">
       <AppToast
         v-for="notification in notifications"

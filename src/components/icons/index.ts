@@ -3,6 +3,7 @@ export {
   PhArrowLeft,
   PhArrowRight,
   PhBookmarkSimple,
+  PhBookOpenText,
   PhDiamond,
   PhImageSquare,
   PhInfo,
