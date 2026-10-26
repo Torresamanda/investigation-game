@@ -1,6 +1,7 @@
 import { canPayAction, spendActionPoints } from '../../../shared/domain/action-points.js'
 import type { ResolveOperationCommand } from '../commands.js'
 import type { MatchRepository } from '../ports/match-repository.js'
+import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import { DomainError, MatchNotFoundError } from '../../domain/errors.js'
 import { resolvePreparedOperation } from '../../domain/investigation-operation.js'
 import type { SoloMatch } from '../../domain/match.js'
@@ -8,7 +9,10 @@ import type { SoloMatch } from '../../domain/match.js'
 const operationCost = 2
 
 export class ResolveOperationUseCase {
-  constructor(private readonly repository: MatchRepository) {}
+  constructor(
+    private readonly repository: MatchRepository,
+    private readonly caseContentRepository: CaseContentRepository,
+  ) {}
 
   execute(command: ResolveOperationCommand): SoloMatch {
     const match = this.repository.findById(command.matchId)
@@ -24,8 +28,15 @@ export class ResolveOperationUseCase {
     const hypothesis = match.hypotheses?.find(
       (item) => item.id === match.preparedOperation?.hypothesisId,
     )
-    const outcome = resolvePreparedOperation(match.preparedOperation, hypothesis)
-    if (outcome === 'resolved') {
+    const isPrepared = resolvePreparedOperation(match.preparedOperation, hypothesis) === 'resolved'
+    const outcome = isPrepared
+      ? this.caseContentRepository.resolveOperation(
+          match,
+          match.preparedOperation.operationId,
+          match.preparedOperation.hypothesisId,
+        )
+      : undefined
+    if (outcome?.isResolved) {
       return this.repository.save({
         ...match,
         actionPoints: spendActionPoints(match.actionPoints, {
@@ -57,6 +68,7 @@ export class ResolveOperationUseCase {
           type: 'observation',
           title: 'Inconsistência na operação',
           content:
+            outcome?.observation ??
             'A operação revelou uma inconsistência na linha de raciocínio. Reavalie as evidências já reunidas antes de tentar outra abordagem.',
           locationId: match.currentLocationId,
           round: match.round,

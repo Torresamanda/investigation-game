@@ -38,6 +38,12 @@ export interface AccusationSubmission {
   readonly linkClueId: string
 }
 
+export interface OperationOption {
+  readonly id: string
+  readonly title: string
+  readonly riskDescription: string
+}
+
 interface ApiError {
   readonly message: string
 }
@@ -152,6 +158,30 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/accuse`, {
       method: 'POST',
       body: JSON.stringify(accusation),
+      headers: matchSessionHeaders(matchId),
+    })
+  },
+
+  getAvailableOperations(matchId: string) {
+    return request<readonly OperationOption[]>(
+      `/api/matches/${encodePathSegment(matchId)}/operations`,
+      {
+        headers: matchSessionHeaders(matchId),
+      },
+    )
+  },
+
+  prepareOperation(matchId: string, operationId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/operations`, {
+      method: 'POST',
+      body: JSON.stringify({ operationId }),
+      headers: matchSessionHeaders(matchId),
+    })
+  },
+
+  resolveOperation(matchId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/operations/resolve`, {
+      method: 'POST',
       headers: matchSessionHeaders(matchId),
     })
   },

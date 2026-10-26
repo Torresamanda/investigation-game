@@ -43,6 +43,7 @@ export interface PublicMatchDto {
   readonly mode: 'solo'
   readonly createdAt: string
   readonly preparedCardInstanceId: string | null
+  readonly preparedOperation?: { readonly operationId: string }
   readonly activeInvestigatorId: InvestigatorId
   readonly supportInvestigatorId: InvestigatorId
   readonly round: number

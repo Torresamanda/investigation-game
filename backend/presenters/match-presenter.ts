@@ -12,6 +12,9 @@ export const MatchPresenter = {
       mode: match.mode,
       createdAt: match.createdAt,
       preparedCardInstanceId: match.preparedCardInstanceId,
+      preparedOperation: match.preparedOperation
+        ? { operationId: match.preparedOperation.operationId }
+        : undefined,
       activeInvestigatorId: match.activeInvestigatorId,
       supportInvestigatorId: match.supportInvestigatorId,
       round: match.round,

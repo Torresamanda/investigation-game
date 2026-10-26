@@ -9,6 +9,7 @@ import type {
   JournalEntry,
   SoloMatch,
 } from '../../domain/match.js'
+import type { OperationOption } from '../../domain/investigation-operation.js'
 
 export type NewJournalEntry = Omit<JournalEntry, 'id'>
 
@@ -40,7 +41,18 @@ export interface CaseActionResolution {
   readonly errorMessage?: string
 }
 
+export interface CaseOperationResolution {
+  readonly isResolved: boolean
+  readonly observation: string
+}
+
 export interface CaseContentRepository {
+  getAvailableOperations(match: SoloMatch): readonly OperationOption[]
+  resolveOperation(
+    match: SoloMatch,
+    operationId: string,
+    hypothesisId: string,
+  ): CaseOperationResolution
   isAccusationCorrect(
     suspectId: PersonId,
     evidence: {

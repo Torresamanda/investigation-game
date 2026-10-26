@@ -9,6 +9,7 @@ import {
   ApiRequestError,
   type AccusationSubmission,
   type MatchJournalEntry,
+  type OperationOption,
   type RemoteMatch,
 } from '../services/game-api'
 import { clearMatchSession } from '../services/match-session'
@@ -31,6 +32,7 @@ export const useMatchStore = defineStore('match', () => {
   const connectionState = ref<ConnectionState>('idle')
   const connectionError = ref<string | null>(null)
   const isRequestPending = ref(false)
+  const availableOperations = ref<readonly OperationOption[]>([])
 
   async function performApiRequest<T>(request: () => Promise<T>): Promise<T> {
     if (isRequestPending.value) throw new Error('Aguarde a solicitação atual terminar.')
@@ -254,6 +256,28 @@ export const useMatchStore = defineStore('match', () => {
     clearCompletedMatchSession()
   }
 
+  async function loadAvailableOperations(): Promise<void> {
+    if (!remoteMatch.value) return
+    availableOperations.value = await performApiRequest(() =>
+      gameApi.getAvailableOperations(remoteMatch.value!.id),
+    )
+  }
+
+  async function prepareOperation(operationId: string): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A operação exige uma partida conectada à API.')
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.prepareOperation(remoteMatch.value!.id, operationId),
+    )
+  }
+
+  async function resolveOperation(): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A operação exige uma partida conectada à API.')
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.resolveOperation(remoteMatch.value!.id),
+    )
+    clearCompletedMatchSession()
+  }
+
   async function moveInvestigator(locationId: LocationId): Promise<void> {
     if (!remoteMatch.value) throw new Error('A partida exige uma conexão ativa com a API.')
     remoteMatch.value = await performApiRequest(() =>
@@ -339,6 +363,7 @@ export const useMatchStore = defineStore('match', () => {
     connectionState,
     connectionError,
     isRequestPending,
+    availableOperations,
     hand,
     round,
     currentLocationId,
@@ -362,6 +387,9 @@ export const useMatchStore = defineStore('match', () => {
     resolveAction,
     createJournalConnection,
     accuse,
+    loadAvailableOperations,
+    prepareOperation,
+    resolveOperation,
     moveInvestigator,
     endRemoteTurn,
     requestSupportCard,

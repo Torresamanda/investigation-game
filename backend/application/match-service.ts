@@ -91,7 +91,7 @@ export class MatchService {
     this.accuseSuspectUseCase = new AccuseSuspectUseCase(repository, caseContentRepository)
     this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository, randomGenerator)
     this.prepareOperationUseCase = new PrepareOperationUseCase(repository, operationOptions)
-    this.resolveOperationUseCase = new ResolveOperationUseCase(repository)
+    this.resolveOperationUseCase = new ResolveOperationUseCase(repository, caseContentRepository)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -198,9 +198,7 @@ export class MatchService {
   getAvailableOperations(matchId: string): readonly OperationOption[] {
     const match = this.getMatch(matchId)
     if (!match) throw new Error('Partida não encontrada.')
-    return match.hypotheses?.some((hypothesis) => hypothesis.status === 'sustained')
-      ? operationOptions
-      : []
+    return this.caseContentRepository.getAvailableOperations(match)
   }
 
   prepareOperation(matchId: string, operationId: string): SoloMatch {

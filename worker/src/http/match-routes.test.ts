@@ -190,6 +190,34 @@ describe('D1 match routes', () => {
     expect(connection.status).toBe(400)
   })
 
+  it('keeps operations protected and does not disclose unavailable options', async () => {
+    const database = new InMemoryD1Database()
+    const match = await createMatch(database)
+
+    const unauthorized = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/operations`),
+      database,
+    )
+    const available = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/operations`, {
+        headers: authorizedHeaders(match.token),
+      }),
+      database,
+    )
+    const invalidPreparation = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/operations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authorizedHeaders(match.token) },
+        body: JSON.stringify({ operationId: '' }),
+      }),
+      database,
+    )
+
+    expect(unauthorized.status).toBe(401)
+    expect(await available.json()).toEqual([])
+    expect(invalidPreparation.status).toBe(400)
+  })
+
   it('rejects extra fields and oversized JSON payloads', async () => {
     const database = new InMemoryD1Database()
     const match = await createMatch(database)

@@ -15,7 +15,7 @@ import SuspectSection from './components/SuspectSection.vue'
 import CaseJournal from './components/CaseJournal.vue'
 import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
-import AccusationDialog from './components/AccusationDialog.vue'
+import OperationPanel from './components/OperationPanel.vue'
 import AppToast from '../../components/ui/AppToast.vue'
 import AppModal from '../../components/ui/AppModal.vue'
 import { statusFeedback } from './action-feedback'
@@ -262,10 +262,9 @@ function executeSelectedAction(action: InvestigationAction) {
           </button>
           <button
             :aria-pressed="panelMode === 'accusation'"
-            :disabled="!session.canAccuse"
-            @click="openAccusation"
+            @click="panelMode = 'accusation'; session.loadAvailableOperations()"
           >
-            Acusação
+            Operação
           </button>
         </nav>
         <div class="contextual-content">
@@ -297,15 +296,14 @@ function executeSelectedAction(action: InvestigationAction) {
             @save="session.saveNote()"
             @create-connection="createJournalConnection"
           />
-          <AccusationDialog
-            v-if="session.remoteMatch && session.canAccuse"
+          <OperationPanel
+            v-if="session.remoteMatch"
             v-show="panelMode === 'accusation'"
-            :suspects="suspectProfiles"
-            :confirmed-clues="confirmedClues"
-            :connection-count="session.journalConnections.length"
-            :action-points="session.remoteMatch.actionPoints"
-            :error-message="accusationError"
-            @accuse="accuseSuspect"
+            :operations="session.availableOperations"
+            :is-prepared="Boolean(session.remoteMatch.preparedOperation)"
+            :is-request-pending="session.isRequestPending"
+            @prepare="session.prepareOperation"
+            @resolve="session.resolveOperation"
           />
         </div>
       </aside>

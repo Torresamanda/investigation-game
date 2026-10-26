@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { InMemoryMatchRepository } from '../../infrastructure/persistence/in-memory-match-repository.js'
 import { createSoloMatch } from '../../domain/match.js'
 import { ResolveOperationUseCase } from './resolve-operation-use-case.js'
+import { Case01ContentRepository } from '../../infrastructure/content/case01-content-repository.js'
 
 function createMatch() {
   return createSoloMatch({
@@ -21,17 +22,23 @@ describe('ResolveOperationUseCase', () => {
       ...match,
       hypotheses: [
         {
-          id: 'route',
+          id: 'case01-primary-operation',
           status: 'sustained',
           evidence: [],
           connectionIds: ['one', 'two'],
           hasOperationalInconsistency: false,
         },
       ],
-      preparedOperation: { operationId: 'operation', hypothesisId: 'route', preparedAtRound: 5 },
+      preparedOperation: {
+        operationId: 'preserve-the-evidence',
+        hypothesisId: 'case01-primary-operation',
+        preparedAtRound: 5,
+      },
     })
 
-    const result = new ResolveOperationUseCase(repository).execute({ matchId: match.id })
+    const result = new ResolveOperationUseCase(repository, new Case01ContentRepository()).execute({
+      matchId: match.id,
+    })
 
     expect(result).toMatchObject({ status: 'won', actionPoints: { general: 3 } })
   })
@@ -53,7 +60,9 @@ describe('ResolveOperationUseCase', () => {
       preparedOperation: { operationId: 'operation', hypothesisId: 'route', preparedAtRound: 5 },
     })
 
-    const result = new ResolveOperationUseCase(repository).execute({ matchId: match.id })
+    const result = new ResolveOperationUseCase(repository, new Case01ContentRepository()).execute({
+      matchId: match.id,
+    })
 
     expect(result.status).toBe('active')
     expect(result.journalEntries.at(-1)?.title).toBe('Inconsistência na operação')

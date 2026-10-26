@@ -16,8 +16,35 @@ import type {
 } from '../../../shared/domain/identifiers.js'
 import type { CaseEvidenceKey, SoloMatch } from '../../domain/match.js'
 import { resolveCase01CardEffect } from './case01-card-effects.js'
+import type { OperationOption } from '../../domain/investigation-operation.js'
 
 export class Case01ContentRepository implements CaseContentRepository {
+  getAvailableOperations(match: SoloMatch): readonly OperationOption[] {
+    return match.hypotheses?.some((hypothesis) => hypothesis.status === 'sustained')
+      ? [
+          {
+            id: 'preserve-the-evidence',
+            title: 'Preservar a prova',
+            riskDescription: 'A operação pode revelar uma inconsistência na linha de raciocínio.',
+          },
+        ]
+      : []
+  }
+
+  resolveOperation(match: SoloMatch, operationId: string, hypothesisId: string) {
+    const isResolved = Boolean(
+      operationId === 'preserve-the-evidence' &&
+      hypothesisId === 'case01-primary-operation' &&
+      match.hypotheses?.some(
+        (hypothesis) => hypothesis.id === hypothesisId && hypothesis.status === 'sustained',
+      ),
+    )
+    return {
+      isResolved,
+      observation:
+        'A operação revelou uma inconsistência na linha de raciocínio. Reavalie as evidências já reunidas antes de tentar outra abordagem.',
+    }
+  }
   isAccusationCorrect(
     suspectId: PersonId,
     evidence: {

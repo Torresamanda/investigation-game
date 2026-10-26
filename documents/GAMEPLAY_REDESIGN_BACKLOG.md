@@ -32,12 +32,12 @@ O jogador continua tomando decisões e podendo chegar a uma teoria incorreta, ma
 
 ## Decisões de produto a aprovar
 
-- [ ] **D-01 — Substituir “Apresentar acusação” por “Preparar operação”.** A operação só fica disponível quando uma hipótese tiver sustentação mínima; ela não revela antecipadamente qual solução é correta.
-- [ ] **D-02 — Definir recuperação após operação incompleta.** Recomendação: registrar uma inconsistência narrativa e manter a missão ativa até o prazo, salvo quando a própria ficção justificar encerramento imediato.
-- [ ] **D-03 — Manter seis rodadas no modo padrão.** Recomendação: manter o prazo, mas introduzir margem de recuperação e medir a primeira partida antes de considerar uma sétima rodada.
-- [ ] **D-04 — Manter a Rodada 6 como janela de recuperação.** Recomendação: permitir uma última ação útil e a operação no mesmo turno solo, quando os PA permitirem.
-- [ ] **D-05 — Tornar conexões formais significativas.** Recomendação: aceitar apenas pistas confirmadas e exigir que as conexões usadas pela operação sejam coerentes com a hipótese escolhida.
-- [ ] **D-06 — Consolidar regras de mão e apoio.** Definir uma única fonte de verdade para renovação da mão e para a escolha ou compra de carta do apoio antes de alterar balanceamento.
+- [x] **D-01 — Substituir “Apresentar acusação” por “Preparar operação”.** A operação só fica disponível quando uma hipótese tiver sustentação mínima; ela não revela antecipadamente qual solução é correta.
+- [x] **D-02 — Definir recuperação após operação incompleta.** Recomendação: registrar uma inconsistência narrativa e manter a missão ativa até o prazo, salvo quando a própria ficção justificar encerramento imediato.
+- [x] **D-03 — Manter seis rodadas no modo padrão.** Recomendação: manter o prazo, mas introduzir margem de recuperação e medir a primeira partida antes de considerar uma sétima rodada.
+- [x] **D-04 — Manter a Rodada 6 como janela de recuperação.** Recomendação: permitir uma última ação útil e a operação no mesmo turno solo, quando os PA permitirem.
+- [x] **D-05 — Tornar conexões formais significativas.** Recomendação: aceitar apenas pistas confirmadas e exigir que as conexões usadas pela operação sejam coerentes com a hipótese escolhida.
+- [x] **D-06 — Consolidar regras de mão e apoio.** Definir uma única fonte de verdade para renovação da mão e para a escolha ou compra de carta do apoio antes de alterar balanceamento.
 
 ## Orçamento de PA e margem para iniciantes
 
@@ -104,7 +104,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
   - Preservar hipóteses livres como anotações sem custo, separadas das conexões que têm efeito mecânico.
   - Critério de aceite: não é possível cumprir a prontidão conectando pistas aleatórias, duplicadas ou refutadas.
 
-- [ ] **GD-07 — Implementar preparação e resolução de operação** `[Back] [API]`
+- [x] **GD-07 — Implementar preparação e resolução de operação** `[Back] [API]`
   - Criar casos de uso separados para consultar operações disponíveis, preparar uma operação e resolver seu resultado.
   - Operação incompleta deve manter a partida ativa quando ainda houver prazo e registrar consequência útil.
   - Critério de aceite: o backend nunca entrega operações, resultados ou requisitos ainda bloqueados além do necessário para a decisão atual.
@@ -121,7 +121,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
   - Diferenciar claramente hipótese livre, hipótese plausível e hipótese sustentada.
   - Critério de aceite: um jogador entende por que sua teoria ganhou ou perdeu força sem receber solução pronta.
 
-- [ ] **GD-10 — Substituir a interface de acusação por preparação de operação** `[Front] [Back]`
+- [x] **GD-10 — Substituir a interface de acusação por preparação de operação** `[Front] [Back]`
   - Remover seleção manual de suspeito e dos três eixos como condição de interface.
   - Apresentar operações disponíveis, seus riscos narrativos e o estado geral de preparação.
   - Critério de aceite: um jogador pode concluir a missão sem uma tela de “acusação”.
