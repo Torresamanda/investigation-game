@@ -22,7 +22,6 @@ const emit = defineEmits<{
 const cardGroups = computed(() => [
   {
     title: 'Baralho do Investigador',
-    description: 'Renova no turno',
     cards: props.cards.filter(
       (card) => !card.temporary && (!props.ownerId || card.ownerId === props.ownerId),
     ),
@@ -30,7 +29,6 @@ const cardGroups = computed(() => [
   },
   {
     title: 'Cartas Temporárias & Extras',
-    description: 'Fixas entre turnos até o uso',
     cards: props.cards.filter(
       (card) => card.temporary || (props.ownerId && card.ownerId !== props.ownerId),
     ),
@@ -73,7 +71,6 @@ function toggleCard(instanceId: string) {
         :class="{ 'card-group--extra': group.isExtra }"
       >
         <h3>{{ group.title }} ({{ group.cards.length }})</h3>
-        <small>{{ group.description }}</small>
         <div class="card-hand">
           <InvestigationCard
             v-for="card in group.cards"
