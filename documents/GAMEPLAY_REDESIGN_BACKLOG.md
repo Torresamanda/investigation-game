@@ -72,7 +72,35 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 
 ### P0 — Definição e contrato do novo ciclo
 
-- [ ] **GD-01 — Definir estados de hipótese** `[Definição] [Back] [Front]`
+### Contrato de estados de hipótese (GD-01)
+
+Uma hipótese livre é uma anotação do jogador: não tem custo, não é validada pelo
+servidor e não libera operações. Uma hipótese mecânica é uma linha de raciocínio
+privada do caso, acompanhada pelo servidor a partir de evidências já descobertas e
+relações coerentes. O cliente recebe somente seu estado, os títulos de evidências já
+conhecidas, os eixos já cobertos e a quantidade de relações coerentes.
+
+| Estado | Significado público | Transições permitidas |
+| --- | --- | --- |
+| `inquiry` | Há fatos relacionados, mas ainda não formam uma explicação consistente. | Pode tornar-se `plausible`, `contested` ou `discarded`. |
+| `plausible` | Fatos confirmados cobrem ao menos dois eixos públicos e há uma relação coerente. | Pode tornar-se `sustained`, `contested` ou `discarded`. |
+| `sustained` | Fatos confirmados cobrem meios, oportunidade e vínculo, com as relações coerentes exigidas pelo caso. É o único estado que pode habilitar consulta de operação em GD-02. | Pode tornar-se `contested` ou `discarded`; nunca vence a missão por si só. |
+| `contested` | Uma refutação, contradição confirmada ou inconsistência de operação enfraqueceu a explicação. A missão continua e a interface mostra apenas a inconsistência já observada. | Pode retornar a `inquiry`, `plausible` ou `sustained` após novos fatos válidos; pode tornar-se `discarded`. |
+| `discarded` | Os fatos confirmados excluem definitivamente esta explicação no caso atual. | Não pode voltar a outro estado; o jogador pode criar uma nova hipótese livre. |
+
+Fatos públicos que podem fortalecer uma hipótese mecânica são pistas confirmadas,
+declarações corroboradas, refutações registradas e relações coerentes entre fatos já
+confirmados. Uma pista refutada nunca fortalece uma hipótese; ela pode contestá-la ou
+descartá-la. Uma observação sem descoberta nunca altera estado sozinha, mas pode
+registrar a consequência narrativa de uma tentativa.
+
+As transições são calculadas apenas no backend. Identificadores de linhas privadas,
+requisitos ainda não descobertos, regras de descarte do caso, condições de operação e
+resultado futuro permanecem privados. O DTO público não pode informar o próximo local,
+carta, pessoa, eixo ausente ou operação bloqueada. GD-02 poderá consultar operações
+somente para uma hipótese mecânica `sustained`, sem expor a regra que a sustentou.
+
+- [x] **GD-01 — Definir estados de hipótese** `[Definição] [Back] [Front]`
   - Modelar hipótese como estado explícito: em apuração, plausível, sustentada, contestada e descartada.
   - Definir quais categorias públicas de evidência podem fortalecê-la: meios, oportunidade e vínculo.
   - Critério de aceite: o estado da hipótese pode ser apresentado sem expor condições futuras ou a solução do caso.
@@ -104,9 +132,17 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
   - Preservar hipóteses livres como anotações sem custo, separadas das conexões que têm efeito mecânico.
   - Critério de aceite: não é possível cumprir a prontidão conectando pistas aleatórias, duplicadas ou refutadas.
 
+- [ ] **GD-06A — Separar relação no mural de cruzamento investigativo** `[Back] [Front] [Definição]`
+  - A ligação visual entre evidências confirmadas e coerentes deve ser gratuita: ela registra a linha de raciocínio do jogador no mural e não consome PA.
+  - O gasto de PA fica reservado para um cruzamento investigativo que produz efeito concreto, como validar uma relação, confrontar uma declaração, proteger uma prova ou abrir uma nova oportunidade.
+  - A prontidão de hipótese e operação deve avaliar cobertura dos eixos e relações coerentes; não pode depender de uma contagem genérica de conexões formais.
+  - Separar os contratos, casos de uso e apresentação das duas intenções para que uma ligação visual nunca seja confundida com uma ação investigativa.
+  - Critério de aceite: o jogador pode organizar livremente o mural sem custo; PA só é gasto quando a relação gera consequência mecânica real; não existe conexão de preenchimento para liberar operação.
+
 - [x] **GD-07 — Implementar preparação e resolução de operação** `[Back] [API]`
   - Criar casos de uso separados para consultar operações disponíveis, preparar uma operação e resolver seu resultado.
   - Operação incompleta deve manter a partida ativa quando ainda houver prazo e registrar consequência útil.
+  - Depende da revisão de conexões em `GD-06A` antes de ser considerado consolidado.
   - Critério de aceite: o backend nunca entrega operações, resultados ou requisitos ainda bloqueados além do necessário para a decisão atual.
 
 - [x] **GD-08 — Reequilibrar especialidades para a rota principal** `[Back] [Definição]`
@@ -126,7 +162,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
   - Apresentar operações disponíveis, seus riscos narrativos e o estado geral de preparação.
   - Critério de aceite: um jogador pode concluir a missão sem uma tela de “acusação”.
 
-- [ ] **GD-11 — Criar feedback de recuperação sem spoiler** `[Front] [Back]`
+- [x] **GD-11 — Criar feedback de recuperação sem spoiler** `[Front] [Back]`
   - Comunicar tentativa incompleta como inconsistência, nova observação ou tempo perdido, sem indicar a prova/local exato ausente.
   - Na Rodada 6, comunicar que só confirmações e decisões de encerramento permanecem possíveis.
   - Critério de aceite: o jogador sabe que ainda pode agir e por que sua teoria não se sustentou, sem receber um guia de solução.
@@ -176,12 +212,13 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 ## Ordem recomendada
 
 1. D-01 a D-06 e GD-01 a GD-04.
-2. GD-05 a GD-08, com testes de domínio desde o início.
-3. GD-09 a GD-12, incluindo GD-11A.
-4. GD-13, GD-13A e GD-14.
-5. GD-15; ajustar o balanceamento conforme dados.
-6. GD-17 depois de validar a economia de PA.
-7. GD-16 somente depois de validar o fluxo.
+2. GD-05 e GD-06, com testes de domínio desde o início.
+3. GD-06A; então revalidar GD-07 e GD-08 contra a economia de PA revisada.
+4. GD-09 a GD-12, incluindo GD-11A.
+5. GD-13, GD-13A e GD-14.
+6. GD-15; ajustar o balanceamento conforme dados.
+7. GD-17 depois de validar a economia de PA.
+8. GD-16 somente depois de validar o fluxo.
 
 ## Métricas de validação
 
