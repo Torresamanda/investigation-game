@@ -106,10 +106,9 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
-  it('exibe conexões na terceira seção do diário', async () => {
+  it('mantém conexões formais acessíveis no diário unificado', async () => {
     const view = createView()
     await view.get('.journal-mode-tab').trigger('click')
-    await view.findAll('.journal-tabs button')[2]!.trigger('click')
     expect(view.get('.journal-connection-form').text()).toContain('Criar conexão formal')
     view.unmount()
   })
