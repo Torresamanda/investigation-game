@@ -113,6 +113,22 @@ it('empilha notificações, distingue observações e zera o badge ao abrir o di
   view.unmount()
 })
 
+it('confirma o abandono da partida em um modal centralizado', async () => {
+  const { view } = setupTable()
+
+  await view.get('.back-link').trigger('click')
+
+  const confirmation = view.get('.delete-match-dialog')
+  expect(confirmation.element.tagName).toBe('DIALOG')
+  expect((confirmation.element as HTMLDialogElement).open).toBe(true)
+  expect(confirmation.attributes('aria-labelledby')).toBe('delete-match-title')
+  expect(confirmation.text()).toContain('Abandonar esta partida?')
+
+  await confirmation.get('.delete-match-actions button').trigger('click')
+  expect(view.find('.delete-match-dialog').exists()).toBe(false)
+  view.unmount()
+})
+
 it('mantém o dossiê dentro do painel e permite percorrer o tour sem alterar a partida', async () => {
   const { session, view } = setupTable()
   expect(view.findAll('.mode-tabs button')[2]!.attributes('disabled')).toBeDefined()

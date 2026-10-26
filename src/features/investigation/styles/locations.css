@@ -48,7 +48,7 @@
 .support-action {
   width: 100%;
   margin-top: 8px;
-  padding: 8px 16px;
+  padding: 8px 12px;
   color: var(--paper);
   background: #264b5d;
   border: 1px solid #c79a5388;
@@ -91,7 +91,7 @@
 .location-list button {
   text-align: left;
   font-size: 12px;
-  padding: 8px 16px;
+  padding: 8px 12px;
 }
 
 .rail-note {

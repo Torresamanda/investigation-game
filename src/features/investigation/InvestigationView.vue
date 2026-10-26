@@ -17,6 +17,7 @@ import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
 import AccusationDialog from './components/AccusationDialog.vue'
 import AppToast from '../../components/ui/AppToast.vue'
+import AppModal from '../../components/ui/AppModal.vue'
 import { statusFeedback } from './action-feedback'
 import { PhBookOpenText } from '../../components/icons'
 import { useTableContext } from './composables/useTableContext'
@@ -179,21 +180,24 @@ function executeSelectedAction(action: InvestigationAction) {
         <span>Como funciona a investigação?</span>
       </button>
     </Teleport>
-    <section
+    <AppModal
       v-if="showDeletionConfirmation"
-      class="panel delete-match-dialog"
-      aria-labelledby="delete-match-title"
+      class="delete-match-dialog"
+      labelled-by="delete-match-title"
+      @close="showDeletionConfirmation = false"
     >
       <h2 id="delete-match-title">Abandonar esta partida?</h2>
       <p>A partida e seu diário serão removidos permanentemente.</p>
-      <p v-if="deletionError" role="alert">{{ deletionError }}</p>
+      <p v-if="deletionError" class="delete-match-error" role="alert">{{ deletionError }}</p>
       <div class="delete-match-actions">
-        <button @click="showDeletionConfirmation = false">Continuar investigando</button>
-        <button :disabled="session.isRequestPending" @click="deleteCurrentMatch">
+        <button type="button" @click="showDeletionConfirmation = false">
+          Continuar investigando
+        </button>
+        <button type="button" :disabled="session.isRequestPending" @click="deleteCurrentMatch">
           Abandonar partida
         </button>
       </div>
-    </section>
+    </AppModal>
     <div class="investigation-layout">
       <LocationsPanel
         v-model="locationId"
@@ -267,7 +271,7 @@ function executeSelectedAction(action: InvestigationAction) {
           </button>
         </nav>
         <div class="contextual-content">
-          <div v-show="panelMode === 'people'">
+          <div v-show="panelMode === 'people'" class="contextual-view">
             <SuspectSection
               v-model="selectedSuspectId"
               :location="location"
