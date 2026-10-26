@@ -94,12 +94,12 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 
 ### P1 — Motor autoritativo de hipóteses e operações
 
-- [ ] **GD-05 — Implementar entidade de hipótese investigativa** `[Back]`
+- [x] **GD-05 — Implementar entidade de hipótese investigativa** `[Back]`
   - Criar entidades e Value Objects tipados para hipótese, eixo de evidência, sustentação e contestação.
   - Não reutilizar arrays de chaves genéricas para controlar estados de dedução.
   - Critério de aceite: o domínio calcula a prontidão de uma hipótese de modo determinístico e testável.
 
-- [ ] **GD-06 — Implementar conexões coerentes** `[Back] [Front]`
+- [x] **GD-06 — Implementar conexões coerentes** `[Back] [Front]`
   - Restringir conexões formais a evidências válidas e impedir que conexões irrelevantes satisfaçam a condição de operação.
   - Preservar hipóteses livres como anotações sem custo, separadas das conexões que têm efeito mecânico.
   - Critério de aceite: não é possível cumprir a prontidão conectando pistas aleatórias, duplicadas ou refutadas.

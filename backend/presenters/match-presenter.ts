@@ -33,6 +33,11 @@ export const MatchPresenter = {
       actionPoints: match.actionPoints,
       journalEntries: match.journalEntries.map(toPublicJournalEntry),
       journalConnections: match.journalConnections,
+      hypotheses: (match.hypotheses ?? []).map((hypothesis) => ({
+        status: hypothesis.status,
+        coveredAxes: [...new Set(hypothesis.evidence.map((evidence) => evidence.axis))],
+        coherentConnectionCount: hypothesis.connectionIds.length,
+      })),
       decks: {
         [match.activeInvestigatorId]: {
           hand: activeDeck.hand.map(toPublicCard),

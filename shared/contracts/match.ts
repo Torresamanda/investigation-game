@@ -31,6 +31,12 @@ export interface MatchJournalConnection {
   readonly round: number
 }
 
+export interface MatchHypothesisProgress {
+  readonly status: 'inquiry' | 'plausible' | 'sustained' | 'contested' | 'discarded'
+  readonly coveredAxes: readonly ('means' | 'opportunity' | 'link')[]
+  readonly coherentConnectionCount: number
+}
+
 export interface PublicMatchDto {
   readonly id: string
   readonly mode: 'solo'
@@ -56,6 +62,7 @@ export interface PublicMatchDto {
   readonly actionPoints: ActionPointPool
   readonly journalEntries: readonly MatchJournalEntry[]
   readonly journalConnections: readonly MatchJournalConnection[]
+  readonly hypotheses?: readonly MatchHypothesisProgress[]
   readonly decks: Readonly<
     Partial<
       Record<

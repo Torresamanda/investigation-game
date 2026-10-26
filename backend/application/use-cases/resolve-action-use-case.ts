@@ -11,6 +11,8 @@ import { recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import type { InvestigatorId } from '../../domain/match.js'
 import { findClueConnectionCandidate } from '../../domain/clue-connection.js'
+import { legacyCaseEvidenceMetadata } from '../../domain/coherent-connection.js'
+import { synchronizeInvestigationHypotheses } from '../../domain/investigation-hypothesis.js'
 import {
   assertMatchIsActive,
   DomainError,
@@ -121,7 +123,11 @@ export class ResolveActionUseCase {
         : { ...resolution.entry, caseEvidenceKey: resolution.resolvedKey }
     const finalResolvedEntry =
       resolvedEntry.type === 'clue' && resolvedEntry.status === 'confirmed'
-        ? { ...resolvedEntry, markedForFollowUp: false }
+        ? {
+            ...resolvedEntry,
+            markedForFollowUp: false,
+            ...legacyCaseEvidenceMetadata(resolvedEntry.caseEvidenceKey),
+          }
         : resolvedEntry
     const journalEntries = match.journalEntries.map((entry) =>
       clearConsumedFollowUpMark(
@@ -214,6 +220,11 @@ export class ResolveActionUseCase {
       preparedCardInstanceId: null,
       journalEntries,
       journalConnections,
+      hypotheses: synchronizeInvestigationHypotheses(
+        journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
+        journalConnections,
+        match.hypotheses ?? [],
+      ),
       resolvedKeys,
       examinedLocationsThisRound:
         command.action === 'examine' &&

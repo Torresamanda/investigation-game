@@ -7,6 +7,7 @@ import {
   type InvestigationAction,
 } from '../../shared/domain/identifiers.js'
 import type { ActionPointPool } from '../../shared/domain/action-points.js'
+import type { EvidenceAxis, InvestigationHypothesis } from './investigation-hypothesis.js'
 
 export { investigatorIds, locationIds, investigationActions }
 export type { InvestigatorId, LocationId, InvestigationAction }
@@ -35,6 +36,8 @@ export interface JournalEntry {
   readonly protectedUntilRound?: number
   readonly markedForFollowUp?: boolean
   readonly caseEvidenceKey?: CaseEvidenceKey
+  readonly evidenceAxes?: readonly EvidenceAxis[]
+  readonly hypothesisThreadIds?: readonly string[]
 }
 
 export type CaseEvidenceKey =
@@ -50,6 +53,7 @@ export interface JournalConnection {
   readonly fromClueId: string
   readonly toClueId: string
   readonly round: number
+  readonly hypothesisThreadId?: string
 }
 
 export interface SoloMatch {
@@ -76,6 +80,7 @@ export interface SoloMatch {
   readonly actionPoints: ActionPoints
   readonly journalEntries: readonly JournalEntry[]
   readonly journalConnections: readonly JournalConnection[]
+  readonly hypotheses?: readonly InvestigationHypothesis[]
   readonly resolvedKeys: readonly string[]
   readonly decks: Readonly<Record<InvestigatorId, MatchDeck>>
   readonly preparedCardInstanceId: string | null
@@ -118,6 +123,7 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     actionPoints: actionPointsFor(input.activeInvestigatorId),
     journalEntries: [],
     journalConnections: [],
+    hypotheses: [],
     resolvedKeys: [],
     decks: {
       [input.activeInvestigatorId]: createInvestigatorDeck(
