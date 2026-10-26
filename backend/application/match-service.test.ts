@@ -436,6 +436,11 @@ describe('MatchService', () => {
     expect(afterHelena.hasUsedPressLeakConversationThisRound).toBe(true)
 
     setCurrentLocation(repository, match.id, 'gallery')
+    const afterGalleryTravel = repository.findById(match.id)!
+    repository.save({
+      ...afterGalleryTravel,
+      resolvedKeys: [...afterGalleryTravel.resolvedKeys, 'security-log-gap'],
+    })
     const daviOptions = service.getConversationOptions(match.id, 'davi', 'gallery')
     expect(daviOptions.questions.find((question) => question.id === 'collectors')).toMatchObject({
       cost: 2,
@@ -783,10 +788,10 @@ describe('MatchService', () => {
       title: 'Declaração de Marta Lobo',
       locationId: 'laboratory',
     })
-    const limitedOptions = service.getConversationOptions('match-1', 'marta', 'laboratory')
-    expect(limitedOptions.questions).toHaveLength(2)
-    expect(limitedOptions.questionLimitReached).toBe(true)
-    expect(limitedOptions.questions.every((question) => !question.canResolve)).toBe(true)
+    const remainingOptions = service.getConversationOptions('match-1', 'marta', 'laboratory')
+    expect(remainingOptions.questions).toHaveLength(2)
+    expect(remainingOptions.questions.some((question) => question.canResolve)).toBe(true)
+    expect(remainingOptions).not.toHaveProperty('questionLimitReached')
   })
 
   it('mantém perguntas dependentes de evidência visíveis, mas bloqueadas sem consumir o turno', () => {
@@ -820,20 +825,75 @@ describe('MatchService', () => {
     })
   })
 
-  it('bloqueia recompensas temporárias até a rodada em que elas podem ser entregues', () => {
-    const service = new MatchService(new InMemoryMatchRepository(), undefined, () => 'match-1')
+  it('bloqueia pergunta por falta de evidência e a libera após o registro correspondente', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
     const match = service.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
-    const options = service.getConversationOptions(match.id, 'davi', 'gallery')
-    expect(options.questions.find((question) => question.id === 'collectors')).toMatchObject({
+    setCurrentLocation(repository, match.id, 'security')
+    const options = service.getConversationOptions(match.id, 'raul', 'security')
+    expect(options.questions.find((question) => question.id === 'power-failure')).toMatchObject({
       canResolve: false,
       isEvidenceBlocked: true,
     })
+
+    const matchAtLaterRound = { ...repository.findById(match.id)!, round: 6 }
+    repository.save(matchAtLaterRound)
+    expect(
+      service
+        .getConversationOptions(match.id, 'raul', 'security')
+        .questions.find((question) => question.id === 'power-failure'),
+    ).toMatchObject({ canResolve: false, isEvidenceBlocked: true })
+
+    repository.save({
+      ...matchAtLaterRound,
+      resolvedKeys: [...matchAtLaterRound.resolvedKeys, 'security-initial-report'],
+    })
+    expect(
+      service
+        .getConversationOptions(match.id, 'raul', 'security')
+        .questions.find((question) => question.id === 'power-failure'),
+    ).toMatchObject({ canResolve: true, isEvidenceBlocked: false })
   })
 
-  it('aceita uma pergunta por pessoa a cada turno e libera outra na rodada seguinte', () => {
+  it('libera as perguntas de Davi e Raul pela lacuna registrada, sem depender da rodada', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'match-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    setCurrentLocation(repository, match.id, 'gallery')
+    repository.save({ ...repository.findById(match.id)!, round: 1 })
+
+    expect(
+      service
+        .getConversationOptions(match.id, 'davi', 'gallery')
+        .questions.find((question) => question.id === 'collectors'),
+    ).toMatchObject({ canResolve: false, isEvidenceBlocked: true })
+
+    const evidenceFound = repository.findById(match.id)!
+    repository.save({
+      ...evidenceFound,
+      resolvedKeys: [...evidenceFound.resolvedKeys, 'security-log-gap'],
+    })
+    expect(
+      service
+        .getConversationOptions(match.id, 'davi', 'gallery')
+        .questions.find((question) => question.id === 'collectors'),
+    ).toMatchObject({ canResolve: true, isEvidenceBlocked: false })
+
+    setCurrentLocation(repository, match.id, 'security')
+    expect(
+      service
+        .getConversationOptions(match.id, 'raul', 'security')
+        .questions.find((question) => question.id === 'security-procedure'),
+    ).toMatchObject({ canResolve: true, isEvidenceBlocked: false })
+  })
+
+  it('permite várias perguntas distintas no mesmo turno e mantém cada uma como uso único', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository, undefined, () => 'match-1')
     const match = service.createSoloMatch({
@@ -842,12 +902,19 @@ describe('MatchService', () => {
     })
     setCurrentLocation(repository, match.id, 'laboratory')
 
-    service.resolveConversation({
+    const firstAnswer = service.resolveConversation({
       matchId: match.id,
       personId: 'marta',
       locationId: 'laboratory',
       questionId: 'davi-interest',
     })
+    const secondAnswer = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: 'technical-assessment',
+    })
+    expect(secondAnswer.journalEntries).toHaveLength(firstAnswer.journalEntries.length + 1)
     expect(() =>
       service.resolveConversation({
         matchId: match.id,
@@ -855,26 +922,7 @@ describe('MatchService', () => {
         locationId: 'laboratory',
         questionId: 'technical-assessment',
       }),
-    ).toThrow('Você já fez uma pergunta neste turno.')
-
-    setCurrentLocation(repository, match.id, 'security')
-    const otherPerson = service.resolveConversation({
-      matchId: match.id,
-      personId: 'raul',
-      locationId: 'security',
-      questionId: 'museum-routine',
-    })
-    expect(otherPerson.journalEntries).toHaveLength(2)
-
-    service.endTurn(match.id)
-    setCurrentLocation(repository, match.id, 'laboratory')
-    const nextTurn = service.resolveConversation({
-      matchId: match.id,
-      personId: 'marta',
-      locationId: 'laboratory',
-      questionId: 'technical-assessment',
-    })
-    expect(nextTurn.journalEntries).toHaveLength(3)
+    ).toThrow('Esta pergunta já foi resolvida.')
   })
 
   it('rejeita conversa fora do local, pergunta inexistente ou já resolvida sem alterar a partida', () => {
@@ -1017,7 +1065,6 @@ describe('MatchService', () => {
       questionId: 'davi-interest',
     })
     const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
-    expect(options.questionLimitReached).toBe(false)
     expect(options.questions.map((question) => question.cost)).toEqual([0, 0])
 
     const updated = service.resolveConversation({
@@ -1047,7 +1094,6 @@ describe('MatchService', () => {
     service.prepareCard(match.id, pause.instanceId)
 
     const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
-    expect(options.questionLimitReached).toBe(false)
     expect(options.questions.map((question) => question.cost)).toEqual([0, 0])
 
     const updated = service.resolveConversation({
@@ -1083,16 +1129,17 @@ describe('MatchService', () => {
   })
 
   it('concede as cartas temporárias de Davi e Raul quando suas conversas são liberadas', () => {
-    const daviService = new MatchService(
-      new InMemoryMatchRepository(),
-      undefined,
-      () => 'davi-match',
-    )
+    const daviRepository = new InMemoryMatchRepository()
+    const daviService = new MatchService(daviRepository, undefined, () => 'davi-match')
     const daviMatch = daviService.createSoloMatch({
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
-    daviService.endTurn(daviMatch.id)
+    const daviTurn = daviService.endTurn(daviMatch.id)
+    daviRepository.save({
+      ...daviTurn,
+      resolvedKeys: [...daviTurn.resolvedKeys, 'security-log-gap'],
+    })
     const afterDavi = daviService.resolveConversation({
       matchId: daviMatch.id,
       personId: 'davi',
@@ -1109,7 +1156,11 @@ describe('MatchService', () => {
       activeInvestigatorId: 'livia',
       supportInvestigatorId: 'rafael',
     })
-    raulService.endTurn(raulMatch.id)
+    const raulTurn = raulService.endTurn(raulMatch.id)
+    raulRepository.save({
+      ...raulTurn,
+      resolvedKeys: [...raulTurn.resolvedKeys, 'security-log-gap'],
+    })
     setCurrentLocation(raulRepository, raulMatch.id, 'security')
     const afterRaul = raulService.resolveConversation({
       matchId: raulMatch.id,
@@ -1133,6 +1184,7 @@ describe('MatchService', () => {
     repository.save({
       ...roundTwo,
       actionPoints: { ...roundTwo.actionPoints, general: 4 },
+      resolvedKeys: [...roundTwo.resolvedKeys, 'security-log-gap'],
     })
     const afterConversation = service.resolveConversation({
       matchId: match.id,

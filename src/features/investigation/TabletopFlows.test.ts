@@ -51,7 +51,6 @@ it('conversa no painel, atualiza opções ao preparar na mão e mantém a respos
     personId: 'davi',
     personName: 'Davi Orsini',
     locationId: 'gallery',
-    questionLimitReached: false,
     questions: [
       {
         id: 'question',

@@ -11,7 +11,6 @@ describe('ConversationDialog', () => {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
-          questionLimitReached: false,
           questions: [
             {
               id: 'technical-assessment',
@@ -47,7 +46,7 @@ describe('ConversationDialog', () => {
     expect(view.emitted('resolve')).toEqual([['davi-interest']])
   })
 
-  it('explica quando a pergunta do turno já foi usada', () => {
+  it('explica o bloqueio por evidência sem revelar qual evidência falta', () => {
     const view = mount(ConversationDialog, {
       props: {
         pointsLabel: '3 PA gerais',
@@ -55,7 +54,6 @@ describe('ConversationDialog', () => {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
-          questionLimitReached: true,
           questions: [
             {
               id: 'davi-interest',
@@ -70,7 +68,6 @@ describe('ConversationDialog', () => {
       },
     })
 
-    expect(view.text()).toContain('já fez uma pergunta neste turno')
     expect(view.text()).toContain('Diálogo bloqueado: evidência necessária')
     expect(view.text()).not.toContain('Examine a fechadura')
     expect(view.get('.conversation-questions button').attributes('disabled')).toBeDefined()
@@ -85,7 +82,6 @@ describe('ConversationDialog', () => {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
-          questionLimitReached: true,
           questions: [],
         },
       },

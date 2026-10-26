@@ -52,14 +52,11 @@ export class ResolveConversationUseCase {
     if (match.preparedCardInstanceId && (!card || !card.compatibleActions.includes('converse'))) {
       throw new InvalidActionError('A carta não pode ser usada nesta conversa.')
     }
-    const questionLimitReached = match.resolvedKeys.includes(
+    const hasAskedQuestionThisTurn = match.resolvedKeys.includes(
       conversationTurnKey(match, command.personId),
     )
     const bonusQuestion = hasConversationBonus(match, command.personId)
-    const usesPreparedPause = questionLimitReached && card?.definitionId === 'calculated-pause'
-    if (questionLimitReached && !bonusQuestion && !usesPreparedPause) {
-      throw new Error('Você já fez uma pergunta neste turno.')
-    }
+    const usesPreparedPause = hasAskedQuestionThisTurn && card?.definitionId === 'calculated-pause'
     const questionCost = bonusQuestion || usesPreparedPause ? 0 : question.cost
     const pressLeakSurcharge = pressLeakConversationSurcharge(
       match,
@@ -85,7 +82,6 @@ export class ResolveConversationUseCase {
     const reward = this.caseContentRepository.getConversationReward(
       command.personId,
       command.questionId,
-      match.round,
     )
     const usesCalculatedPause = card?.definitionId === 'calculated-pause'
     const usesIsadoraPassive =
@@ -128,7 +124,7 @@ export class ResolveConversationUseCase {
         ...(bonusQuestion || usesPreparedPause
           ? [conversationBonusUsedKey(match, command.personId)]
           : []),
-        ...(usesCalculatedPause && !questionLimitReached
+        ...(usesCalculatedPause && !hasAskedQuestionThisTurn
           ? [conversationBonusKey(match, command.personId)]
           : []),
       ],

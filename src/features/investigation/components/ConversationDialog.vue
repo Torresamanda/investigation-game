@@ -30,11 +30,7 @@ const emit = defineEmits<{ close: []; resolve: [questionId: string] }>()
       </button>
     </header>
 
-    <p v-if="conversation.questionLimitReached" class="conversation-help">
-      Você já fez uma pergunta neste turno. Encerre o turno para continuar a conversa.
-    </p>
-
-    <p v-else-if="conversation.questions.length" class="conversation-help">
+    <p v-if="conversation.questions.length" class="conversation-help">
       Escolha uma pergunta. O custo será confirmado pelo motor da investigação.
     </p>
 

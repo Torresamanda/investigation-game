@@ -64,7 +64,6 @@ export interface CaseContentRepository {
   getConversationReward(
     personId: PersonId,
     questionId: string,
-    round: number,
   ): 'curator-agenda' | 'treatment-sheet' | 'guest-list' | 'patrol-map' | undefined
   resolveAction(
     match: SoloMatch,
