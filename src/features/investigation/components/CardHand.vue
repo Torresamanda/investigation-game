@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import SectionHeading from '../../../components/ui/SectionHeading.vue'
+import { computed, ref } from 'vue'
 import type { HandCard } from '../../../stores/investigation'
 import { PhTrash } from '../../../components/icons'
 import InvestigationCard from './InvestigationCard.vue'
@@ -7,6 +8,7 @@ import CardDetails from './CardDetails.vue'
 const props = defineProps<{
   cards: readonly HandCard[]
   ownerLabel: string
+  ownerId?: HandCard['ownerId']
   preparedCardId: string | null
   canDiscardPreparedCard: boolean
   isRequestPending?: boolean
@@ -17,6 +19,25 @@ const emit = defineEmits<{
   clearPrepared: []
   discardPrepared: []
 }>()
+const cardGroups = computed(() => [
+  {
+    title: 'Baralho do Investigador',
+    description: 'Renova no turno',
+    cards: props.cards.filter(
+      (card) => !card.temporary && (!props.ownerId || card.ownerId === props.ownerId),
+    ),
+    isExtra: false,
+  },
+  {
+    title: 'Cartas Temporárias & Extras',
+    description: 'Fixas entre turnos até o uso',
+    cards: props.cards.filter(
+      (card) => card.temporary || (props.ownerId && card.ownerId !== props.ownerId),
+    ),
+    isExtra: true,
+  },
+])
+
 const inspectedCard = ref<HandCard | null>(null)
 function toggleCard(instanceId: string) {
   if (props.preparedCardId === instanceId) {
@@ -28,43 +49,52 @@ function toggleCard(instanceId: string) {
 </script>
 
 <template>
-  <section class="panel hand-panel" aria-labelledby="hand-title">
+  <section class="panel hand-panel" aria-label="Sua mão">
     <div class="hand-heading">
-      <div>
-        <p class="eyebrow">Recursos do investigador</p>
-        <h2 id="hand-title">Sua mão</h2>
+      <SectionHeading title="Sua mão" eyebrow="Recursos do investigador" />
+      <div class="hand-actions" aria-label="Ações da mão">
+        <button
+          class="discard-card"
+          :class="{ 'discard-card--icon-only': compactActions }"
+          aria-label="Descartar carta"
+          :disabled="!canDiscardPreparedCard || isRequestPending"
+          @click="emit('discardPrepared')"
+        >
+          <PhTrash :size="16" weight="bold" aria-hidden="true" />
+          <span v-if="!compactActions" class="discard-label">Descartar carta</span>
+        </button>
+        <button
+          v-if="preparedCardId"
+          class="clear-prepared"
+          :disabled="isRequestPending"
+          @click="emit('clearPrepared')"
+        >
+          Cancelar preparação
+        </button>
       </div>
     </div>
-    <div class="card-hand">
-      <InvestigationCard
-        v-for="card in cards"
-        :key="card.instanceId"
-        :card="card"
-        :prepared="preparedCardId === card.instanceId"
-        :is-disabled="isRequestPending"
-        @toggle="toggleCard"
-        @inspect="inspectedCard = $event"
-      />
-    </div>
-    <div class="hand-actions" aria-label="Ações da mão">
-      <button
-        class="discard-card"
-        :class="{ 'discard-card--icon-only': compactActions }"
-        aria-label="Descartar carta"
-        :disabled="!canDiscardPreparedCard || isRequestPending"
-        @click="emit('discardPrepared')"
+    <div class="hand-groups">
+      <section
+        v-for="group in cardGroups"
+        :key="group.title"
+        class="card-group"
+        :class="{ 'card-group--extra': group.isExtra }"
       >
-        <PhTrash :size="16" weight="bold" aria-hidden="true" />
-        <span v-if="!compactActions" class="discard-label">Descartar carta</span>
-      </button>
-      <button
-        v-if="preparedCardId"
-        class="clear-prepared"
-        :disabled="isRequestPending"
-        @click="emit('clearPrepared')"
-      >
-        Cancelar
-      </button>
+        <h3>{{ group.title }} ({{ group.cards.length }})</h3>
+        <small>{{ group.description }}</small>
+        <div class="card-hand">
+          <InvestigationCard
+            v-for="card in group.cards"
+            :key="card.instanceId"
+            :card="card"
+            :is-extra="group.isExtra"
+            :prepared="preparedCardId === card.instanceId"
+            :is-disabled="isRequestPending"
+            @toggle="toggleCard"
+            @inspect="inspectedCard = $event"
+          />
+        </div>
+      </section>
     </div>
     <CardDetails
       v-if="inspectedCard"
