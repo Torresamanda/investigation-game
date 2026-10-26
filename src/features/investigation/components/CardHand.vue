@@ -63,14 +63,6 @@ function toggleCard(instanceId: string) {
           <PhTrash :size="16" weight="bold" aria-hidden="true" />
           <span v-if="!compactActions" class="discard-label">Descartar carta</span>
         </button>
-        <button
-          v-if="preparedCardId"
-          class="clear-prepared"
-          :disabled="isRequestPending"
-          @click="emit('clearPrepared')"
-        >
-          Cancelar preparação
-        </button>
       </div>
     </div>
     <div class="hand-groups">

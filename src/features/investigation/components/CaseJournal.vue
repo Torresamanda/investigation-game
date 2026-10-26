@@ -3,7 +3,6 @@ import SectionHeading from '../../../components/ui/SectionHeading.vue'
 import { computed, ref } from 'vue'
 import { locations, type LocationId } from '../../../content/case01'
 import type { MatchJournalEntry } from '../../../services/game-api'
-import { PhX } from '../../../components/icons'
 import { journalStatusLabels } from '../action-feedback'
 const notes = defineModel<string>('notes', { required: true })
 const props = defineProps<{
@@ -19,7 +18,6 @@ const emit = defineEmits<{
   enter: []
   leave: []
   pin: []
-  close: []
   save: []
   createConnection: [fromClueId: string, toClueId: string]
 }>()
@@ -120,9 +118,6 @@ const tabs = [
   >
     <header class="journal-heading">
       <SectionHeading title="Diário do caso" eyebrow="Memória da investigação" />
-      <button class="journal-close" aria-label="Fechar diário" @click="emit('close')">
-        <PhX :size="18" weight="bold" aria-hidden="true" />
-      </button>
     </header>
     <div class="journal-tabs" role="group" aria-label="Seções do diário">
       <button

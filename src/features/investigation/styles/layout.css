@@ -10,32 +10,32 @@
 .investigation-page {
   width: 100%;
   margin: auto;
-  padding: 14px 20px;
+  padding: var(--space-3) var(--space-4);
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .investigation-layout {
   display: grid;
   grid-template-columns: 270px minmax(380px, 1fr) 390px;
   align-items: stretch;
-  gap: 14px;
+  gap: var(--space-3);
   min-width: 0;
 }
 
 .center-zone {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-3);
   min-width: 0;
 }
 
 .contextual-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
   min-width: 0;
-  padding-inline-end: 0;
+  padding-inline-end: var(--space-3);
 }
 
 .contextual-content {
@@ -44,8 +44,6 @@
   min-width: 0;
   overflow: auto;
   max-height: calc(100dvh - 240px);
-  padding-inline-end: 16px;
-  scrollbar-gutter: stable;
 }
 
 .contextual-view {
@@ -57,7 +55,11 @@
 .mode-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--space-1);
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ink-deep);
 }
 
 .mode-tabs button {
@@ -81,7 +83,6 @@
   max-height: none;
   overflow: visible;
   padding-inline-end: 0;
-  scrollbar-gutter: auto;
 }
 
 .contextual-panel .suspect-profile {
@@ -169,14 +170,11 @@
     overflow-y: auto;
     min-height: 0;
     max-height: none;
-    scrollbar-gutter: stable;
-    padding-inline-end: 16px;
   }
 
   .locations-panel {
     min-height: 0;
     max-height: none;
-    scrollbar-gutter: stable;
   }
 
   .center-zone > * {
@@ -189,10 +187,6 @@
   background: var(--ink-deep);
   padding: 12px;
   font-size: 12px;
-}
-
-.contextual-panel .suspect-section > button {
-  flex-shrink: 0;
 }
 
 .center-zone .scene-panel {

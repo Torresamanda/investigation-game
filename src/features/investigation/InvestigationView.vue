@@ -222,11 +222,9 @@ function executeSelectedAction(action: InvestigationAction) {
           :feedback="feedback"
           :can-end-turn="session.canEndTurn"
           :has-usable-action-points="hasUsableActionPoints"
-          :can-accuse="session.canAccuse"
           :round="session.round"
           @execute="executeSelectedAction"
           @end-turn="endTurn"
-          @accuse="openAccusation"
         />
         <CardHand
           :cards="cards"
@@ -281,7 +279,6 @@ function executeSelectedAction(action: InvestigationAction) {
               <ConversationDialog
                 v-if="conversation"
                 :conversation="conversation"
-                :points-label="session.pointsLabel"
                 :answer="conversationAnswer"
                 @close="conversation = null"
                 @resolve="resolveConversation"
@@ -299,7 +296,6 @@ function executeSelectedAction(action: InvestigationAction) {
             :has-prepared-connection-card="hasPreparedConnectionCard"
             @save="session.saveNote()"
             @create-connection="createJournalConnection"
-            @close="panelMode = 'people'"
           />
           <AccusationDialog
             v-if="session.remoteMatch && session.canAccuse"
@@ -309,7 +305,6 @@ function executeSelectedAction(action: InvestigationAction) {
             :connection-count="session.journalConnections.length"
             :action-points="session.remoteMatch.actionPoints"
             :error-message="accusationError"
-            @close="panelMode = 'people'"
             @accuse="accuseSuspect"
           />
         </div>

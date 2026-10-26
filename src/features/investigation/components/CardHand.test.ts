@@ -140,6 +140,7 @@ it('separa várias temporárias e apoio sem sobrepor controles às cartas', () =
   expect(groups[1]!.text()).toContain('Temp')
   expect(groups[1]!.text()).toContain('Apoio')
   expect(groups[1]!.findAll('.investigation-card-shell--extra')).toHaveLength(3)
-  expect(view.get('.hand-heading .hand-actions').text()).toContain('Cancelar preparação')
+  expect(view.get('.hand-heading .hand-actions').text()).toContain('Descartar carta')
+  expect(view.find('.clear-prepared').exists()).toBe(false)
   expect(view.find('.hand-groups .hand-actions').exists()).toBe(false)
 })

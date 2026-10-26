@@ -3,10 +3,9 @@ import { describe, expect, it } from 'vitest'
 import ConversationDialog from './ConversationDialog.vue'
 
 describe('ConversationDialog', () => {
-  it('fecha a conversa com um botão de ícone acessível', () => {
+  it('retorna ao perfil sem encerrar o painel contextual', async () => {
     const view = mount(ConversationDialog, {
       props: {
-        pointsLabel: '2 PA gerais',
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
@@ -16,15 +15,15 @@ describe('ConversationDialog', () => {
       },
     })
 
-    const closeButton = view.get('.conversation-close')
-    expect(closeButton.attributes('aria-label')).toBe('Fechar conversa')
-    expect(closeButton.text()).toBe('')
+    const backButton = view.get('.conversation-back')
+    expect(backButton.text()).toContain('Perfil')
+    await backButton.trigger('click')
+    expect(view.emitted('close')).toEqual([[]])
   })
 
   it('mostra as perguntas e informa seus custos antes de resolver uma delas', async () => {
     const view = mount(ConversationDialog, {
       props: {
-        pointsLabel: '5 PA gerais',
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
@@ -52,7 +51,7 @@ describe('ConversationDialog', () => {
     })
 
     expect(view.text()).toContain('Marta Lobo')
-    expect(view.text()).toContain('5 PA gerais')
+    expect(view.find('.conversation-person-portrait').exists()).toBe(true)
     expect(view.text()).toContain('Apuração')
     expect(view.text()).toContain('Contexto')
     expect(view.findAll('.conversation-questions button').map((button) => button.text())).toEqual([
@@ -67,7 +66,6 @@ describe('ConversationDialog', () => {
   it('explica o bloqueio por evidência sem revelar qual evidência falta', () => {
     const view = mount(ConversationDialog, {
       props: {
-        pointsLabel: '3 PA gerais',
         conversation: {
           personId: 'marta',
           personName: 'Marta Lobo',
@@ -94,7 +92,6 @@ describe('ConversationDialog', () => {
   it('exibe a resposta inline e prepara cartas somente na mão principal', () => {
     const view = mount(ConversationDialog, {
       props: {
-        pointsLabel: '2 PA gerais',
         answer: 'Declaração recém-colhida.',
         conversation: {
           personId: 'marta',
@@ -105,7 +102,7 @@ describe('ConversationDialog', () => {
       },
     })
     expect(view.get('.conversation-answer').text()).toContain('Declaração recém-colhida.')
-    expect(view.text()).toContain('mão principal')
+    expect(view.text()).toContain('Declaração registrada no diário')
     expect(view.find('.conversation-cards').exists()).toBe(false)
     expect(view.find('[aria-modal]').exists()).toBe(false)
   })

@@ -166,7 +166,7 @@ describe('fluxos da investigação', () => {
     await view.get('.journal-notes').trigger('submit')
     expect(view.get('.hypothesis-list').text()).toContain('Conferir os horários do museu')
     expect((view.get('#notes').element as HTMLTextAreaElement).value).toBe('')
-    await view.get('.journal-close').trigger('click')
+    await view.findAll('.mode-tabs button')[0]!.trigger('click')
     await view.get('.journal-mode-tab').trigger('click')
     expect(view.get('.hypothesis-list').text()).toContain('Conferir os horários do museu')
     view.unmount()

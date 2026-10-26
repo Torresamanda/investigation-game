@@ -4,7 +4,6 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-inline-end: 16px;
 }
 
 .investigation-controls h3 {
@@ -90,22 +89,6 @@
   width: 100%;
   padding: 8px 12px;
   font-size: 12px;
-}
-
-.accusation-control {
-  margin-top: auto;
-  padding-top: 8px;
-}
-
-.accusation-control button {
-  width: 100%;
-  font-size: 12px;
-  padding: 8px 12px;
-}
-
-.accusation-control .button-primary {
-  border-color: var(--gold);
-  color: var(--paper);
 }
 
 .accusation-dialog {

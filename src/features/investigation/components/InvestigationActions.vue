@@ -11,14 +11,12 @@ const props = defineProps<{
   feedback: InvestigationFeedback
   canEndTurn: boolean
   hasUsableActionPoints: boolean
-  canAccuse: boolean
   isRequestPending?: boolean
   round: number
 }>()
 const emit = defineEmits<{
   execute: [action: InvestigationAction]
   endTurn: []
-  accuse: []
 }>()
 const actions: readonly { label: string; action: VisibleInvestigationAction }[] = [
   { label: 'Examinar', action: 'examine' },
@@ -103,18 +101,6 @@ function confirmEndTurn() {
         {{ round === 6 ? 'Encerrar missão' : 'Encerrar turno' }}
         <PhArrowRight :size="18" weight="bold" aria-hidden="true" />
       </button>
-    </div>
-    <div class="accusation-control">
-      <button
-        :disabled="!canAccuse || isRequestPending"
-        aria-describedby="accusation-help"
-        @click="emit('accuse')"
-      >
-        {{ canAccuse ? 'Apresentar acusação' : 'Acusação bloqueada' }}
-      </button>
-      <p id="accusation-help" class="help-text">
-        Disponível nas Rodadas 5 e 6. No modo solo, exige 3 PA gerais.
-      </p>
     </div>
   </section>
 </template>

@@ -17,6 +17,20 @@ const clues: readonly MatchJournalEntry[] = ['one', 'two', 'three'].map((id) => 
 }))
 
 describe('AccusationDialog', () => {
+  it('permanece no painel contextual sem botão de fechar redundante', () => {
+    const view = mount(AccusationDialog, {
+      props: {
+        suspects,
+        confirmedClues: clues,
+        connectionCount: 2,
+        actionPoints: { general: 3, specialty: 2, specialtyPoint: 'research' },
+        errorMessage: null,
+      },
+    })
+
+    expect(view.find('[aria-label="Fechar acusação"]').exists()).toBe(false)
+  })
+
   it('submete pessoa e uma pista confirmada por eixo quando o dossiê está sustentado', async () => {
     const view = mount(AccusationDialog, {
       props: {

@@ -70,7 +70,7 @@ it('conversa no painel, atualiza opções ao preparar na mão e mantém a respos
     session.remoteMatch = { ...session.remoteMatch!, journalEntries: [statement] }
     return statement
   })
-  await view.get('.suspect-section > button').trigger('click')
+  await view.get('.suspect-conversation-trigger').trigger('click')
   await flushPromises()
   expect(view.get('.contextual-panel .conversation-dialog').isVisible()).toBe(true)
   expect(view.find('.suspect-profile').exists()).toBe(false)

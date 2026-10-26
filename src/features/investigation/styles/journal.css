@@ -4,8 +4,6 @@
   gap: 12px;
   overflow: auto;
   border-top: 2px solid var(--gold);
-  padding-inline-end: 16px;
-  scrollbar-gutter: stable;
 }
 
 .journal-heading {
@@ -23,12 +21,6 @@
 .journal-heading h2 {
   margin: 0;
   font-size: 24px;
-}
-
-.journal-close {
-  display: grid;
-  place-items: center;
-  padding: 8px;
 }
 
 .journal-tabs {
@@ -95,6 +87,11 @@
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.journal-notes textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -1px;
 }
 
 .journal-notes .help-text {

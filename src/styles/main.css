@@ -13,6 +13,10 @@
   --paper: #e8ddc5;
   --rust: #a64b3d;
   --line: #e8ddc526;
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
 }
 * {
   box-sizing: border-box;
@@ -42,8 +46,7 @@ select {
 }
 button {
   cursor: pointer;
-  min-height: 44px;
-  padding: 8px 12px;
+  padding: var(--space-1) var(--space-2);
   transition:
     border-color 0.15s,
     background 0.15s;
@@ -173,7 +176,7 @@ small {
   left: 16px;
   background: var(--paper);
   color: var(--ink);
-  padding: 16px;
+  padding: var(--space-3);
   z-index: 10;
 }
 

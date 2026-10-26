@@ -25,14 +25,9 @@ const selectedSuspect = computed(() =>
       class="suspect-section-profile"
       :person="selectedSuspect"
       :location="props.location"
+      :can-converse="selectedSuspect.locationId === location.id"
+      @converse="emit('converse')"
     />
-    <button
-      v-if="selectedSuspect && !isConversing"
-      :disabled="selectedSuspect.locationId !== location.id"
-      @click="emit('converse')"
-    >
-      Conversar
-    </button>
     <slot />
   </section>
 </template>

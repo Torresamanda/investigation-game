@@ -43,9 +43,13 @@ onBeforeUnmount(() => dialog.value?.close?.())
 <style>
 .app-modal {
   position: fixed;
-  inset: 0;
-  margin: auto;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  margin: 0;
   width: fit-content;
+  transform: translate(-50%, -50%);
   display: grid;
   padding: 0;
   max-width: calc(100vw - 32px);
@@ -59,8 +63,8 @@ onBeforeUnmount(() => dialog.value?.close?.())
 
 .app-modal-content {
   display: grid;
-  gap: 24px;
-  padding: 24px;
+  gap: var(--space-4);
+  padding: var(--space-4);
   min-width: 0;
 }
 
