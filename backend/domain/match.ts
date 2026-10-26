@@ -8,6 +8,7 @@ import {
 } from '../../shared/domain/identifiers.js'
 import type { ActionPointPool } from '../../shared/domain/action-points.js'
 import type { EvidenceAxis, InvestigationHypothesis } from './investigation-hypothesis.js'
+import type { PreparedOperation } from './investigation-operation.js'
 
 export { investigatorIds, locationIds, investigationActions }
 export type { InvestigatorId, LocationId, InvestigationAction }
@@ -81,6 +82,8 @@ export interface SoloMatch {
   readonly journalEntries: readonly JournalEntry[]
   readonly journalConnections: readonly JournalConnection[]
   readonly hypotheses?: readonly InvestigationHypothesis[]
+  readonly preparedOperation?: PreparedOperation
+  readonly hasAttemptedOperationThisRound?: boolean
   readonly resolvedKeys: readonly string[]
   readonly decks: Readonly<Record<InvestigatorId, MatchDeck>>
   readonly preparedCardInstanceId: string | null
@@ -124,6 +127,8 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     journalEntries: [],
     journalConnections: [],
     hypotheses: [],
+    preparedOperation: undefined,
+    hasAttemptedOperationThisRound: false,
     resolvedKeys: [],
     decks: {
       [input.activeInvestigatorId]: createInvestigatorDeck(

@@ -56,6 +56,7 @@ export class EndTurnUseCase {
       hasUsedFreeMoveThisRound: false,
       hasDiscardedCardThisRound: false,
       hasUsedSupportThisRound: false,
+      hasAttemptedOperationThisRound: false,
       actionPoints: actionPointsFor(match.activeInvestigatorId),
       preparedCardInstanceId: null,
       journalEntries: nextJournalEntries,

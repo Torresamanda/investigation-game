@@ -14,6 +14,8 @@ import {
   type ResolveActionCommand,
   type ResolveConversationCommand,
   type CreateJournalConnectionCommand,
+  type PrepareOperationCommand,
+  type ResolveOperationCommand,
 } from './commands.js'
 import { CreateSoloMatchUseCase } from './use-cases/create-solo-match-use-case.js'
 import { DiscardCardUseCase } from './use-cases/discard-card-use-case.js'
@@ -26,6 +28,9 @@ import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.
 import { CreateJournalConnectionUseCase } from './use-cases/create-journal-connection-use-case.js'
 import { AccuseSuspectUseCase } from './use-cases/accuse-suspect-use-case.js'
 import { RequestSupportCardUseCase } from './use-cases/request-support-card-use-case.js'
+import { PrepareOperationUseCase } from './use-cases/prepare-operation-use-case.js'
+import { ResolveOperationUseCase } from './use-cases/resolve-operation-use-case.js'
+import type { OperationOption } from '../domain/investigation-operation.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 import { DomainError } from '../domain/errors.js'
 import type { RandomGenerator } from './ports/random-generator.js'
@@ -56,6 +61,8 @@ export class MatchService {
   private readonly createJournalConnectionUseCase: CreateJournalConnectionUseCase
   private readonly accuseSuspectUseCase: AccuseSuspectUseCase
   private readonly requestSupportCardUseCase: RequestSupportCardUseCase
+  private readonly prepareOperationUseCase: PrepareOperationUseCase
+  private readonly resolveOperationUseCase: ResolveOperationUseCase
 
   constructor(
     private readonly repository: MatchRepository,
@@ -83,6 +90,8 @@ export class MatchService {
     this.createJournalConnectionUseCase = new CreateJournalConnectionUseCase(repository, createId)
     this.accuseSuspectUseCase = new AccuseSuspectUseCase(repository, caseContentRepository)
     this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository, randomGenerator)
+    this.prepareOperationUseCase = new PrepareOperationUseCase(repository, operationOptions)
+    this.resolveOperationUseCase = new ResolveOperationUseCase(repository)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -186,12 +195,42 @@ export class MatchService {
     return this.accuseSuspectUseCase.execute(command)
   }
 
+  getAvailableOperations(matchId: string): readonly OperationOption[] {
+    const match = this.getMatch(matchId)
+    if (!match) throw new Error('Partida não encontrada.')
+    return match.hypotheses?.some((hypothesis) => hypothesis.status === 'sustained')
+      ? operationOptions
+      : []
+  }
+
+  prepareOperation(matchId: string, operationId: string): SoloMatch {
+    const match = this.getMatch(matchId)
+    if (!match) throw new Error('Partida não encontrada.')
+    const hypothesis = match.hypotheses?.find((item) => item.status === 'sustained')
+    if (!hypothesis) throw new DomainError('A linha de raciocínio ainda não sustenta uma operação.')
+    const command: PrepareOperationCommand = { matchId, operationId, hypothesisId: hypothesis.id }
+    return this.prepareOperationUseCase.execute(command)
+  }
+
+  resolveOperation(matchId: string): SoloMatch {
+    const command: ResolveOperationCommand = { matchId }
+    return this.resolveOperationUseCase.execute(command)
+  }
+
   private assertPersonAvailability(personId: PersonId, locationId: LocationId) {
     if (!this.caseContentRepository.isPersonAvailableAtLocation(personId, locationId)) {
       throw new Error('Esta pessoa não está disponível neste local.')
     }
   }
 }
+
+const operationOptions: readonly OperationOption[] = [
+  {
+    id: 'preserve-the-evidence',
+    title: 'Preservar a prova',
+    riskDescription: 'A operação pode revelar uma inconsistência na linha de raciocínio.',
+  },
+]
 
 function assertCurrentLocation(match: SoloMatch, locationId: LocationId): void {
   if (locationId !== match.currentLocationId) {

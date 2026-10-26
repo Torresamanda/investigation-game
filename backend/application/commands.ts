@@ -39,3 +39,13 @@ export interface AccuseSuspectCommand extends AccusationEvidenceSelection {
   readonly matchId: string
   readonly suspectId: PersonId
 }
+
+export interface PrepareOperationCommand {
+  readonly matchId: string
+  readonly operationId: string
+  readonly hypothesisId: string
+}
+
+export interface ResolveOperationCommand {
+  readonly matchId: string
+}

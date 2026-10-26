@@ -67,7 +67,54 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
   const accusationMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/accuse$/)?.[1]
   if (request.method === 'POST' && accusationMatch)
     return accuseSuspect(request, accusationMatch, database)
+  const operationsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/operations$/)?.[1]
+  if (request.method === 'GET' && operationsMatch)
+    return getAvailableOperations(operationsMatch, database)
+  if (request.method === 'POST' && operationsMatch)
+    return prepareOperation(request, operationsMatch, database)
+  const resolveOperationMatch = url.pathname.match(
+    /^\/api\/matches\/([^/]+)\/operations\/resolve$/,
+  )?.[1]
+  if (request.method === 'POST' && resolveOperationMatch)
+    return resolveOperation(request, resolveOperationMatch, database)
   return jsonResponse({ message: 'Rota não encontrada.' }, 404)
+}
+
+async function getAvailableOperations(
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  return readMatch(id, database, (service, matchId) => service.getAvailableOperations(matchId))
+}
+
+async function prepareOperation(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  const operationId =
+    typeof body === 'object' && body !== null && 'operationId' in body
+      ? body.operationId
+      : undefined
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['operationId']) || !isNonEmptyString(operationId)) {
+    return jsonResponse({ message: 'Operação inválida.' }, 400)
+  }
+  return mutateMatch(id, database, (service, matchId) =>
+    service.prepareOperation(matchId, operationId),
+  )
+}
+
+async function resolveOperation(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (body) return jsonResponse({ message: 'Operação inválida.' }, 400)
+  return mutateMatch(id, database, (service, matchId) => service.resolveOperation(matchId))
 }
 
 async function createMatch(request: Request, database: D1DatabaseConnection): Promise<Response> {
