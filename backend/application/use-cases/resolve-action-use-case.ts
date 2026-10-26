@@ -183,14 +183,11 @@ export class ResolveActionUseCase {
         id: `journal-${journalEntries.length + 1}`,
         type: 'observation',
         title: 'Conexão de Otávio',
-        content: `“${connectionCandidate.confirmedEntry.title}” se relaciona a “${connectionCandidate.pendingEntry.title}”. Reavalie ${locationName(connectionCandidate.pendingEntry.locationId)} para verificar essa ligação.`,
+        content: `“${connectionCandidate.fromEntry.title}” se relaciona a “${connectionCandidate.toEntry.title}”. A ligação foi registrada no mural.`,
         locationId: command.locationId,
         round: match.round,
         status: 'note',
-        relatedEntryIds: [
-          connectionCandidate.confirmedEntry.id,
-          connectionCandidate.pendingEntry.id,
-        ],
+        relatedEntryIds: [connectionCandidate.fromEntry.id, connectionCandidate.toEntry.id],
       })
       resolvedKeys.push(connectionCandidate.key)
     }
@@ -198,10 +195,11 @@ export class ResolveActionUseCase {
     const journalConnections = [...match.journalConnections]
     if (connectionCandidate) {
       addFormalConnection(journalConnections, {
-        id: `journal-connection:${[connectionCandidate.confirmedEntry.id, connectionCandidate.pendingEntry.id].sort().join(':')}`,
-        fromClueId: connectionCandidate.confirmedEntry.id,
-        toClueId: connectionCandidate.pendingEntry.id,
+        id: `journal-connection:${[connectionCandidate.fromEntry.id, connectionCandidate.toEntry.id].sort().join(':')}`,
+        fromClueId: connectionCandidate.fromEntry.id,
+        toClueId: connectionCandidate.toEntry.id,
         round: match.round,
+        hypothesisThreadId: connectionCandidate.hypothesisThreadId,
       })
     }
     if (resolution.journalConnection) {
@@ -263,17 +261,6 @@ function isPhysicalEvidenceLocation(locationId: ResolveActionCommand['locationId
   return (
     locationId === 'gallery' || locationId === 'laboratory' || locationId === 'service-corridor'
   )
-}
-
-function locationName(locationId: ResolveActionCommand['locationId']): string {
-  const names: Record<ResolveActionCommand['locationId'], string> = {
-    gallery: 'Galeria Principal',
-    security: 'Sala de Segurança',
-    laboratory: 'Laboratório de Restauração',
-    office: 'Escritório da Curadoria',
-    'service-corridor': 'Corredor de Serviço',
-  }
-  return names[locationId]
 }
 
 function clearConsumedFollowUpMark(

@@ -114,6 +114,7 @@ export class ResolveConversationUseCase {
         },
       ],
       hasUsedPassiveThisRound: match.hasUsedPassiveThisRound || usesIsadoraPassive,
+      hasSocialConnectionThisRound: match.hasSocialConnectionThisRound || usesIsadoraPassive,
       hasUsedPressLeakConversationThisRound:
         match.hasUsedPressLeakConversationThisRound ||
         isPressLeakConversation(match, command.personId),

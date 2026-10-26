@@ -87,7 +87,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
   - Confirmar a prioridade de descontos, custos de cartas e gastos especializados.
   - Critério de aceite: documentação, UI e motor calculam o mesmo custo e a mesma disponibilidade de carta.
 
-- [ ] **GD-04 — Criar matriz de margem de erro** `[Definição] [Test]`
+- [x] **GD-04 — Criar matriz de margem de erro** `[Definição] [Test]`
   - Mapear, por investigador, o menor custo para obter uma hipótese sustentada e quantas ações de curiosidade ainda cabem antes da Rodada 5 e da Rodada 6.
   - Cobrir cartas ausentes, deslocamentos, conversas, pistas falsas e uso opcional do apoio.
   - Critério de aceite: cada investigador solo possui uma rota sem carta obrigatória e suporta ao menos três ações não decisivas até a conclusão na Rodada 6.
@@ -109,7 +109,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
   - Operação incompleta deve manter a partida ativa quando ainda houver prazo e registrar consequência útil.
   - Critério de aceite: o backend nunca entrega operações, resultados ou requisitos ainda bloqueados além do necessário para a decisão atual.
 
-- [ ] **GD-08 — Reequilibrar especialidades para a rota principal** `[Back] [Definição]`
+- [x] **GD-08 — Reequilibrar especialidades para a rota principal** `[Back] [Definição]`
   - Garantir que os PA técnico, social e de pesquisa possam reduzir pressão da rota investigativa de formas equivalentes.
   - Dar à especialidade social um ganho investigativo concreto, sem transformar conversas em revelação automática da solução.
   - Critério de aceite: em testes de orçamento, os quatro investigadores têm margem semelhante para erro e exploração.

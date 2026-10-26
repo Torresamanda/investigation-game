@@ -49,6 +49,8 @@ export interface PublicMatchDto {
   readonly examinedLocationsThisRound: readonly LocationId[]
   readonly hasUsedPassiveThisRound: boolean
   readonly hasReceivedSocialBonusThisRound: boolean
+  readonly hasSocialConnectionThisRound?: boolean
+  readonly hasUsedSocialConnectionThisRound?: boolean
   readonly hasUsedPressLeakConversationThisRound: boolean
   readonly canAccuse: boolean
   readonly hasFreeConnectionThisRound: boolean

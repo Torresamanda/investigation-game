@@ -19,6 +19,8 @@ export const MatchPresenter = {
       examinedLocationsThisRound: match.examinedLocationsThisRound,
       hasUsedPassiveThisRound: match.hasUsedPassiveThisRound,
       hasReceivedSocialBonusThisRound: match.hasReceivedSocialBonusThisRound,
+      hasSocialConnectionThisRound: match.hasSocialConnectionThisRound ?? false,
+      hasUsedSocialConnectionThisRound: match.hasUsedSocialConnectionThisRound ?? false,
       hasUsedPressLeakConversationThisRound: match.hasUsedPressLeakConversationThisRound,
       canAccuse: match.canAccuse,
       hasFreeConnectionThisRound: match.hasFreeConnectionThisRound,

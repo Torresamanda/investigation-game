@@ -55,7 +55,11 @@ export class CreateJournalConnectionUseCase {
     )
     const usesRoundFreeConnection =
       match.hasFreeConnectionThisRound && !match.hasUsedFreeConnectionThisRound
-    const isFree = usesConnectionCard || usesRoundFreeConnection
+    const usesSocialConnection =
+      !usesRoundFreeConnection &&
+      match.hasSocialConnectionThisRound &&
+      !match.hasUsedSocialConnectionThisRound
+    const isFree = usesConnectionCard || usesRoundFreeConnection || usesSocialConnection
     if (
       !isFree &&
       !canPayAction(match.actionPoints, {
@@ -99,6 +103,8 @@ export class CreateJournalConnectionUseCase {
       preparedCardInstanceId: usesConnectionCard ? null : match.preparedCardInstanceId,
       hasUsedFreeConnectionThisRound:
         match.hasUsedFreeConnectionThisRound || (usesRoundFreeConnection && !usesConnectionCard),
+      hasUsedSocialConnectionThisRound:
+        match.hasUsedSocialConnectionThisRound || (usesSocialConnection && !usesConnectionCard),
       journalConnections: [...match.journalConnections, connection],
       hypotheses: synchronizeInvestigationHypotheses(
         match.journalEntries,

@@ -49,6 +49,8 @@ export class EndTurnUseCase {
       examinedLocationsThisRound: [],
       hasUsedPassiveThisRound: false,
       hasReceivedSocialBonusThisRound: false,
+      hasSocialConnectionThisRound: false,
+      hasUsedSocialConnectionThisRound: false,
       hasUsedPressLeakConversationThisRound: false,
       canAccuse: match.canAccuse || nextRound >= 5,
       hasFreeConnectionThisRound: nextRound === 5,

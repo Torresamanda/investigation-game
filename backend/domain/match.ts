@@ -67,6 +67,8 @@ export interface SoloMatch {
   readonly examinedLocationsThisRound: readonly LocationId[]
   readonly hasUsedPassiveThisRound: boolean
   readonly hasReceivedSocialBonusThisRound: boolean
+  readonly hasSocialConnectionThisRound?: boolean
+  readonly hasUsedSocialConnectionThisRound?: boolean
   readonly hasUsedPressLeakConversationThisRound: boolean
   readonly canAccuse: boolean
   readonly hasFreeConnectionThisRound: boolean
@@ -112,6 +114,8 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     examinedLocationsThisRound: [],
     hasUsedPassiveThisRound: false,
     hasReceivedSocialBonusThisRound: false,
+    hasSocialConnectionThisRound: false,
+    hasUsedSocialConnectionThisRound: false,
     hasUsedPressLeakConversationThisRound: false,
     canAccuse: false,
     hasFreeConnectionThisRound: false,

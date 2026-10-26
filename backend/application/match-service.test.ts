@@ -241,6 +241,53 @@ describe('MatchService', () => {
     expect(afterDiscard.decks.livia.hand).toContainEqual(receivedCard)
   })
 
+  it('consome a conexão gratuita de Isadora sem cobrar PA adicionais', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'livia',
+    })
+    repository.save({
+      ...match,
+      actionPoints: { general: 0, specialty: 0, specialtyPoint: 'social' },
+      hasSocialConnectionThisRound: true,
+      journalEntries: [
+        {
+          id: 'means',
+          type: 'clue',
+          title: 'Meios',
+          content: 'Confirmada.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
+        },
+        {
+          id: 'opportunity',
+          type: 'clue',
+          title: 'Oportunidade',
+          content: 'Confirmada.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
+        },
+      ],
+    })
+
+    const connected = service.createJournalConnection({
+      matchId: match.id,
+      fromClueId: 'means',
+      toClueId: 'opportunity',
+    })
+
+    expect(connected.actionPoints.general).toBe(0)
+    expect(connected.hasUsedSocialConnectionThisRound).toBe(true)
+  })
+
   it('restaura o custo original de uma carta do apoio ao usá-la no Diário', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository)
@@ -560,15 +607,19 @@ describe('MatchService', () => {
           locationId: 'security',
           round: 2,
           status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
         },
         {
           id: 'pending-clue',
           type: 'clue',
-          title: 'Pista pendente',
-          content: 'Indício a verificar.',
+          title: 'Oportunidade confirmada',
+          content: 'Evidência validada.',
           locationId: 'gallery',
           round: 2,
-          status: 'unconfirmed',
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
         },
       ],
     })
@@ -1314,6 +1365,7 @@ describe('MatchService', () => {
       isadoraMarkedContestable: true,
     })
     expect(statement.hasUsedPassiveThisRound).toBe(true)
+    expect(statement.hasSocialConnectionThisRound).toBe(true)
 
     const contradiction = service.resolveAction({
       matchId: match.id,
@@ -1344,15 +1396,19 @@ describe('MatchService', () => {
           locationId: 'security',
           round: 1,
           status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
         },
         {
-          id: 'clue-pending',
+          id: 'clue-opportunity',
           type: 'clue',
-          title: 'Pista pendente',
-          content: 'Indício a verificar.',
+          title: 'Oportunidade confirmada',
+          content: 'Registro confirmado.',
           locationId: 'gallery',
           round: 1,
-          status: 'unconfirmed',
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
         },
       ],
     })
@@ -1365,13 +1421,15 @@ describe('MatchService', () => {
     expect(connected.actionPoints).toMatchObject({ general: 0, specialty: 0 })
     expect(connected.journalEntries.at(-1)).toMatchObject({
       title: 'Conexão de Otávio',
-      relatedEntryIds: ['clue-confirmed', 'clue-pending'],
+      relatedEntryIds: ['clue-confirmed', 'clue-opportunity'],
     })
-    expect(connected.resolvedKeys).toContain('investigator-connection:clue-confirmed:clue-pending')
+    expect(connected.resolvedKeys).toContain(
+      'investigator-connection:clue-confirmed:clue-opportunity',
+    )
     expect(connected.journalConnections).toContainEqual(
       expect.objectContaining({
         fromClueId: 'clue-confirmed',
-        toClueId: 'clue-pending',
+        toClueId: 'clue-opportunity',
       }),
     )
   })
