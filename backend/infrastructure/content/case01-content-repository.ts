@@ -22,6 +22,23 @@ import type {
   InvestigationOpportunity,
 } from '../../../shared/contracts/investigation-opportunity.js'
 
+const case01Operations: readonly OperationOption[] = [
+  {
+    id: 'verify-the-theory',
+    kind: 'verify',
+    title: 'Verificar a linha de raciocínio',
+    riskDescription:
+      'A equipe confronta a linha com os registros reunidos; uma inconsistência ainda pode exigir revisão.',
+  },
+  {
+    id: 'preserve-the-evidence',
+    kind: 'closure',
+    title: 'Preservar a prova',
+    riskDescription:
+      'A equipe formaliza a linha sustentada e protege os elementos que dão suporte à conclusão.',
+  },
+]
+
 export class Case01ContentRepository implements CaseContentRepository {
   getActionOpportunity(
     match: SoloMatch,
@@ -84,42 +101,35 @@ export class Case01ContentRepository implements CaseContentRepository {
     const hasSustainedHypothesis = match.hypotheses?.some(
       (hypothesis) => hypothesis.status === 'sustained',
     )
-    return [
-      ...(hasPlausibleHypothesis
-        ? [
-            {
-              id: 'verify-the-theory',
-              kind: 'verify' as const,
-              title: 'Verificar a linha de raciocínio',
-              riskDescription: 'A verificação pode revelar uma inconsistência recuperável.',
-            },
-          ]
-        : []),
-      ...(hasSustainedHypothesis
-        ? [
-            {
-              id: 'preserve-the-evidence',
-              kind: 'closure' as const,
-              title: 'Preservar a prova',
-              riskDescription: 'A operação pode revelar uma inconsistência na linha de raciocínio.',
-            },
-          ]
-        : []),
-    ]
+    return case01Operations.filter((operation) =>
+      operation.kind === 'verify' ? hasPlausibleHypothesis : hasSustainedHypothesis,
+    )
   }
 
   resolveOperation(match: SoloMatch, operationId: string, hypothesisId: string) {
+    const hypothesis = match.hypotheses?.find((item) => item.id === hypothesisId)
+    if (
+      operationId === 'verify-the-theory' &&
+      (hypothesis?.status === 'plausible' || hypothesis?.status === 'sustained')
+    ) {
+      return {
+        isResolved: true,
+        observation:
+          hypothesis.status === 'plausible'
+            ? 'A equipe confrontou a linha com os registros reunidos. A relação permanece plausível e pode ser fortalecida antes do encerramento.'
+            : 'A equipe confrontou a linha com os registros reunidos. A consistência observada permite considerar a preservação formal das evidências.',
+      }
+    }
+
     const isResolved = Boolean(
       operationId === 'preserve-the-evidence' &&
       hypothesisId === 'case01-primary-operation' &&
-      match.hypotheses?.some(
-        (hypothesis) => hypothesis.id === hypothesisId && hypothesis.status === 'sustained',
-      ),
+      hypothesis?.status === 'sustained',
     )
     return {
       isResolved,
       observation:
-        'A operação revelou uma inconsistência na linha de raciocínio. Reavalie as evidências já reunidas antes de tentar outra abordagem.',
+        'A formalização encontrou uma inconsistência entre os registros. Reavalie as relações já anotadas antes de tentar outra abordagem.',
     }
   }
   getConversation(personId: PersonId) {

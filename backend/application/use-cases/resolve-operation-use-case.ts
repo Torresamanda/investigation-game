@@ -28,8 +28,19 @@ export class ResolveOperationUseCase {
     const hypothesis = match.hypotheses?.find(
       (item) => item.id === match.preparedOperation?.hypothesisId,
     )
+    const operation = this.caseContentRepository
+      .getAvailableOperations(match)
+      .find((item) => item.id === match.preparedOperation?.operationId)
     const isPrepared = resolvePreparedOperation(match.preparedOperation, hypothesis) === 'resolved'
-    if (isPrepared && match.preparedOperation.operationId === 'verify-the-theory') {
+    const outcome =
+      isPrepared && operation
+        ? this.caseContentRepository.resolveOperation(
+            match,
+            match.preparedOperation.operationId,
+            match.preparedOperation.hypothesisId,
+          )
+        : undefined
+    if (isPrepared && operation?.kind === 'verify') {
       return this.repository.save({
         ...match,
         actionPoints: spendActionPoints(match.actionPoints, {
@@ -45,7 +56,8 @@ export class ResolveOperationUseCase {
             type: 'observation',
             title: 'Linha de raciocínio verificada',
             content:
-              'A verificação organizou os fatos já reunidos e indicou que a linha ainda precisa de confirmação antes do encerramento.',
+              outcome?.observation ??
+              'A verificação organizou os fatos já reunidos antes do encerramento.',
             locationId: match.currentLocationId,
             round: match.round,
             status: 'note',
@@ -53,14 +65,7 @@ export class ResolveOperationUseCase {
         ],
       })
     }
-    const outcome = isPrepared
-      ? this.caseContentRepository.resolveOperation(
-          match,
-          match.preparedOperation.operationId,
-          match.preparedOperation.hypothesisId,
-        )
-      : undefined
-    if (outcome?.isResolved) {
+    if (isPrepared && operation?.kind === 'closure' && outcome?.isResolved) {
       return this.repository.save({
         ...match,
         actionPoints: spendActionPoints(match.actionPoints, {

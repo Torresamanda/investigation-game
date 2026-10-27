@@ -32,9 +32,9 @@ import { RequestSupportCardUseCase } from './use-cases/request-support-card-use-
 import { PrepareOperationUseCase } from './use-cases/prepare-operation-use-case.js'
 import { ResolveOperationUseCase } from './use-cases/resolve-operation-use-case.js'
 import { CancelOperationUseCase } from './use-cases/cancel-operation-use-case.js'
-import type { OperationOption } from '../domain/investigation-operation.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 import { DomainError } from '../domain/errors.js'
+import type { OperationOption } from '../domain/investigation-operation.js'
 import type { RandomGenerator } from './ports/random-generator.js'
 import { WebCryptoRandomGenerator } from '../infrastructure/crypto/web-crypto-random-generator.js'
 import type { InvestigationOpportunity } from '../../shared/contracts/investigation-opportunity.js'
@@ -118,7 +118,7 @@ export class MatchService {
     )
     this.prepareOperationUseCase = new PrepareOperationUseCase(
       notificationRepository,
-      operationOptions,
+      caseContentRepository,
     )
     this.resolveOperationUseCase = new ResolveOperationUseCase(
       notificationRepository,
@@ -269,7 +269,9 @@ export class MatchService {
   prepareOperation(matchId: string, operationId: string): SoloMatch {
     const match = this.getMatch(matchId)
     if (!match) throw new Error('Partida não encontrada.')
-    const operation = operationOptions.find((item) => item.id === operationId)
+    const operation = this.caseContentRepository
+      .getAvailableOperations(match)
+      .find((item) => item.id === operationId)
     const hypothesis = match.hypotheses?.find((item) =>
       operation?.kind === 'verify'
         ? item.status === 'plausible' || item.status === 'sustained'
@@ -295,21 +297,6 @@ export class MatchService {
     }
   }
 }
-
-const operationOptions: readonly OperationOption[] = [
-  {
-    id: 'verify-the-theory',
-    kind: 'verify',
-    title: 'Verificar a linha de raciocínio',
-    riskDescription: 'A verificação pode revelar uma inconsistência recuperável.',
-  },
-  {
-    id: 'preserve-the-evidence',
-    kind: 'closure',
-    title: 'Preservar a prova',
-    riskDescription: 'A operação pode revelar uma inconsistência na linha de raciocínio.',
-  },
-]
 
 function assertCurrentLocation(match: SoloMatch, locationId: LocationId): void {
   if (locationId !== match.currentLocationId) {

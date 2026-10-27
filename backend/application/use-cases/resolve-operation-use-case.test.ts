@@ -15,6 +15,37 @@ function createMatch() {
 }
 
 describe('ResolveOperationUseCase', () => {
+  it('uses the case-specific verification observation for a plausible line', () => {
+    const repository = new InMemoryMatchRepository()
+    const match = createMatch()
+    repository.save({
+      ...match,
+      hypotheses: [
+        {
+          id: 'case01-primary-operation',
+          status: 'plausible',
+          evidence: [],
+          coherentRelationIds: ['one'],
+          hasOperationalInconsistency: false,
+        },
+      ],
+      preparedOperation: {
+        operationId: 'verify-the-theory',
+        hypothesisId: 'case01-primary-operation',
+        preparedAtRound: 4,
+      },
+    })
+
+    const result = new ResolveOperationUseCase(repository, new Case01ContentRepository()).execute({
+      matchId: match.id,
+    })
+
+    expect(result.status).toBe('active')
+    expect(result.journalEntries.at(-1)?.content).toContain(
+      'A relação permanece plausível e pode ser fortalecida',
+    )
+  })
+
   it('spends two general PA and wins after resolving a sustained prepared operation', () => {
     const repository = new InMemoryMatchRepository()
     const match = createMatch()

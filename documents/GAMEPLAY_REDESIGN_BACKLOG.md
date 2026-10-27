@@ -292,7 +292,7 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
 
 ### P3 — Conteúdo, regressão e validação
 
-- [ ] **GD-13 — Adaptar o Caso 01 ao sistema de operações** `[Back] [Definição]`
+- [x] **GD-13 — Adaptar o Caso 01 ao sistema de operações** `[Back] [Definição]`
   - Reescrever apenas o conteúdo privado do caso para mapear evidências, hipóteses, pistas falsas e operações.
   - Manter solução, condições futuras e árvore completa exclusivamente no backend/conteúdo privado.
   - Critério de aceite: existem múltiplas rotas sem carta obrigatória até a operação correta.
