@@ -45,6 +45,10 @@ export interface CaseOperationResolution {
 }
 
 export interface CaseContentRepository {
+  getEvidenceMetadata(
+    caseEvidenceKey: NonNullable<JournalEntry['caseEvidenceKey']> | undefined,
+  ): Pick<JournalEntry, 'evidenceAxes' | 'hypothesisThreadIds'> | undefined
+  getConfirmedEvidenceKey(resolvedKey: string | undefined): JournalEntry['caseEvidenceKey']
   getAvailableOperations(match: SoloMatch): readonly OperationOption[]
   resolveOperation(
     match: SoloMatch,

@@ -297,7 +297,7 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Manter solução, condições futuras e árvore completa exclusivamente no backend/conteúdo privado.
   - Critério de aceite: existem múltiplas rotas sem carta obrigatória até a operação correta.
 
-- [ ] **GD-13A — Externalizar e versionar conteúdo de casos** `[Back] [Definição]`
+- [x] **GD-13A — Externalizar e versionar conteúdo de casos** `[Back] [Definição]`
   - Substitui `31 · CONTEUDO-01` do backlog principal.
   - Modelar conteúdo privado versionado para evidências, diálogos, hipóteses, operações e resultados; validar por schema antes de publicar.
   - Manter conteúdo secreto no backend e entregar ao cliente apenas opções e resultados já desbloqueados.

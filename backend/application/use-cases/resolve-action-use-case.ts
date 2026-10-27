@@ -11,7 +11,6 @@ import { recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import type { InvestigatorId } from '../../domain/match.js'
 import { findOtavioInvestigativeCrossingCandidate } from '../../domain/otavio-investigative-crossing.js'
-import { legacyCaseEvidenceMetadata } from '../../domain/coherent-connection.js'
 import { synchronizeInvestigationHypotheses } from '../../domain/investigation-hypothesis.js'
 import {
   assertMatchIsActive,
@@ -114,24 +113,25 @@ export class ResolveActionUseCase {
       resolvedEntryBase.type === 'clue' &&
       (resolvedEntryBase.status === 'unconfirmed' || resolvedEntryBase.status === 'indicio') &&
       isPhysicalEvidenceLocation(command.locationId)
+    const passiveEvidenceKey = this.caseContentRepository.getConfirmedEvidenceKey(
+      resolution.resolvedKey,
+    )
     const resolvedEntry = usesRafaelPassive
       ? {
           ...resolvedEntryBase,
           status: 'confirmed' as const,
-          ...(resolution.resolvedKey === 'gallery-lock'
-            ? { caseEvidenceKey: 'e1-confirmed' as const }
-            : {}),
+          ...(passiveEvidenceKey ? { caseEvidenceKey: passiveEvidenceKey } : {}),
           content: `${resolvedEntryBase.content} Rafael confirmou o vestígio na análise pericial.`,
         }
-      : resolution.entry.caseEvidenceKey || !isConfirmedCaseEvidence(resolution.resolvedKey)
+      : resolution.entry.caseEvidenceKey || !passiveEvidenceKey
         ? resolvedEntryBase
-        : { ...resolvedEntryBase, caseEvidenceKey: resolution.resolvedKey }
+        : { ...resolvedEntryBase, caseEvidenceKey: passiveEvidenceKey }
     const finalResolvedEntry =
       resolvedEntry.type === 'clue' && resolvedEntry.status === 'confirmed'
         ? {
             ...resolvedEntry,
             markedForFollowUp: false,
-            ...legacyCaseEvidenceMetadata(resolvedEntry.caseEvidenceKey),
+            ...this.caseContentRepository.getEvidenceMetadata(resolvedEntry.caseEvidenceKey),
           }
         : resolvedEntry
     const journalEntries = match.journalEntries.map((entry) =>
@@ -240,19 +240,6 @@ export class ResolveActionUseCase {
     }
     return this.repository.save(updated)
   }
-}
-
-function isConfirmedCaseEvidence(
-  key: string | undefined,
-): key is NonNullable<SoloMatch['journalEntries'][number]['caseEvidenceKey']> {
-  return (
-    key === 'e1-confirmed' ||
-    key === 'e2-confirmed' ||
-    key === 'e3-confirmed' ||
-    key === 'e4-confirmed' ||
-    key === 'e5-confirmed' ||
-    key === 'e6-confirmed'
-  )
 }
 
 function isPhysicalEvidenceLocation(locationId: ResolveActionCommand['locationId']): boolean {

@@ -13,6 +13,15 @@ function createMatch() {
 }
 
 describe('Case01ContentRepository', () => {
+  it('exposes conversation options without private conditions or future outcomes', () => {
+    const content = new Case01ContentRepository()
+    const serializedOptions = JSON.stringify(content.getConversation('helena'))
+
+    expect(serializedOptions).not.toContain('gallery-lock')
+    expect(serializedOptions).not.toContain('blockedWhen')
+    expect(serializedOptions).not.toContain('outcomes')
+  })
+
   it('keeps both false leads outside confirmed hypothesis evidence', () => {
     const content = new Case01ContentRepository()
     const match = createMatch()
