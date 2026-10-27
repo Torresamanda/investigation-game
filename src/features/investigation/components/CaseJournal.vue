@@ -79,6 +79,39 @@ function createInvestigativeCrossing() {
     <header class="journal-heading">
       <h2>Diário do caso</h2>
     </header>
+    <section class="journal-guide" aria-labelledby="journal-guide-title">
+      <h3 id="journal-guide-title">Como avançar</h3>
+      <dl>
+        <div>
+          <dt>Pista</dt>
+          <dd>
+            Registro de uma informação encontrada; seu estado mostra se ainda está em apuração,
+            confirmada ou refutada.
+          </dd>
+        </div>
+        <div>
+          <dt>Conexão</dt>
+          <dd>
+            A ligação no mural registra uma associação sem custo. O cruzamento investigativo testa
+            uma relação, registra o resultado e custa PA.
+          </dd>
+        </div>
+        <div>
+          <dt>Hipótese</dt>
+          <dd>
+            Linha de raciocínio que reúne pistas confirmadas e relações coerentes. O estado indica
+            sua sustentação.
+          </dd>
+        </div>
+        <div>
+          <dt>Operação</dt>
+          <dd>
+            Decisão investigativa: verificar uma linha plausível ou resolver o encerramento quando
+            estiver sustentada. Preparar é grátis; resolver custa 2 PA.
+          </dd>
+        </div>
+      </dl>
+    </section>
     <section v-if="hypothesisProgress?.length" class="journal-hypothesis-progress">
       <h3>Linhas de raciocínio</h3>
       <article v-for="(hypothesis, index) in hypothesisProgress" :key="index" class="journal-entry">

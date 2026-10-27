@@ -178,7 +178,7 @@ describe('fluxos da investigação', () => {
     await view.get('.case-introduction .button-primary').trigger('click')
     expect(view.find('.case-introduction').exists()).toBe(false)
     expect(useInvestigationStore().introductionSeen).toBe(true)
-    expect(view.get('.tour-popover').text()).toContain('Passo 1 de 5')
+    expect(view.get('.tour-popover').text()).toContain('Passo 1 de 7')
     view.unmount()
   })
 
@@ -193,7 +193,7 @@ describe('fluxos da investigação', () => {
     expect(document.querySelector('.header-context .tour-trigger')).toBeNull()
     expect(secondView.find('.case-tools .tour-trigger').exists()).toBe(true)
     await secondView.get('.case-tools .tour-trigger').trigger('click')
-    expect(secondView.get('.tour-popover').text()).toContain('Passo 1 de 5')
+    expect(secondView.get('.tour-popover').text()).toContain('Passo 1 de 7')
     secondView.unmount()
   })
 

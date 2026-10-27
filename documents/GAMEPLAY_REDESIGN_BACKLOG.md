@@ -285,7 +285,7 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Toda ação sem descoberta deve registrar uma observação que reduza incerteza ou indique uma mudança de abordagem; evitar consumir PA em retornos puramente genéricos.
   - Critério de aceite: um iniciante consegue distinguir tentativa de exploração de uma oportunidade investigativa plausível e não perde PA relevante sem receber orientação aproveitável.
 
-- [ ] **GD-12 — Revisar onboarding e linguagem de regras** `[Front] [Docs]`
+- [x] **GD-12 — Revisar onboarding e linguagem de regras** `[Front] [Docs]`
   - Explicar diferença entre pista, conexão, hipótese e operação no tour opcional e no Diário.
   - Priorizar exemplos de mecânica neutros, sem conteúdo secreto de caso.
   - Critério de aceite: uma pessoa nova entende como progredir sem instrução externa.

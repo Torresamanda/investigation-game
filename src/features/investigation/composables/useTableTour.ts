@@ -30,11 +30,24 @@ const steps = [
     target: 'context',
     title: 'Painel contextual',
     description:
-      'Alterne entre Pessoas, Diário e Acusação na mesma página. Prepare cartas de conversa na mão principal. O dossiê fica disponível nas Rodadas 5 e 6.',
+      'Alterne entre Pessoas, Diário e Operação na mesma página. Prepare cartas de conversa na mão principal. A aba Operação mostra decisões disponíveis conforme suas linhas avançam.',
+  },
+  {
+    target: 'context',
+    title: 'Diário: pistas e hipóteses',
+    description:
+      'Uma pista registra uma informação encontrada e pode estar em apuração, confirmada ou refutada. A hipótese reúne pistas e relações numa linha de raciocínio; seu estado mostra quanto ela está sustentada.',
+  },
+  {
+    target: 'context',
+    title: 'Conexões e operações',
+    description:
+      'Desenhar uma ligação no mural é grátis e registra uma associação. O cruzamento investigativo testa uma relação e custa PA. Uma operação verifica uma linha plausível ou resolve o encerramento de uma linha sustentada.',
   },
 ] as const
 
 export type TableTourStep = (typeof steps)[number]
+export const tableTourStepCount = steps.length
 
 export function useTableTour() {
   const tourIndex = ref(-1)

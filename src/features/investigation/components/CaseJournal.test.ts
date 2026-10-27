@@ -73,6 +73,18 @@ describe('CaseJournal', () => {
     expect(view.find('.journal-close').exists()).toBe(false)
   })
 
+  it('explica pistas, conexões, hipóteses e operações com regras neutras', () => {
+    const guide = mountJournal().get('.journal-guide')
+
+    expect(guide.text()).toContain('Pista')
+    expect(guide.text()).toContain('Conexão')
+    expect(guide.text()).toContain('A ligação no mural registra uma associação sem custo')
+    expect(guide.text()).toContain('Hipótese')
+    expect(guide.text()).toContain('Operação')
+    expect(guide.text()).not.toContain('Galeria')
+    expect(guide.text()).not.toContain('suspeito')
+  })
+
   it('reúne pistas, observações, declarações e conexões em cartões com estado e origem', () => {
     const view = mountJournal()
     const records = view.findAll('.journal-record-list .journal-entry')

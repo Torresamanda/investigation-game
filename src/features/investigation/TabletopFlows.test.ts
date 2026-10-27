@@ -167,9 +167,14 @@ it('mantém o dossiê dentro do painel e permite percorrer o tour sem alterar a 
   const beforeTour = JSON.stringify(session.remoteMatch)
   await view.get('.case-tools .tour-trigger').trigger('click')
   await view.vm.$nextTick()
-  for (let step = 1; step <= 5; step++) {
-    expect(view.get('.tour-popover').text()).toContain(`Passo ${step} de 5`)
+  for (let step = 1; step <= 7; step++) {
+    expect(view.get('.tour-popover').text()).toContain(`Passo ${step} de 7`)
     expect(view.findAll('.tour-highlight')).toHaveLength(1)
+    if (step === 7) {
+      expect(view.get('.tour-popover').text()).toContain(
+        'O cruzamento investigativo testa uma relação',
+      )
+    }
     await view.findAll('.tour-popover button')[2]!.trigger('click')
   }
   expect(view.find('.tour-popover').exists()).toBe(false)

@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useInvestigationStore } from '../../stores/investigation'
 import type { InvestigationAction } from '../../domain/game/action-points'
 import { useTableNotifications } from './composables/useTableNotifications'
-import { useTableTour } from './composables/useTableTour'
+import { tableTourStepCount, useTableTour } from './composables/useTableTour'
 import TableTour from './components/TableTour.vue'
 import CaseToolbar from './components/CaseToolbar.vue'
 import LocationsPanel from './components/LocationsPanel.vue'
@@ -370,6 +370,7 @@ async function cancelOperation() {
       v-if="tourStep"
       :step="tourStep"
       :index="tourIndex"
+      :total-steps="tableTourStepCount"
       @step="stepTour"
       @close="closeTour"
     />
