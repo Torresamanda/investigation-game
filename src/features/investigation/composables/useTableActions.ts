@@ -16,6 +16,7 @@ export function useTableActions(
   location: Ref<CaseLocation>,
   locationId: Ref<LocationId>,
   selectedSuspectId: Ref<SuspectId | null>,
+  notifyActionFailure: (message: string) => void,
 ) {
   async function executeAction(action: InvestigationAction) {
     const labels: Record<InvestigationAction, string> = {
@@ -37,9 +38,10 @@ export function useTableActions(
         preparedCard?.name ?? null,
       )
     } catch (error) {
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : `${labels[action]}: PA insuficientes.`,
-      )
+      const message =
+        error instanceof Error ? error.message : `${labels[action]}: PA insuficientes.`
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 
@@ -56,9 +58,9 @@ export function useTableActions(
       )
     } catch (error) {
       locationId.value = session.currentLocationId
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : 'Não foi possível se deslocar.',
-      )
+      const message = error instanceof Error ? error.message : 'Não foi possível se deslocar.'
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 
@@ -67,9 +69,9 @@ export function useTableActions(
       await session.createMuralLink(fromClueId, toClueId)
       feedback.value = statusFeedback('Ligação registrada no mural · Grátis.')
     } catch (error) {
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : 'Não foi possível criar a conexão.',
-      )
+      const message = error instanceof Error ? error.message : 'Não foi possível criar a conexão.'
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 
@@ -81,9 +83,10 @@ export function useTableActions(
         `Cruzamento investigativo validado · ${cost === 0 ? 'Grátis' : `${cost} PA de pesquisa gasto.`}`,
       )
     } catch (error) {
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : 'Não foi possível cruzar as evidências.',
-      )
+      const message =
+        error instanceof Error ? error.message : 'Não foi possível cruzar as evidências.'
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 

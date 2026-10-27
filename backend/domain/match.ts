@@ -9,11 +9,14 @@ import {
 import type { ActionPointPool } from '../../shared/domain/action-points.js'
 import type { EvidenceAxis, InvestigationHypothesis } from './investigation-hypothesis.js'
 import type { PreparedOperation } from './investigation-operation.js'
+import type { MatchNotificationEvent, MatchNotificationKind } from '../../shared/contracts/match.js'
 
 export { investigatorIds, locationIds, investigationActions }
 export type { InvestigatorId, LocationId, InvestigationAction }
 
 export type ActionPoints = ActionPointPool
+
+export type { MatchNotificationEvent, MatchNotificationKind }
 
 export interface JournalEntry {
   readonly id: string
@@ -31,6 +34,7 @@ export interface JournalEntry {
     | 'recorded'
     | 'contestable'
     | 'blocked'
+  readonly notificationSignal?: 'action-failure'
   readonly recordedWith?: 'pocket-recorder'
   readonly isadoraMarkedContestable?: boolean
   readonly relatedEntryIds?: readonly string[]
@@ -91,6 +95,7 @@ export interface SoloMatch {
   readonly muralLinks: readonly MuralLink[]
   readonly investigativeRelations: readonly InvestigativeRelation[]
   readonly hypotheses?: readonly InvestigationHypothesis[]
+  readonly notificationEvents?: readonly MatchNotificationEvent[]
   readonly preparedOperation?: PreparedOperation
   readonly hasAttemptedOperationThisRound?: boolean
   readonly resolvedKeys: readonly string[]

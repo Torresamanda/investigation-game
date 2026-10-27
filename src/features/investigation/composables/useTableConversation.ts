@@ -13,6 +13,7 @@ export function useTableConversation(
   selectedSuspectId: Ref<SuspectId | null>,
   panelMode: Ref<'people' | 'journal' | 'operation'>,
   feedback: Ref<InvestigationFeedback>,
+  notifyActionFailure: (message: string) => void,
 ) {
   const conversation = ref<ConversationOptions | null>(null)
   const conversationAnswer = ref('')
@@ -66,9 +67,10 @@ export function useTableConversation(
         location.value.id,
       )
     } catch (error) {
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : 'Não foi possível resolver a pergunta.',
-      )
+      const message =
+        error instanceof Error ? error.message : 'Não foi possível resolver a pergunta.'
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 

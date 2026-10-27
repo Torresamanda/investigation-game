@@ -67,7 +67,18 @@ it('conversa no painel, atualiza opções ao preparar na mão e mantém a respos
   const load = vi.spyOn(session, 'loadConversationOptions').mockResolvedValue(options)
   vi.spyOn(session, 'prepareCard').mockResolvedValue(true)
   vi.spyOn(session, 'resolveConversation').mockImplementation(async () => {
-    session.remoteMatch = { ...session.remoteMatch!, journalEntries: [statement] }
+    session.remoteMatch = {
+      ...session.remoteMatch!,
+      journalEntries: [statement],
+      notificationEvents: [
+        {
+          id: `${session.remoteMatch!.id}:notification:1`,
+          kind: 'discovery',
+          round: 1,
+          entryId: statement.id,
+        },
+      ],
+    }
     return statement
   })
   await view.get('.suspect-conversation-trigger').trigger('click')
@@ -100,10 +111,24 @@ it('empilha notificações, distingue observações e zera o badge ao abrir o di
         title: 'Nenhuma descoberta nova',
       },
     ],
+    notificationEvents: [
+      {
+        id: `${session.remoteMatch!.id}:notification:1`,
+        kind: 'discovery',
+        round: 1,
+        entryId: statement.id,
+      },
+      {
+        id: `${session.remoteMatch!.id}:notification:2`,
+        kind: 'observation',
+        round: 1,
+        entryId: 'observation',
+      },
+    ],
   }
   await view.vm.$nextTick()
   expect(view.findAll('.discovery-toast')).toHaveLength(2)
-  expect(view.get('.discovery-toast--observation').text()).toContain('Nenhuma descoberta nova:')
+  expect(view.get('.discovery-toast--observation').text()).toContain('Nenhuma descoberta nova')
   expect(view.get('.journal-unread-count').text()).toBe('1')
   await view.get('.discovery-toast-actions button').trigger('click')
   expect(view.get('#case-journal').isVisible()).toBe(true)

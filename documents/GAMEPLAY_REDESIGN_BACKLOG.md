@@ -270,10 +270,10 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Na Rodada 6, comunicar que só confirmações e decisões de encerramento permanecem possíveis.
   - Critério de aceite: o jogador sabe que ainda pode agir e por que sua teoria não se sustentou, sem receber um guia de solução.
 
-- [ ] **GD-11A — Unificar notificações de investigação** `[Front] [Back]`
+- [x] **GD-11A — Unificar notificações de investigação** `[Front] [Back]`
   - Substitui `05C · NOTIF-01` do backlog principal.
   - Notificar descoberta, pista refutada, hipótese fortalecida ou contestada, operação disponível, falha de ação e evento de rodada.
-  - Critério de aceite: as mensagens derivam de eventos autoritativos e continuam consistentes entre participantes em uma futura sala cooperativa.
+  - Critério de aceite: as mensagens derivam de eventos persistidos no estado autoritativo e têm a mesma sequência para os participantes.
 
 - [ ] **GD-11B — Orientar prontidão da operação sem spoiler** `[Front] [Back] [Definição]`
   - Quando não houver operação disponível, o painel deve explicar o próximo tipo de avanço em linguagem ficcional e neutra, sem revelar local, pessoa, carta, eixo específico ou solução.

@@ -1,14 +1,29 @@
 <script setup lang="ts">
 defineProps<{
   message: string
-  kind: 'clue' | 'statement' | 'temporary-card' | 'support-card' | 'observation'
+  kind:
+    | 'discovery'
+    | 'clue-refuted'
+    | 'hypothesis-strengthened'
+    | 'hypothesis-contested'
+    | 'operation-available'
+    | 'action-failure'
+    | 'round-event'
+    | 'temporary-card'
+    | 'support-card'
+    | 'observation'
 }>()
 
 const emit = defineEmits<{ openJournal: []; dismiss: [] }>()
 
 const labels = {
-  clue: 'Nova Pista',
-  statement: 'Declaração',
+  discovery: 'Nova descoberta',
+  'clue-refuted': 'Pista refutada',
+  'hypothesis-strengthened': 'Hipótese fortalecida',
+  'hypothesis-contested': 'Hipótese contestada',
+  'operation-available': 'Operação disponível',
+  'action-failure': 'Ação sem descoberta',
+  'round-event': 'Evento da rodada',
   'temporary-card': 'Carta Temporária recebida',
   'support-card': 'Carta de Apoio recebida',
   observation: 'Observação',

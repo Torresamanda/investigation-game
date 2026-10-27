@@ -7,6 +7,7 @@ import type {
   ConversationQuestionContent,
 } from './ports/case-content-repository.js'
 import type { MatchRepository } from './ports/match-repository.js'
+import { NotificationRecordingMatchRepository } from './notification-recording-match-repository.js'
 import { Case01ContentRepository } from '../infrastructure/content/case01-content-repository.js'
 import {
   type CreateMatchCommand,
@@ -73,37 +74,53 @@ export class MatchService {
   private readonly cancelOperationUseCase: CancelOperationUseCase
 
   constructor(
-    private readonly repository: MatchRepository,
+    repository: MatchRepository,
     now: () => Date = () => new Date(),
     createId: () => string = () => globalThis.crypto.randomUUID(),
     private readonly caseContentRepository: CaseContentRepository = new Case01ContentRepository(),
     private readonly randomGenerator: RandomGenerator = new WebCryptoRandomGenerator(),
   ) {
-    this.createSoloMatchUseCase = new CreateSoloMatchUseCase(
+    const notificationRepository = new NotificationRecordingMatchRepository(
       repository,
+      caseContentRepository,
+    )
+    this.createSoloMatchUseCase = new CreateSoloMatchUseCase(
+      notificationRepository,
       now,
       createId,
       randomGenerator,
     )
-    this.discardCardUseCase = new DiscardCardUseCase(repository, randomGenerator)
-    this.endTurnUseCase = new EndTurnUseCase(repository, randomGenerator)
-    this.getMatchUseCase = new GetMatchUseCase(repository)
-    this.prepareCardUseCase = new PrepareCardUseCase(repository)
-    this.resolveActionUseCase = new ResolveActionUseCase(repository, caseContentRepository)
-    this.resolveConversationUseCase = new ResolveConversationUseCase(
-      repository,
+    this.discardCardUseCase = new DiscardCardUseCase(notificationRepository, randomGenerator)
+    this.endTurnUseCase = new EndTurnUseCase(notificationRepository, randomGenerator)
+    this.getMatchUseCase = new GetMatchUseCase(notificationRepository)
+    this.prepareCardUseCase = new PrepareCardUseCase(notificationRepository)
+    this.resolveActionUseCase = new ResolveActionUseCase(
+      notificationRepository,
       caseContentRepository,
     )
-    this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
-    this.createMuralLinkUseCase = new CreateMuralLinkUseCase(repository, createId)
+    this.resolveConversationUseCase = new ResolveConversationUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
+    this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(notificationRepository)
+    this.createMuralLinkUseCase = new CreateMuralLinkUseCase(notificationRepository, createId)
     this.createInvestigativeCrossingUseCase = new CreateInvestigativeCrossingUseCase(
-      repository,
+      notificationRepository,
       createId,
     )
-    this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository, randomGenerator)
-    this.prepareOperationUseCase = new PrepareOperationUseCase(repository, operationOptions)
-    this.resolveOperationUseCase = new ResolveOperationUseCase(repository, caseContentRepository)
-    this.cancelOperationUseCase = new CancelOperationUseCase(repository)
+    this.requestSupportCardUseCase = new RequestSupportCardUseCase(
+      notificationRepository,
+      randomGenerator,
+    )
+    this.prepareOperationUseCase = new PrepareOperationUseCase(
+      notificationRepository,
+      operationOptions,
+    )
+    this.resolveOperationUseCase = new ResolveOperationUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
+    this.cancelOperationUseCase = new CancelOperationUseCase(notificationRepository)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {

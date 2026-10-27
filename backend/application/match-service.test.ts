@@ -553,6 +553,7 @@ describe('MatchService', () => {
       type: 'observation',
       title: 'Sem nova descoberta: Galeria Principal',
     })
+    expect(third.notificationEvents?.map((event) => event.kind)).toContain('action-failure')
     expect(third.actionPoints.general).toBe(4)
   })
 
@@ -662,6 +663,7 @@ describe('MatchService', () => {
       title: 'Comunicado da manutenção municipal',
       round: 3,
     })
+    expect(roundThree.notificationEvents?.map((event) => event.kind)).toContain('round-event')
 
     repository.save({ ...roundThree, round: 4 })
     const roundFive = service.endTurn(match.id)

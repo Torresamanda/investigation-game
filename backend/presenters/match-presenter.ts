@@ -39,6 +39,7 @@ export const MatchPresenter = {
       hasUsedSupportThisRound: match.hasUsedSupportThisRound,
       actionPoints: match.actionPoints,
       journalEntries: match.journalEntries.map(toPublicJournalEntry),
+      notificationEvents: match.notificationEvents ?? [],
       muralLinks: match.muralLinks.map(({ id, fromClueId, toClueId, round }) => ({
         id,
         fromClueId,
@@ -64,8 +65,10 @@ export const MatchPresenter = {
 
 function toPublicJournalEntry({
   caseEvidenceKey: _caseEvidenceKey,
+  notificationSignal,
   ...entry
 }: SoloMatch['journalEntries'][number]) {
+  void notificationSignal
   return _caseEvidenceKey ? entry : { ...entry }
 }
 

@@ -98,6 +98,10 @@ export class ResolveActionUseCase {
     if (match.round === 6 && command.action !== 'analyse' && resolution.entry.type === 'clue') {
       throw new DomainError('O prazo final impede novas descobertas por exploração.')
     }
+    const resolvedEntryBase =
+      resolution.entry.type === 'observation' && !resolution.additionalEntries?.length
+        ? { ...resolution.entry, notificationSignal: 'action-failure' as const }
+        : resolution.entry
     const actionPoints = spendActionPoints(match.actionPoints, {
       action: command.action,
       amount: cost,
@@ -106,21 +110,21 @@ export class ResolveActionUseCase {
       match.activeInvestigatorId === 'rafael' &&
       command.action === 'analyse' &&
       !match.hasUsedPassiveThisRound &&
-      resolution.entry.type === 'clue' &&
-      (resolution.entry.status === 'unconfirmed' || resolution.entry.status === 'indicio') &&
+      resolvedEntryBase.type === 'clue' &&
+      (resolvedEntryBase.status === 'unconfirmed' || resolvedEntryBase.status === 'indicio') &&
       isPhysicalEvidenceLocation(command.locationId)
     const resolvedEntry = usesRafaelPassive
       ? {
-          ...resolution.entry,
+          ...resolvedEntryBase,
           status: 'confirmed' as const,
           ...(resolution.resolvedKey === 'gallery-lock'
             ? { caseEvidenceKey: 'e1-confirmed' as const }
             : {}),
-          content: `${resolution.entry.content} Rafael confirmou o vestígio na análise pericial.`,
+          content: `${resolvedEntryBase.content} Rafael confirmou o vestígio na análise pericial.`,
         }
       : resolution.entry.caseEvidenceKey || !isConfirmedCaseEvidence(resolution.resolvedKey)
-        ? resolution.entry
-        : { ...resolution.entry, caseEvidenceKey: resolution.resolvedKey }
+        ? resolvedEntryBase
+        : { ...resolvedEntryBase, caseEvidenceKey: resolution.resolvedKey }
     const finalResolvedEntry =
       resolvedEntry.type === 'clue' && resolvedEntry.status === 'confirmed'
         ? {

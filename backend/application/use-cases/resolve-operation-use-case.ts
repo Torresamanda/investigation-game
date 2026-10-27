@@ -97,6 +97,7 @@ export class ResolveOperationUseCase {
           locationId: match.currentLocationId,
           round: match.round,
           status: 'note',
+          notificationSignal: 'action-failure',
         },
       ],
     })

@@ -53,13 +53,27 @@ const {
   canAffordInvestigativeCrossing,
 } = useTableContext(session)
 
+const { notifications, unreadCount, dismissNotification, notifyActionFailure } =
+  useTableNotifications(
+    () => session.remoteMatch,
+    () => panelMode.value === 'journal',
+  )
+
 const {
   conversation,
   conversationAnswer,
   refreshConversation,
   openConversation,
   resolveConversation,
-} = useTableConversation(session, location, locationId, selectedSuspectId, panelMode, feedback)
+} = useTableConversation(
+  session,
+  location,
+  locationId,
+  selectedSuspectId,
+  panelMode,
+  feedback,
+  notifyActionFailure,
+)
 
 const {
   isSupportRequestPending,
@@ -67,7 +81,7 @@ const {
   clearPreparedCard,
   discardPreparedCard,
   requestSupportCard,
-} = useTableHand(session, feedback, refreshConversation)
+} = useTableHand(session, feedback, refreshConversation, notifyActionFailure)
 
 const {
   showDeletionConfirmation,
@@ -79,12 +93,7 @@ const {
 } = useCaseLifecycle(session, feedback)
 
 const { executeAction, moveToLocation, createMuralLink, createInvestigativeCrossing } =
-  useTableActions(session, feedback, location, locationId, selectedSuspectId)
-
-const { notifications, unreadCount, dismissNotification } = useTableNotifications(
-  () => session.remoteMatch,
-  () => panelMode.value === 'journal',
-)
+  useTableActions(session, feedback, location, locationId, selectedSuspectId, notifyActionFailure)
 
 function openDiscoveryInJournal(id: string) {
   panelMode.value = 'journal'
@@ -113,9 +122,9 @@ async function prepareOperation(operationId: string) {
       'Operação preparada. Quando estiver pronto, resolva o desfecho.',
     )
   } catch (error) {
-    feedback.value = statusFeedback(
-      error instanceof Error ? error.message : 'Não foi possível preparar a operação.',
-    )
+    const message = error instanceof Error ? error.message : 'Não foi possível preparar a operação.'
+    notifyActionFailure(message)
+    feedback.value = statusFeedback(message)
   }
 }
 
@@ -129,9 +138,9 @@ async function resolveOperation() {
         : 'A operação foi resolvida.',
     )
   } catch (error) {
-    feedback.value = statusFeedback(
-      error instanceof Error ? error.message : 'Não foi possível resolver a operação.',
-    )
+    const message = error instanceof Error ? error.message : 'Não foi possível resolver a operação.'
+    notifyActionFailure(message)
+    feedback.value = statusFeedback(message)
   }
 }
 
@@ -142,9 +151,10 @@ async function cancelOperation() {
       'A preparação foi cancelada. Você pode escolher outra operação.',
     )
   } catch (error) {
-    feedback.value = statusFeedback(
-      error instanceof Error ? error.message : 'Não foi possível cancelar a preparação.',
-    )
+    const message =
+      error instanceof Error ? error.message : 'Não foi possível cancelar a preparação.'
+    notifyActionFailure(message)
+    feedback.value = statusFeedback(message)
   }
 }
 </script>

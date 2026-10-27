@@ -38,6 +38,25 @@ export interface MatchHypothesisProgress {
   readonly coherentRelationCount: number
 }
 
+export type MatchNotificationKind =
+  | 'discovery'
+  | 'clue-refuted'
+  | 'hypothesis-strengthened'
+  | 'hypothesis-contested'
+  | 'operation-available'
+  | 'action-failure'
+  | 'round-event'
+  | 'observation'
+  | 'temporary-card'
+  | 'support-card'
+
+export interface MatchNotificationEvent {
+  readonly id: string
+  readonly kind: MatchNotificationKind
+  readonly round: number
+  readonly entryId?: string
+}
+
 export interface PublicMatchDto {
   readonly id: string
   readonly mode: 'solo'
@@ -67,6 +86,7 @@ export interface PublicMatchDto {
   readonly journalEntries: readonly MatchJournalEntry[]
   readonly muralLinks: readonly MatchMuralLink[]
   readonly hypotheses?: readonly MatchHypothesisProgress[]
+  readonly notificationEvents?: readonly MatchNotificationEvent[]
   readonly decks: Readonly<
     Partial<
       Record<

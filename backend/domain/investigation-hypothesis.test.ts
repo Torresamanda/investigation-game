@@ -88,7 +88,23 @@ describe('createInvestigationHypothesis', () => {
       { id: 'connection-2', fromEntryId: 'opportunity', toEntryId: 'link' },
     ])
 
-    const publicMatch = MatchPresenter.toPublicDto({ ...match, hypotheses: [hypothesis] })
+    const publicMatch = MatchPresenter.toPublicDto({
+      ...match,
+      hypotheses: [hypothesis],
+      notificationEvents: [{ id: 'event-1', kind: 'hypothesis-strengthened', round: 2 }],
+      journalEntries: [
+        {
+          id: 'entry-1',
+          type: 'observation',
+          title: 'Observação',
+          content: 'Tentativa registrada.',
+          locationId: 'gallery',
+          round: 2,
+          status: 'note',
+          notificationSignal: 'action-failure',
+        },
+      ],
+    })
 
     expect(publicMatch.hypotheses).toEqual([
       {
@@ -99,5 +115,9 @@ describe('createInvestigationHypothesis', () => {
       },
     ])
     expect(JSON.stringify(publicMatch)).not.toContain('private-route')
+    expect(publicMatch.notificationEvents).toEqual([
+      { id: 'event-1', kind: 'hypothesis-strengthened', round: 2 },
+    ])
+    expect(publicMatch.journalEntries[0]).not.toHaveProperty('notificationSignal')
   })
 })
