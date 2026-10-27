@@ -13,6 +13,7 @@ export type Case01RouteKind = 'minimum' | 'curiosity'
 export interface Case01RouteSimulation {
   readonly finalMatch: SoloMatch
   readonly nonDecisiveClueCount: number
+  readonly remainingActionPointsAfterClosure: number
   readonly usedCard: boolean
 }
 
@@ -105,7 +106,13 @@ export function simulateCase01Route(
     (entry) => entry.type === 'clue' && entry.status !== 'confirmed',
   ).length
 
-  return { finalMatch, nonDecisiveClueCount, usedCard }
+  return {
+    finalMatch,
+    nonDecisiveClueCount,
+    remainingActionPointsAfterClosure:
+      finalMatch.actionPoints.general + finalMatch.actionPoints.specialty,
+    usedCard,
+  }
 }
 
 function assertEvidenceHasHypothesisMetadata(match: SoloMatch | undefined): void {

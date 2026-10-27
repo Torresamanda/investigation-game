@@ -1579,6 +1579,16 @@ describe('MatchService', () => {
           round: 1,
           status: 'recorded',
         },
+        {
+          id: 'confirmed-evidence',
+          type: 'clue',
+          title: 'Evidência confirmada',
+          content: 'Registro técnico confirmado.',
+          locationId: 'laboratory',
+          round: 1,
+          status: 'confirmed',
+          caseEvidenceKey: 'e1-confirmed',
+        },
       ],
     })
 
@@ -1594,6 +1604,17 @@ describe('MatchService', () => {
     })
     expect(statement.hasUsedPassiveThisRound).toBe(true)
     expect(statement.hasSocialConnectionThisRound).toBe(true)
+    expect(statement.journalEntries.at(-1)?.contestableCrossing?.evidenceKeys).toContain(
+      'e1-confirmed',
+    )
+
+    const crossedStatement = service.createInvestigativeCrossing({
+      matchId: match.id,
+      fromClueId: statement.journalEntries.at(-1)!.id,
+      toClueId: 'confirmed-evidence',
+    })
+    expect(crossedStatement.hasUsedSocialConnectionThisRound).toBe(true)
+    expect(crossedStatement.actionPoints).toEqual(statement.actionPoints)
 
     const contradiction = service.resolveAction({
       matchId: match.id,

@@ -47,4 +47,14 @@ describe('Case 01 route and budget simulator', () => {
 
     expect(firstSimulation.finalMatch).toEqual(secondSimulation.finalMatch)
   })
+
+  it('preserves the same action-point margin after the closure for every investigator', () => {
+    const remainingBudgets = investigatorIds.map(
+      (investigatorId) =>
+        simulateCase01Route(investigatorId, 'minimum').remainingActionPointsAfterClosure,
+    )
+
+    expect(new Set(remainingBudgets).size).toBe(1)
+    expect(remainingBudgets[0]).toBeGreaterThanOrEqual(3)
+  })
 })
