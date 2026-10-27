@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { suspectProfiles } from '../../content/case01'
 import { useInvestigationStore } from '../../stores/investigation'
 import type { InvestigationAction } from '../../domain/game/action-points'
 import { useTableNotifications } from './composables/useTableNotifications'
@@ -50,7 +49,6 @@ const {
   availableActions,
   actionCosts,
   hasUsableActionPoints,
-  confirmedClues,
   hasFreeJournalConnection,
   hasPreparedConnectionCard,
 } = useTableContext(session)
@@ -74,13 +72,10 @@ const {
 const {
   showDeletionConfirmation,
   deletionError,
-  accusationError,
   retryConnection,
   requestReturnToWorld,
   deleteCurrentMatch,
   endTurn,
-  accuseSuspect,
-  openAccusation,
 } = useCaseLifecycle(session, feedback, panelMode)
 
 const { executeAction, moveToLocation, createJournalConnection } = useTableActions(
