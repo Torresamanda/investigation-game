@@ -72,8 +72,7 @@ export function useTableContext(session: ReturnType<typeof useInvestigationStore
       hasAvailableInvestigationAction ||
       hasAvailableConversation ||
       canPayForMovement ||
-      canPayForJournalConnection ||
-      (session.canAccuse && match.actionPoints.general >= 3)
+      canPayForJournalConnection
     )
   })
   const confirmedClues = computed(() =>

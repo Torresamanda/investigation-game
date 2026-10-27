@@ -22,6 +22,7 @@ describe('OperationPanel', () => {
         operations: [
           {
             id: 'preserve-the-evidence',
+            kind: 'closure',
             title: 'Preservar a prova',
             riskDescription: 'Pode revelar uma inconsistência.',
           },

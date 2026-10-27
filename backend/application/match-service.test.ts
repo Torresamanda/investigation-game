@@ -525,7 +525,7 @@ describe('MatchService', () => {
     })
   })
 
-  it('registra o evento da Rodada 3 e desbloqueia acusação e conexão gratuita nas rodadas previstas', () => {
+  it('registra o evento da Rodada 3 e mantém a conexão gratuita nas rodadas previstas', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository, undefined, () => 'round-events')
     const match = service.createSoloMatch({
@@ -540,13 +540,11 @@ describe('MatchService', () => {
       title: 'Comunicado da manutenção municipal',
       round: 3,
     })
-    expect(roundThree.canAccuse).toBe(false)
 
     repository.save({ ...roundThree, round: 4 })
     const roundFive = service.endTurn(match.id)
     expect(roundFive).toMatchObject({
       round: 5,
-      canAccuse: true,
       hasFreeConnectionThisRound: true,
       hasUsedFreeConnectionThisRound: false,
     })
@@ -554,7 +552,6 @@ describe('MatchService', () => {
     const roundSix = service.endTurn(match.id)
     expect(roundSix).toMatchObject({
       round: 6,
-      canAccuse: true,
       hasFreeConnectionThisRound: false,
       hasUsedFreeConnectionThisRound: false,
     })

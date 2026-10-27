@@ -11,7 +11,7 @@ export function useTableConversation(
   location: Ref<CaseLocation>,
   locationId: Ref<LocationId>,
   selectedSuspectId: Ref<SuspectId | null>,
-  panelMode: Ref<'people' | 'journal' | 'accusation'>,
+  panelMode: Ref<'people' | 'journal' | 'operation'>,
   feedback: Ref<InvestigationFeedback>,
 ) {
   const conversation = ref<ConversationOptions | null>(null)

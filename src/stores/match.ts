@@ -7,7 +7,6 @@ import { canPayAction, investigatorActionCost } from '../../shared/domain/action
 import {
   gameApi,
   ApiRequestError,
-  type AccusationSubmission,
   type MatchJournalEntry,
   type OperationOption,
   type RemoteMatch,
@@ -106,13 +105,6 @@ export const useMatchStore = defineStore('match', () => {
   const canEndTurn = computed(() => remoteMatch.value?.status === 'active' && round.value <= 6)
   const hasUsedSupportThisRound = computed(
     () => remoteMatch.value?.hasUsedSupportThisRound ?? false,
-  )
-  const canAccuse = computed(
-    () =>
-      remoteMatch.value?.status === 'active' &&
-      remoteMatch.value.canAccuse &&
-      round.value >= 5 &&
-      round.value <= 6,
   )
   const preparedCard = computed(() =>
     hand.value.find(
@@ -247,15 +239,6 @@ export const useMatchStore = defineStore('match', () => {
     preparedCardId.value = remoteMatch.value.preparedCardInstanceId
   }
 
-  async function accuse(accusation: AccusationSubmission): Promise<void> {
-    if (!remoteMatch.value) throw new Error('A acusação exige uma partida conectada à API.')
-    remoteMatch.value = await performApiRequest(() =>
-      gameApi.accuse(remoteMatch.value!.id, accusation),
-    )
-    preparedCardId.value = null
-    clearCompletedMatchSession()
-  }
-
   async function loadAvailableOperations(): Promise<void> {
     if (!remoteMatch.value) return
     availableOperations.value = await performApiRequest(() =>
@@ -276,6 +259,13 @@ export const useMatchStore = defineStore('match', () => {
       gameApi.resolveOperation(remoteMatch.value!.id),
     )
     clearCompletedMatchSession()
+  }
+
+  async function cancelOperation(): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A operação exige uma partida conectada à API.')
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.cancelOperation(remoteMatch.value!.id),
+    )
   }
 
   async function moveInvestigator(locationId: LocationId): Promise<void> {
@@ -372,7 +362,6 @@ export const useMatchStore = defineStore('match', () => {
     pointsLabel,
     canEndTurn,
     hasUsedSupportThisRound,
-    canAccuse,
     canDiscardPreparedCard,
     preparedCard,
     journalEntries,
@@ -386,10 +375,10 @@ export const useMatchStore = defineStore('match', () => {
     retryConnection,
     resolveAction,
     createJournalConnection,
-    accuse,
     loadAvailableOperations,
     prepareOperation,
     resolveOperation,
+    cancelOperation,
     moveInvestigator,
     endRemoteTurn,
     requestSupportCard,

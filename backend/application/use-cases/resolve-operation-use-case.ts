@@ -29,6 +29,30 @@ export class ResolveOperationUseCase {
       (item) => item.id === match.preparedOperation?.hypothesisId,
     )
     const isPrepared = resolvePreparedOperation(match.preparedOperation, hypothesis) === 'resolved'
+    if (isPrepared && match.preparedOperation.operationId === 'verify-the-theory') {
+      return this.repository.save({
+        ...match,
+        actionPoints: spendActionPoints(match.actionPoints, {
+          action: 'move',
+          amount: operationCost,
+        }),
+        preparedOperation: undefined,
+        hasAttemptedOperationThisRound: true,
+        journalEntries: [
+          ...match.journalEntries,
+          {
+            id: `journal-${match.journalEntries.length + 1}`,
+            type: 'observation',
+            title: 'Linha de raciocínio verificada',
+            content:
+              'A verificação organizou os fatos já reunidos e indicou que a linha ainda precisa de confirmação antes do encerramento.',
+            locationId: match.currentLocationId,
+            round: match.round,
+            status: 'note',
+          },
+        ],
+      })
+    }
     const outcome = isPrepared
       ? this.caseContentRepository.resolveOperation(
           match,

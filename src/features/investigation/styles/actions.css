@@ -89,35 +89,35 @@
   font-size: 12px;
 }
 
-.accusation-dialog {
+.operation-dialog {
   display: grid;
   gap: 12px;
   padding: 12px 0;
   min-width: 0;
 }
 
-.accusation-dialog-heading {
+.operation-dialog-heading {
   display: flex;
   justify-content: space-between;
   align-items: start;
   gap: 12px;
 }
 
-.accusation-dialog h2 {
+.operation-dialog h2 {
   margin: 0;
   font:
     24px Georgia,
     serif;
 }
 
-.accusation-dialog label {
+.operation-dialog label {
   display: grid;
   gap: 6px;
   color: var(--gold);
   font-size: 12px;
 }
 
-.accusation-dialog select {
+.operation-dialog select {
   width: 100%;
   padding: 10px;
   border: 1px solid var(--line);
@@ -127,21 +127,21 @@
   font: inherit;
 }
 
-.accusation-dialog-help,
-.accusation-readiness,
-.accusation-error {
+.operation-dialog-help,
+.operation-readiness,
+.operation-error {
   margin: 0;
   color: #b9cbd3;
   font-size: 12px;
   line-height: 1.5;
 }
 
-.accusation-readiness span {
+.operation-readiness span {
   display: block;
   margin-top: 4px;
 }
 
-.accusation-error {
+.operation-error {
   color: #ffb0a8;
 }
 

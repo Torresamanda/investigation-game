@@ -96,6 +96,5 @@ describe('InvestigationActions', () => {
         .every((button) => button.attributes('disabled') !== undefined),
     ).toBe(true)
     expect(view.get('.end-turn').attributes('disabled')).toBeDefined()
-    expect(view.find('.accusation-control').exists()).toBe(false)
   })
 })

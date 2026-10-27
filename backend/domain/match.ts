@@ -70,7 +70,6 @@ export interface SoloMatch {
   readonly hasSocialConnectionThisRound?: boolean
   readonly hasUsedSocialConnectionThisRound?: boolean
   readonly hasUsedPressLeakConversationThisRound: boolean
-  readonly canAccuse: boolean
   readonly hasFreeConnectionThisRound: boolean
   readonly hasUsedFreeConnectionThisRound: boolean
   readonly currentLocationId: LocationId
@@ -117,7 +116,6 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     hasSocialConnectionThisRound: false,
     hasUsedSocialConnectionThisRound: false,
     hasUsedPressLeakConversationThisRound: false,
-    canAccuse: false,
     hasFreeConnectionThisRound: false,
     hasUsedFreeConnectionThisRound: false,
     currentLocationId: 'gallery',

@@ -135,7 +135,7 @@ it('mantém o dossiê dentro do painel e permite percorrer o tour sem alterar a 
   expect(view.findAll('.mode-tabs button')[2]!.attributes('disabled')).toBeUndefined()
   await view.findAll('.mode-tabs button')[2]!.trigger('click')
   await flushPromises()
-  expect(view.get('.contextual-panel .accusation-dialog').isVisible()).toBe(true)
+  expect(view.get('.contextual-panel .operation-dialog').isVisible()).toBe(true)
   expect(loadAvailableOperations).toHaveBeenCalledTimes(1)
   expect(view.find('[aria-modal]').exists()).toBe(false)
   const beforeTour = JSON.stringify(session.remoteMatch)

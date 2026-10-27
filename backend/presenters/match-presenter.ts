@@ -25,7 +25,6 @@ export const MatchPresenter = {
       hasSocialConnectionThisRound: match.hasSocialConnectionThisRound ?? false,
       hasUsedSocialConnectionThisRound: match.hasUsedSocialConnectionThisRound ?? false,
       hasUsedPressLeakConversationThisRound: match.hasUsedPressLeakConversationThisRound,
-      canAccuse: match.canAccuse,
       hasFreeConnectionThisRound: match.hasFreeConnectionThisRound,
       hasUsedFreeConnectionThisRound: match.hasUsedFreeConnectionThisRound,
       canCreateInvestigatorConnection:

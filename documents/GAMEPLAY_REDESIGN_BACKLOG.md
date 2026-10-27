@@ -97,15 +97,59 @@ registrar a consequência narrativa de uma tentativa.
 As transições são calculadas apenas no backend. Identificadores de linhas privadas,
 requisitos ainda não descobertos, regras de descarte do caso, condições de operação e
 resultado futuro permanecem privados. O DTO público não pode informar o próximo local,
-carta, pessoa, eixo ausente ou operação bloqueada. GD-02 poderá consultar operações
-somente para uma hipótese mecânica `sustained`, sem expor a regra que a sustentou.
+carta, pessoa, eixo ausente ou operação bloqueada. GD-02 poderá consultar uma operação
+de verificação para uma hipótese mecânica `plausible` e uma operação de encerramento
+somente para uma hipótese mecânica `sustained`, sem expor a regra que as sustenta.
 
 - [x] **GD-01 — Definir estados de hipótese** `[Definição] [Back] [Front]`
   - Modelar hipótese como estado explícito: em apuração, plausível, sustentada, contestada e descartada.
   - Definir quais categorias públicas de evidência podem fortalecê-la: meios, oportunidade e vínculo.
   - Critério de aceite: o estado da hipótese pode ser apresentado sem expor condições futuras ou a solução do caso.
 
-- [ ] **GD-02 — Definir operações investigativas** `[Definição] [Back] [Front]`
+### Contrato de operações investigativas (GD-02)
+
+Uma operação é uma decisão narrativa associada a uma hipótese mecânica; não é uma
+acusação, não recebe suspeito nem eixos de evidência como entrada. O servidor decide
+se ela existe, pode ser preparada e qual consequência produz. Relações do mural só a
+sustentam quando forem coerentes e evidências já confirmadas; uma contagem de conexões
+pagas nunca libera uma operação por si só.
+
+| Tipo | Hipótese necessária | Finalidade | Resultado possível |
+| --- | --- | --- | --- |
+| `verify` | `plausible` ou `sustained` | Verificar uma linha de raciocínio sem encerrar a missão. | Corrobora fatos já acessíveis, registra observação útil ou revela inconsistência recuperável. Nunca vence nem perde a missão. |
+| `closure` | `sustained` | Executar o desfecho ficcional do caso. | Resolve a missão somente se o servidor confirmar o resultado; uma tentativa incompleta segue a regra de recuperação abaixo. |
+
+Uma hipótese livre nunca consulta, prepara ou resolve operação. Hipóteses em `inquiry`,
+`contested` ou `discarded` não recebem operação disponível. Se uma hipótese preparada
+deixar de atender ao estado mínimo, o servidor invalida a preparação antes de qualquer
+resolução e informa apenas que a linha precisa ser reavaliada.
+
+Preparar uma operação disponível é gratuito, registra no máximo uma preparação por vez
+e pode ser trocado ou cancelado sem custo. Resolver exige a operação ainda preparada,
+gasta exatamente 2 PA gerais — nunca PA de especialidade, carta ou apoio — e só pode
+ocorrer uma vez por rodada. Na Rodada 6, a resolução continua permitida depois de uma
+última confirmação no mesmo turno quando os PA gerais restantes cobrem ambos os custos.
+
+Uma resolução incompleta consome os 2 PA, registra uma observação ou inconsistência já
+vivida na ficção e contesta a hipótese associada. Ela não encerra automaticamente a
+partida: enquanto houver prazo, o jogador pode reorganizar a investigação. Na Rodada 6,
+a partida permanece ativa até o encerramento normal do turno; somente esse prazo, e não
+a tentativa isolada, pode encerrar a missão sem vitória.
+
+O DTO público de uma operação disponível contém somente um identificador opaco, tipo,
+título narrativo, descrição de risco já liberada e estado `available` ou `prepared`.
+O presenter pode expor uma mensagem de consequência já ocorrida no diário, mas nunca
+requisitos privados, eixos ausentes, pistas ou pessoas faltantes, operação bloqueada,
+probabilidade, resultado futuro ou se a operação é a solução correta. Operações não
+disponíveis simplesmente não integram a resposta pública.
+
+GD-07 implementará três casos de uso separados: consultar opções públicas, preparar uma
+operação e resolver a preparação. Eles recebem somente o identificador público e a
+partida; o conteúdo privado do caso avalia a hipótese, os requisitos e o resultado. A
+interface apresenta opções por `props` e emite apenas preparar, trocar, cancelar ou
+resolver, sem calcular prontidão ou consequência localmente.
+
+- [x] **GD-02 — Definir operações investigativas** `[Definição] [Back] [Front]`
   - Substituir o comando de acusação por operações narrativas específicas de cada caso, como seguir uma rota, preservar uma prova ou confrontar uma inconsistência. A interface não pede suspeito ou eixos de prova.
   - Definir dois níveis de operação:
     1. **Verificar linha de raciocínio:** fica disponível para hipótese plausível; não vence a missão e pode confirmar parcialmente a teoria, registrar uma observação útil ou revelar uma inconsistência recuperável.
@@ -115,6 +159,7 @@ somente para uma hipótese mecânica `sustained`, sem expor a regra que a susten
   - Uma operação incompleta consome o custo, registra consequência narrativa útil, contesta a hipótese relacionada e mantém a missão ativa enquanto houver prazo. Ela nunca encerra a partida automaticamente.
   - O servidor determina disponibilidade, custo e resultado. O cliente recebe apenas título, descrição de risco e estado disponível ou preparado, sem requisito oculto, pista faltante ou solução.
   - Critério de aceite: a decisão final é compreensível em ficção, não pede preenchimento manual de eixos, mantém recuperação após tentativa incompleta e não revela a solução antes da sustentação da hipótese.
+  - **Situação atual:** a operação de encerramento já pode ser preparada e resolvida; ainda faltam a operação de verificação para hipótese `plausible`, troca e cancelamento explícitos da preparação e a retirada completa do fluxo legado de acusação.
 
 - [ ] **GD-03 — Consolidar economia de PA e cartas** `[Definição] [Back]`
   - Tornar uma única regra oficial para renovação de mão, descarte voluntário, cartas temporárias e apoio de plantão.
@@ -177,6 +222,16 @@ somente para uma hipótese mecânica `sustained`, sem expor a regra que a susten
   - Substitui `05C · NOTIF-01` do backlog principal.
   - Notificar descoberta, pista refutada, hipótese fortalecida ou contestada, operação disponível, falha de ação e evento de rodada.
   - Critério de aceite: as mensagens derivam de eventos autoritativos e continuam consistentes entre participantes em uma futura sala cooperativa.
+
+- [ ] **GD-11B — Orientar prontidão da operação sem spoiler** `[Front] [Back] [Definição]`
+  - Quando não houver operação disponível, o painel deve explicar o próximo tipo de avanço em linguagem ficcional e neutra, sem revelar local, pessoa, carta, eixo específico ou solução.
+  - Diferenciar visualmente linha em apuração, plausível, sustentada e contestada, deixando claro quando uma operação de verificação ou de encerramento passou a estar disponível.
+  - Critério de aceite: uma pessoa nova entende o que significa “organizar evidências e conexões” e qual é o objetivo investigativo imediato, sem receber uma rota pronta até a solução.
+
+- [ ] **GD-11C — Sinalizar oportunidades de investigação antes do gasto** `[Front] [Back] [Definição]`
+  - Comunicar, com pistas diegéticas e sem garantia de resultado, quando um local, pessoa ou método parece uma abordagem promissora, esgotada ou apenas exploratória para o estado atual do caso.
+  - Toda ação sem descoberta deve registrar uma observação que reduza incerteza ou indique uma mudança de abordagem; evitar consumir PA em retornos puramente genéricos.
+  - Critério de aceite: um iniciante consegue distinguir tentativa de exploração de uma oportunidade investigativa plausível e não perde PA relevante sem receber orientação aproveitável.
 
 - [ ] **GD-12 — Revisar onboarding e linguagem de regras** `[Front] [Docs]`
   - Explicar diferença entre pista, conexão, hipótese e operação no tour opcional e no Diário.

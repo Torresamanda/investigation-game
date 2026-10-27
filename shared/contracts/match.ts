@@ -54,7 +54,6 @@ export interface PublicMatchDto {
   readonly hasSocialConnectionThisRound?: boolean
   readonly hasUsedSocialConnectionThisRound?: boolean
   readonly hasUsedPressLeakConversationThisRound: boolean
-  readonly canAccuse: boolean
   readonly hasFreeConnectionThisRound: boolean
   readonly hasUsedFreeConnectionThisRound: boolean
   readonly canCreateInvestigatorConnection: boolean

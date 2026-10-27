@@ -31,15 +31,9 @@ export interface ConversationOptions {
   readonly questions: readonly ConversationQuestion[]
 }
 
-export interface AccusationSubmission {
-  readonly suspectId: PersonId
-  readonly meansClueId: string
-  readonly opportunityClueId: string
-  readonly linkClueId: string
-}
-
 export interface OperationOption {
   readonly id: string
+  readonly kind: 'verify' | 'closure'
   readonly title: string
   readonly riskDescription: string
 }
@@ -154,14 +148,6 @@ export const gameApi = {
     })
   },
 
-  accuse(matchId: string, accusation: AccusationSubmission) {
-    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/accuse`, {
-      method: 'POST',
-      body: JSON.stringify(accusation),
-      headers: matchSessionHeaders(matchId),
-    })
-  },
-
   getAvailableOperations(matchId: string) {
     return request<readonly OperationOption[]>(
       `/api/matches/${encodePathSegment(matchId)}/operations`,
@@ -175,6 +161,13 @@ export const gameApi = {
     return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/operations`, {
       method: 'POST',
       body: JSON.stringify({ operationId }),
+      headers: matchSessionHeaders(matchId),
+    })
+  },
+
+  cancelOperation(matchId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/operations`, {
+      method: 'DELETE',
       headers: matchSessionHeaders(matchId),
     })
   },

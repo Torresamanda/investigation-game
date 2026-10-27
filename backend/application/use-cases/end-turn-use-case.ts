@@ -18,7 +18,6 @@ export class EndTurnUseCase {
       const finished: SoloMatch = {
         ...match,
         status: 'lost',
-        canAccuse: false,
         preparedCardInstanceId: null,
         hasUsedSupportThisRound: false,
       }
@@ -52,7 +51,6 @@ export class EndTurnUseCase {
       hasSocialConnectionThisRound: false,
       hasUsedSocialConnectionThisRound: false,
       hasUsedPressLeakConversationThisRound: false,
-      canAccuse: match.canAccuse || nextRound >= 5,
       hasFreeConnectionThisRound: nextRound === 5,
       hasUsedFreeConnectionThisRound: false,
       hasUsedFreeMoveThisRound: false,

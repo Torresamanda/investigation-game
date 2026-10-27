@@ -28,7 +28,7 @@ import './investigation.css'
 const session = useInvestigationStore()
 const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigação.'))
 const cards = computed(() => session.hand)
-const panelMode = ref<'people' | 'journal' | 'accusation'>('people')
+const panelMode = ref<'people' | 'journal' | 'operation'>('people')
 const { tourStep, tourIndex, startTour, startTourOnFirstVisit, closeTour, stepTour } =
   useTableTour()
 
@@ -76,7 +76,7 @@ const {
   requestReturnToWorld,
   deleteCurrentMatch,
   endTurn,
-} = useCaseLifecycle(session, feedback, panelMode)
+} = useCaseLifecycle(session, feedback)
 
 const { executeAction, moveToLocation, createJournalConnection } = useTableActions(
   session,
@@ -99,7 +99,7 @@ function openDiscoveryInJournal(id: string) {
 }
 
 function openOperationPanel() {
-  panelMode.value = 'accusation'
+  panelMode.value = 'operation'
   void session.loadAvailableOperations()
 }
 
@@ -138,6 +138,19 @@ async function resolveOperation() {
   } catch (error) {
     feedback.value = statusFeedback(
       error instanceof Error ? error.message : 'Não foi possível resolver a operação.',
+    )
+  }
+}
+
+async function cancelOperation() {
+  try {
+    await session.cancelOperation()
+    feedback.value = statusFeedback(
+      'A preparação foi cancelada. Você pode escolher outra operação.',
+    )
+  } catch (error) {
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível cancelar a preparação.',
     )
   }
 }
@@ -289,7 +302,7 @@ async function resolveOperation() {
               >{{ unreadCount }}</span
             >
           </button>
-          <button :aria-pressed="panelMode === 'accusation'" @click="openOperationPanel">
+          <button :aria-pressed="panelMode === 'operation'" @click="openOperationPanel">
             Operação
           </button>
         </nav>
@@ -324,13 +337,14 @@ async function resolveOperation() {
           />
           <OperationPanel
             v-if="session.remoteMatch"
-            v-show="panelMode === 'accusation'"
+            v-show="panelMode === 'operation'"
             :operations="session.availableOperations"
             :is-prepared="Boolean(session.remoteMatch.preparedOperation)"
             :is-final-round="session.remoteMatch.round === 6"
             :is-request-pending="session.isRequestPending"
             @prepare="prepareOperation"
             @resolve="resolveOperation"
+            @cancel="cancelOperation"
           />
         </div>
       </aside>

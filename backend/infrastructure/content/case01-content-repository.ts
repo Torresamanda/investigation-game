@@ -14,21 +14,40 @@ import type {
   LocationId,
   PersonId,
 } from '../../../shared/domain/identifiers.js'
-import type { CaseEvidenceKey, SoloMatch } from '../../domain/match.js'
+import type { SoloMatch } from '../../domain/match.js'
 import { resolveCase01CardEffect } from './case01-card-effects.js'
 import type { OperationOption } from '../../domain/investigation-operation.js'
 
 export class Case01ContentRepository implements CaseContentRepository {
   getAvailableOperations(match: SoloMatch): readonly OperationOption[] {
-    return match.hypotheses?.some((hypothesis) => hypothesis.status === 'sustained')
-      ? [
-          {
-            id: 'preserve-the-evidence',
-            title: 'Preservar a prova',
-            riskDescription: 'A operação pode revelar uma inconsistência na linha de raciocínio.',
-          },
-        ]
-      : []
+    const hasPlausibleHypothesis = match.hypotheses?.some(
+      (hypothesis) => hypothesis.status === 'plausible' || hypothesis.status === 'sustained',
+    )
+    const hasSustainedHypothesis = match.hypotheses?.some(
+      (hypothesis) => hypothesis.status === 'sustained',
+    )
+    return [
+      ...(hasPlausibleHypothesis
+        ? [
+            {
+              id: 'verify-the-theory',
+              kind: 'verify' as const,
+              title: 'Verificar a linha de raciocínio',
+              riskDescription: 'A verificação pode revelar uma inconsistência recuperável.',
+            },
+          ]
+        : []),
+      ...(hasSustainedHypothesis
+        ? [
+            {
+              id: 'preserve-the-evidence',
+              kind: 'closure' as const,
+              title: 'Preservar a prova',
+              riskDescription: 'A operação pode revelar uma inconsistência na linha de raciocínio.',
+            },
+          ]
+        : []),
+    ]
   }
 
   resolveOperation(match: SoloMatch, operationId: string, hypothesisId: string) {
@@ -45,25 +64,6 @@ export class Case01ContentRepository implements CaseContentRepository {
         'A operação revelou uma inconsistência na linha de raciocínio. Reavalie as evidências já reunidas antes de tentar outra abordagem.',
     }
   }
-  isAccusationCorrect(
-    suspectId: PersonId,
-    evidence: {
-      readonly means?: CaseEvidenceKey
-      readonly opportunity?: CaseEvidenceKey
-      readonly link?: CaseEvidenceKey
-    },
-  ): boolean {
-    return (
-      suspectId === 'raul' &&
-      (evidence.means === 'e1-confirmed' || evidence.means === 'e5-confirmed') &&
-      (evidence.opportunity === 'e2-confirmed' || evidence.opportunity === 'e6-confirmed') &&
-      (evidence.link === 'e3-confirmed' ||
-        evidence.link === 'e4-confirmed' ||
-        evidence.link === 'e5-confirmed' ||
-        evidence.link === 'e6-confirmed')
-    )
-  }
-
   getConversation(personId: PersonId) {
     const conversation = getConversation(personId)
     return {

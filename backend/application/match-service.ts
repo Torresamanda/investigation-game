@@ -9,7 +9,6 @@ import type {
 import type { MatchRepository } from './ports/match-repository.js'
 import { Case01ContentRepository } from '../infrastructure/content/case01-content-repository.js'
 import {
-  type AccuseSuspectCommand,
   type CreateMatchCommand,
   type ResolveActionCommand,
   type ResolveConversationCommand,
@@ -26,10 +25,10 @@ import { ResolveActionUseCase } from './use-cases/resolve-action-use-case.js'
 import { ResolveConversationUseCase } from './use-cases/resolve-conversation-use-case.js'
 import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.js'
 import { CreateJournalConnectionUseCase } from './use-cases/create-journal-connection-use-case.js'
-import { AccuseSuspectUseCase } from './use-cases/accuse-suspect-use-case.js'
 import { RequestSupportCardUseCase } from './use-cases/request-support-card-use-case.js'
 import { PrepareOperationUseCase } from './use-cases/prepare-operation-use-case.js'
 import { ResolveOperationUseCase } from './use-cases/resolve-operation-use-case.js'
+import { CancelOperationUseCase } from './use-cases/cancel-operation-use-case.js'
 import type { OperationOption } from '../domain/investigation-operation.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 import { DomainError } from '../domain/errors.js'
@@ -59,10 +58,10 @@ export class MatchService {
   private readonly resolveConversationUseCase: ResolveConversationUseCase
   private readonly moveInvestigatorUseCase: MoveInvestigatorUseCase
   private readonly createJournalConnectionUseCase: CreateJournalConnectionUseCase
-  private readonly accuseSuspectUseCase: AccuseSuspectUseCase
   private readonly requestSupportCardUseCase: RequestSupportCardUseCase
   private readonly prepareOperationUseCase: PrepareOperationUseCase
   private readonly resolveOperationUseCase: ResolveOperationUseCase
+  private readonly cancelOperationUseCase: CancelOperationUseCase
 
   constructor(
     private readonly repository: MatchRepository,
@@ -88,10 +87,10 @@ export class MatchService {
     )
     this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
     this.createJournalConnectionUseCase = new CreateJournalConnectionUseCase(repository, createId)
-    this.accuseSuspectUseCase = new AccuseSuspectUseCase(repository, caseContentRepository)
     this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository, randomGenerator)
     this.prepareOperationUseCase = new PrepareOperationUseCase(repository, operationOptions)
     this.resolveOperationUseCase = new ResolveOperationUseCase(repository, caseContentRepository)
+    this.cancelOperationUseCase = new CancelOperationUseCase(repository)
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -191,10 +190,6 @@ export class MatchService {
     return this.createJournalConnectionUseCase.execute(command)
   }
 
-  accuseSuspect(command: AccuseSuspectCommand): SoloMatch {
-    return this.accuseSuspectUseCase.execute(command)
-  }
-
   getAvailableOperations(matchId: string): readonly OperationOption[] {
     const match = this.getMatch(matchId)
     if (!match) throw new Error('Partida não encontrada.')
@@ -204,8 +199,13 @@ export class MatchService {
   prepareOperation(matchId: string, operationId: string): SoloMatch {
     const match = this.getMatch(matchId)
     if (!match) throw new Error('Partida não encontrada.')
-    const hypothesis = match.hypotheses?.find((item) => item.status === 'sustained')
-    if (!hypothesis) throw new DomainError('A linha de raciocínio ainda não sustenta uma operação.')
+    const operation = operationOptions.find((item) => item.id === operationId)
+    const hypothesis = match.hypotheses?.find((item) =>
+      operation?.kind === 'verify'
+        ? item.status === 'plausible' || item.status === 'sustained'
+        : item.status === 'sustained',
+    )
+    if (!hypothesis) throw new DomainError('A linha de raciocínio ainda não permite esta operação.')
     const command: PrepareOperationCommand = { matchId, operationId, hypothesisId: hypothesis.id }
     return this.prepareOperationUseCase.execute(command)
   }
@@ -213,6 +213,10 @@ export class MatchService {
   resolveOperation(matchId: string): SoloMatch {
     const command: ResolveOperationCommand = { matchId }
     return this.resolveOperationUseCase.execute(command)
+  }
+
+  cancelOperation(matchId: string): SoloMatch {
+    return this.cancelOperationUseCase.execute(matchId)
   }
 
   private assertPersonAvailability(personId: PersonId, locationId: LocationId) {
@@ -224,7 +228,14 @@ export class MatchService {
 
 const operationOptions: readonly OperationOption[] = [
   {
+    id: 'verify-the-theory',
+    kind: 'verify',
+    title: 'Verificar a linha de raciocínio',
+    riskDescription: 'A verificação pode revelar uma inconsistência recuperável.',
+  },
+  {
     id: 'preserve-the-evidence',
+    kind: 'closure',
     title: 'Preservar a prova',
     riskDescription: 'A operação pode revelar uma inconsistência na linha de raciocínio.',
   },

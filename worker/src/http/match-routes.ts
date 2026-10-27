@@ -64,14 +64,13 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
   const connectionsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/connections$/)?.[1]
   if (request.method === 'POST' && connectionsMatch)
     return createJournalConnection(request, connectionsMatch, database)
-  const accusationMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/accuse$/)?.[1]
-  if (request.method === 'POST' && accusationMatch)
-    return accuseSuspect(request, accusationMatch, database)
   const operationsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/operations$/)?.[1]
   if (request.method === 'GET' && operationsMatch)
     return getAvailableOperations(operationsMatch, database)
   if (request.method === 'POST' && operationsMatch)
     return prepareOperation(request, operationsMatch, database)
+  if (request.method === 'DELETE' && operationsMatch)
+    return cancelOperation(request, operationsMatch, database)
   const resolveOperationMatch = url.pathname.match(
     /^\/api\/matches\/([^/]+)\/operations\/resolve$/,
   )?.[1]
@@ -115,6 +114,17 @@ async function resolveOperation(
   if (isOversizedBody(body)) return payloadTooLargeResponse()
   if (body) return jsonResponse({ message: 'Operação inválida.' }, 400)
   return mutateMatch(id, database, (service, matchId) => service.resolveOperation(matchId))
+}
+
+async function cancelOperation(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (body) return jsonResponse({ message: 'Operação inválida.' }, 400)
+  return mutateMatch(id, database, (service, matchId) => service.cancelOperation(matchId))
 }
 
 async function createMatch(request: Request, database: D1DatabaseConnection): Promise<Response> {
@@ -331,38 +341,6 @@ async function createJournalConnection(
     return jsonResponse({ message: 'Selecione duas pistas válidas.' }, 400)
   return mutateMatch(id, database, (service, matchId) =>
     service.createJournalConnection({ matchId, fromClueId, toClueId }),
-  )
-}
-
-async function accuseSuspect(
-  request: Request,
-  id: string,
-  database: D1DatabaseConnection,
-): Promise<Response> {
-  const body = await readJsonBody(request)
-  if (isOversizedBody(body)) return payloadTooLargeResponse()
-  if (!hasOnlyFields(body, ['suspectId', 'meansClueId', 'opportunityClueId', 'linkClueId']))
-    return jsonResponse({ message: 'Preencha um dossiê de acusação válido.' }, 400)
-  const suspectId = body?.suspectId
-  const meansClueId = body?.meansClueId
-  const opportunityClueId = body?.opportunityClueId
-  const linkClueId = body?.linkClueId
-  if (
-    !isPersonId(suspectId) ||
-    !isNonEmptyString(meansClueId) ||
-    !isNonEmptyString(opportunityClueId) ||
-    !isNonEmptyString(linkClueId)
-  ) {
-    return jsonResponse({ message: 'Preencha um dossiê de acusação válido.' }, 400)
-  }
-  return mutateMatch(id, database, (service, matchId) =>
-    service.accuseSuspect({
-      matchId,
-      suspectId,
-      meansClueId,
-      opportunityClueId,
-      linkClueId,
-    }),
   )
 }
 
