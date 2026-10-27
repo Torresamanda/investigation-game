@@ -131,11 +131,12 @@ it('confirma o abandono da partida em um modal centralizado', async () => {
 
 it('mantém o dossiê dentro do painel e permite percorrer o tour sem alterar a partida', async () => {
   const { session, view } = setupTable()
-  expect(view.findAll('.mode-tabs button')[2]!.attributes('disabled')).toBeDefined()
-  session.remoteMatch = { ...session.remoteMatch!, round: 5, canAccuse: true }
-  await view.vm.$nextTick()
+  const loadAvailableOperations = vi.spyOn(session, 'loadAvailableOperations').mockResolvedValue()
+  expect(view.findAll('.mode-tabs button')[2]!.attributes('disabled')).toBeUndefined()
   await view.findAll('.mode-tabs button')[2]!.trigger('click')
+  await flushPromises()
   expect(view.get('.contextual-panel .accusation-dialog').isVisible()).toBe(true)
+  expect(loadAvailableOperations).toHaveBeenCalledTimes(1)
   expect(view.find('[aria-modal]').exists()).toBe(false)
   const beforeTour = JSON.stringify(session.remoteMatch)
   await view.get('.case-tools .tour-trigger').trigger('click')

@@ -4,6 +4,7 @@ import type { OperationOption } from '../../../services/game-api'
 defineProps<{
   operations: readonly OperationOption[]
   isPrepared: boolean
+  isFinalRound: boolean
   isRequestPending?: boolean
 }>()
 
@@ -26,6 +27,9 @@ const emit = defineEmits<{
     </p>
     <p v-if="!operations.length" class="accusation-readiness" role="status">
       Continue organizando evidências e conexões para desenvolver uma linha de raciocínio.
+    </p>
+    <p v-if="isFinalRound" class="accusation-readiness" role="status">
+      No prazo final, ainda é possível confirmar informações já encontradas e resolver uma operação.
     </p>
     <article v-for="operation in operations" :key="operation.id" class="journal-entry">
       <strong>{{ operation.title }}</strong>

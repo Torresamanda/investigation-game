@@ -98,6 +98,11 @@ function openDiscoveryInJournal(id: string) {
   dismissNotification(id)
 }
 
+function openOperationPanel() {
+  panelMode.value = 'accusation'
+  void session.loadAvailableOperations()
+}
+
 function executeSelectedAction(action: InvestigationAction) {
   if (action === 'converse') {
     if (selectedSuspectId.value && canConverseWithSelectedSuspect.value) {
@@ -106,6 +111,35 @@ function executeSelectedAction(action: InvestigationAction) {
     return
   }
   void executeAction(action)
+}
+
+async function prepareOperation(operationId: string) {
+  try {
+    await session.prepareOperation(operationId)
+    feedback.value = statusFeedback(
+      'Operação preparada. Quando estiver pronto, resolva o desfecho.',
+    )
+  } catch (error) {
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível preparar a operação.',
+    )
+  }
+}
+
+async function resolveOperation() {
+  try {
+    await session.resolveOperation()
+    const latestEntry = session.journalEntries.at(-1)
+    feedback.value = statusFeedback(
+      latestEntry?.title === 'Inconsistência na operação'
+        ? 'A operação revelou uma inconsistência. Ainda há tempo para reavaliar as evidências.'
+        : 'A operação foi resolvida.',
+    )
+  } catch (error) {
+    feedback.value = statusFeedback(
+      error instanceof Error ? error.message : 'Não foi possível resolver a operação.',
+    )
+  }
 }
 </script>
 
@@ -255,10 +289,7 @@ function executeSelectedAction(action: InvestigationAction) {
               >{{ unreadCount }}</span
             >
           </button>
-          <button
-            :aria-pressed="panelMode === 'accusation'"
-            @click="panelMode = 'accusation'; session.loadAvailableOperations()"
-          >
+          <button :aria-pressed="panelMode === 'accusation'" @click="openOperationPanel">
             Operação
           </button>
         </nav>
@@ -296,9 +327,10 @@ function executeSelectedAction(action: InvestigationAction) {
             v-show="panelMode === 'accusation'"
             :operations="session.availableOperations"
             :is-prepared="Boolean(session.remoteMatch.preparedOperation)"
+            :is-final-round="session.remoteMatch.round === 6"
             :is-request-pending="session.isRequestPending"
-            @prepare="session.prepareOperation"
-            @resolve="session.resolveOperation"
+            @prepare="prepareOperation"
+            @resolve="resolveOperation"
           />
         </div>
       </aside>
