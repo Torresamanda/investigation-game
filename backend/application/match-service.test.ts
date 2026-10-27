@@ -388,6 +388,68 @@ describe('MatchService', () => {
     })
   })
 
+  it('confronta uma declaração contestável sem reabrir a conversa', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'statement-crossing-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({
+      ...match,
+      actionPoints: { general: 1, specialty: 0, specialtyPoint: null },
+      journalEntries: [
+        {
+          id: 'raul-statement',
+          type: 'statement',
+          title: 'Declaração de Raul Viana',
+          content: 'Raul sustenta que a falha foi inesperada.',
+          locationId: 'security',
+          round: 5,
+          status: 'contestable',
+          contestableCrossing: {
+            evidenceKeys: ['e2-confirmed'],
+            result: 'refuted',
+            observation: 'A cronologia técnica contradiz a versão de Raul.',
+          },
+        },
+        {
+          id: 'technical-chronology',
+          type: 'clue',
+          title: 'Cronologia técnica confirmada',
+          content: 'O acionamento ocorreu dentro do prédio.',
+          locationId: 'security',
+          round: 5,
+          status: 'confirmed',
+          caseEvidenceKey: 'e2-confirmed',
+        },
+      ],
+    })
+
+    const crossed = service.createInvestigativeCrossing({
+      matchId: match.id,
+      fromClueId: 'raul-statement',
+      toClueId: 'technical-chronology',
+    })
+
+    expect(crossed.actionPoints.general).toBe(0)
+    expect(crossed.investigativeRelations).toHaveLength(0)
+    expect(crossed.contestableCrossings).toEqual([
+      expect.objectContaining({
+        statementId: 'raul-statement',
+        clueId: 'technical-chronology',
+        result: 'refuted',
+      }),
+    ])
+    expect(crossed.journalEntries.find((entry) => entry.id === 'raul-statement')).toMatchObject({
+      status: 'refuted',
+    })
+    expect(crossed.journalEntries.at(-1)).toMatchObject({
+      title: 'Declaração confrontada',
+      relatedEntryIds: ['raul-statement', 'technical-chronology'],
+    })
+  })
+
   it('aplica o benefício social ao cruzamento e o marca como usado', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository)

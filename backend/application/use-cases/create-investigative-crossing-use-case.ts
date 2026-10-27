@@ -4,6 +4,7 @@ import type { MatchRepository } from '../ports/match-repository.js'
 import { assertMatchIsActive, DomainError, MatchNotFoundError } from '../../domain/errors.js'
 import {
   findConfirmedEvidenceRelation,
+  findContestableStatementRelation,
   hasInvestigativeRelation,
 } from '../../domain/evidence-relation.js'
 import {
@@ -25,13 +26,29 @@ export class CreateInvestigativeCrossingUseCase {
     if (!match) throw new MatchNotFoundError()
     assertMatchIsActive(match.status)
 
-    const relation = findConfirmedEvidenceRelation(
+    const evidenceRelation = findConfirmedEvidenceRelation(
       match.journalEntries,
       command.fromClueId,
       command.toClueId,
     )
-    if (!relation) throw new DomainError('O cruzamento exige duas pistas confirmadas e coerentes.')
+    const statementRelation = findContestableStatementRelation(
+      match.journalEntries,
+      command.fromClueId,
+      command.toClueId,
+    )
+    const reversedStatementRelation = findContestableStatementRelation(
+      match.journalEntries,
+      command.toClueId,
+      command.fromClueId,
+    )
+    const contestableRelation = statementRelation ?? reversedStatementRelation
+    if (!evidenceRelation && !contestableRelation) {
+      throw new DomainError(
+        'O cruzamento exige pistas confirmadas coerentes ou uma declaração contestável ligada à evidência correspondente.',
+      )
+    }
     if (
+      evidenceRelation &&
       hasInvestigativeRelation(
         match.investigativeRelations ?? [],
         command.fromClueId,
@@ -39,6 +56,16 @@ export class CreateInvestigativeCrossingUseCase {
       )
     ) {
       throw new DomainError('Esse cruzamento investigativo já foi validado.')
+    }
+    if (
+      contestableRelation &&
+      match.contestableCrossings?.some(
+        (crossing) =>
+          crossing.statementId === contestableRelation.statement.id &&
+          crossing.clueId === contestableRelation.clue.id,
+      )
+    ) {
+      throw new DomainError('Essa declaração já foi cruzada com esta evidência.')
     }
 
     const cost = investigativeCrossingCost(match)
@@ -68,22 +95,36 @@ export class CreateInvestigativeCrossingUseCase {
       !usesRoundDiscount &&
       match.hasSocialConnectionThisRound &&
       !match.hasUsedSocialConnectionThisRound
-    const investigativeRelation = {
-      id: this.createId(),
-      fromClueId: command.fromClueId,
-      toClueId: command.toClueId,
-      round: match.round,
-      hypothesisThreadId: relation.hypothesisThreadId,
-    }
+    const investigativeRelation = evidenceRelation
+      ? {
+          id: this.createId(),
+          fromClueId: command.fromClueId,
+          toClueId: command.toClueId,
+          round: match.round,
+          hypothesisThreadId: evidenceRelation.hypothesisThreadId,
+        }
+      : undefined
+    const contestableCrossing = contestableRelation
+      ? {
+          statementId: contestableRelation.statement.id,
+          clueId: contestableRelation.clue.id,
+          result: contestableRelation.statement.contestableCrossing!.result,
+          round: match.round,
+        }
+      : undefined
     const relationObservation = {
       id: `journal-${match.journalEntries.length + 1}`,
       type: 'observation' as const,
-      title: 'Relação investigativa validada',
-      content: `O cruzamento confirmou uma relação coerente entre “${relation.fromEntry.title}” e “${relation.toEntry.title}”.`,
+      title: contestableRelation ? 'Declaração confrontada' : 'Relação investigativa validada',
+      content: contestableRelation
+        ? contestableRelation.statement.contestableCrossing!.observation
+        : `O cruzamento confirmou uma relação coerente entre “${evidenceRelation!.fromEntry.title}” e “${evidenceRelation!.toEntry.title}”.`,
       locationId: match.currentLocationId,
       round: match.round,
       status: 'note' as const,
-      relatedEntryIds: [relation.fromEntry.id, relation.toEntry.id],
+      relatedEntryIds: contestableRelation
+        ? [contestableRelation.statement.id, contestableRelation.clue.id]
+        : [evidenceRelation!.fromEntry.id, evidenceRelation!.toEntry.id],
     }
 
     let decks = match.decks
@@ -100,7 +141,9 @@ export class CreateInvestigativeCrossingUseCase {
       }
     }
 
-    const updatedRelations = [...(match.investigativeRelations ?? []), investigativeRelation]
+    const updatedRelations = investigativeRelation
+      ? [...(match.investigativeRelations ?? []), investigativeRelation]
+      : (match.investigativeRelations ?? [])
     const updated: SoloMatch = {
       ...match,
       actionPoints: spendActionPoints(match.actionPoints, {
@@ -113,12 +156,23 @@ export class CreateInvestigativeCrossingUseCase {
       hasUsedSocialConnectionThisRound:
         match.hasUsedSocialConnectionThisRound || usesSocialDiscount,
       investigativeRelations: updatedRelations,
+      contestableCrossings: contestableCrossing
+        ? [...(match.contestableCrossings ?? []), contestableCrossing]
+        : (match.contestableCrossings ?? []),
       hypotheses: synchronizeInvestigationHypotheses(
         match.journalEntries,
         updatedRelations,
         match.hypotheses ?? [],
       ),
-      journalEntries: [...match.journalEntries, relationObservation],
+      journalEntries: [
+        ...match.journalEntries.map((entry) =>
+          entry.id === contestableRelation?.statement.id &&
+          contestableRelation.statement.contestableCrossing!.result === 'refuted'
+            ? { ...entry, status: 'refuted' as const }
+            : entry,
+        ),
+        relationObservation,
+      ],
     }
     return this.repository.save(updated)
   }

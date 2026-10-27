@@ -38,12 +38,19 @@ export interface JournalEntry {
   readonly actionAttempt?: 'examine' | 'analyse' | 'research'
   readonly recordedWith?: 'pocket-recorder'
   readonly isadoraMarkedContestable?: boolean
+  readonly contestableCrossing?: ContestableStatementCrossing
   readonly relatedEntryIds?: readonly string[]
   readonly protectedUntilRound?: number
   readonly markedForFollowUp?: boolean
   readonly caseEvidenceKey?: CaseEvidenceKey
   readonly evidenceAxes?: readonly EvidenceAxis[]
   readonly hypothesisThreadIds?: readonly string[]
+}
+
+export interface ContestableStatementCrossing {
+  readonly evidenceKeys: readonly CaseEvidenceKey[]
+  readonly result: 'refuted' | 'inconclusive'
+  readonly observation: string
 }
 
 export type CaseEvidenceKey =
@@ -95,6 +102,7 @@ export interface SoloMatch {
   readonly journalEntries: readonly JournalEntry[]
   readonly muralLinks: readonly MuralLink[]
   readonly investigativeRelations: readonly InvestigativeRelation[]
+  readonly contestableCrossings?: readonly ContestableStatementCrossingRecord[]
   readonly hypotheses?: readonly InvestigationHypothesis[]
   readonly notificationEvents?: readonly MatchNotificationEvent[]
   readonly preparedOperation?: PreparedOperation
@@ -102,6 +110,13 @@ export interface SoloMatch {
   readonly resolvedKeys: readonly string[]
   readonly decks: Readonly<Record<InvestigatorId, MatchDeck>>
   readonly preparedCardInstanceId: string | null
+}
+
+export interface ContestableStatementCrossingRecord {
+  readonly statementId: string
+  readonly clueId: string
+  readonly result: ContestableStatementCrossing['result']
+  readonly round: number
 }
 
 export interface CreateSoloMatchInput {
@@ -143,6 +158,7 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     journalEntries: [],
     muralLinks: [],
     investigativeRelations: [],
+    contestableCrossings: [],
     hypotheses: [],
     preparedOperation: undefined,
     hasAttemptedOperationThisRound: false,

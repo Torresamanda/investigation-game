@@ -3,7 +3,7 @@ import type {
   LocationId,
   PersonId,
 } from '../../../shared/domain/identifiers.js'
-import type { JournalEntry, SoloMatch } from '../../domain/match.js'
+import type { ContestableStatementCrossing, JournalEntry, SoloMatch } from '../../domain/match.js'
 import type { OperationOption } from '../../domain/investigation-operation.js'
 import type {
   BasicInvestigationAction,
@@ -27,6 +27,7 @@ export interface ConversationContent {
 export interface ConversationOutcomeContent {
   readonly content: string
   readonly status: 'recorded' | 'contestable' | 'blocked'
+  readonly contestableCrossing?: ContestableStatementCrossing
 }
 
 export interface CaseActionResolution {

@@ -454,6 +454,12 @@ const case01ContentV1: CaseContentDefinitionV1 = {
               status: 'contestable',
               content:
                 'Raul mantém que a falha foi inesperada, apesar de agora existir motivo para confrontar a versão com a cronologia técnica.',
+              contestableCrossing: {
+                evidenceKeys: ['e2-confirmed'],
+                result: 'refuted',
+                observation:
+                  'A cronologia técnica contradiz a versão de Raul: a interrupção foi acionada dentro do prédio, e não uma falha inesperada.',
+              },
             },
             {
               status: 'blocked',
@@ -556,6 +562,12 @@ const case01ContentV1: CaseContentDefinitionV1 = {
               status: 'contestable',
               content:
                 'Davi afirma que a mensagem trata de outra negociação e aceita localizar documentos para que a versão possa ser verificada.',
+              contestableCrossing: {
+                evidenceKeys: ['e2-confirmed'],
+                result: 'inconclusive',
+                observation:
+                  'A relação entre a mensagem e o acionamento interno ainda não permite concluir a finalidade do contato. A declaração permanece em revisão.',
+              },
             },
             {
               status: 'blocked',

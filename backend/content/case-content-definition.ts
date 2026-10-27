@@ -1,7 +1,11 @@
 import { locationIds, personIds } from '../../shared/domain/identifiers.js'
 import type { LocationId, PersonId } from '../../shared/domain/identifiers.js'
 import type { EvidenceAxis, HypothesisStatus } from '../domain/investigation-hypothesis.js'
-import type { CaseEvidenceKey, JournalEntry } from '../domain/match.js'
+import type {
+  CaseEvidenceKey,
+  ContestableStatementCrossing,
+  JournalEntry,
+} from '../domain/match.js'
 
 export const caseContentSchemaVersion = 1
 
@@ -69,6 +73,7 @@ export interface CaseConversationOutcomeDefinition {
   readonly whenResolvedKeys?: readonly string[]
   readonly status: CaseConversationStatus
   readonly content: string
+  readonly contestableCrossing?: ContestableStatementCrossing
 }
 
 export interface CaseConversationQuestionDefinition {
@@ -246,7 +251,20 @@ function isCaseConversationOutcomeDefinition(
     isRecord(value) &&
     (value.whenResolvedKeys === undefined || isStringArray(value.whenResolvedKeys)) &&
     isOneOf(value.status, ['recorded', 'contestable', 'blocked']) &&
-    isNonEmptyString(value.content)
+    isNonEmptyString(value.content) &&
+    (value.status === 'contestable'
+      ? isContestableStatementCrossing(value.contestableCrossing)
+      : value.contestableCrossing === undefined)
+  )
+}
+
+function isContestableStatementCrossing(value: unknown): value is ContestableStatementCrossing {
+  return (
+    isRecord(value) &&
+    isArrayOf(value.evidenceKeys, isCaseEvidenceKey) &&
+    value.evidenceKeys.length > 0 &&
+    isOneOf(value.result, ['refuted', 'inconclusive']) &&
+    isNonEmptyString(value.observation)
   )
 }
 

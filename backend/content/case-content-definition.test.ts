@@ -43,4 +43,37 @@ describe('parseCaseContentDefinition', () => {
 
     expect(() => parseCaseContentDefinition(invalidDefinition)).toThrow('evidência duplicada')
   })
+
+  it('requires a crossing route for every contestable conversation outcome', () => {
+    const raulConversation = case01Content.conversations.find(
+      (conversation) => conversation.personId === 'raul',
+    )
+    if (!raulConversation) throw new Error('A conversa de Raul precisa existir.')
+    const question = raulConversation.questions.find((item) => item.id === 'power-failure')
+    if (!question?.outcomes) throw new Error('A pergunta precisa ter resultados configurados.')
+    const invalidDefinition: CaseContentDefinitionV1 = {
+      ...case01Content,
+      conversations: case01Content.conversations.map((conversation) =>
+        conversation.personId !== 'raul'
+          ? conversation
+          : {
+              ...conversation,
+              questions: conversation.questions.map((item) =>
+                item.id !== 'power-failure'
+                  ? item
+                  : {
+                      ...item,
+                      outcomes: item.outcomes?.map((outcome) =>
+                        outcome.status === 'contestable'
+                          ? { ...outcome, contestableCrossing: undefined }
+                          : outcome,
+                      ),
+                    },
+              ),
+            },
+      ),
+    }
+
+    expect(() => parseCaseContentDefinition(invalidDefinition)).toThrow('schema v1')
+  })
 })

@@ -1,5 +1,5 @@
 import { personIds, type PersonId } from '../../shared/domain/identifiers.js'
-import type { LocationId } from '../domain/match.js'
+import type { ContestableStatementCrossing, LocationId } from '../domain/match.js'
 import type { CaseConversationDefinition } from './case-content-definition.js'
 import { case01Content } from './cases/case01/v1.js'
 
@@ -46,7 +46,13 @@ export function resolveConversationOutcome(
   personId: PersonId,
   questionId: string,
   context: { readonly resolvedKeys: readonly string[] },
-): { readonly content: string; readonly status: ConversationOutcomeStatus } | undefined {
+):
+  | {
+      readonly content: string
+      readonly status: ConversationOutcomeStatus
+      readonly contestableCrossing?: ContestableStatementCrossing
+    }
+  | undefined {
   const question = case01Content.conversations
     .find((item) => item.personId === personId)
     ?.questions.find((item) => item.id === questionId)
@@ -57,7 +63,13 @@ export function resolveConversationOutcome(
   const fallbackOutcome = question.outcomes?.find((outcome) => !outcome.whenResolvedKeys)
   const outcome = matchingOutcome ?? fallbackOutcome
   return outcome
-    ? { content: outcome.content, status: outcome.status }
+    ? {
+        content: outcome.content,
+        status: outcome.status,
+        ...(outcome.contestableCrossing
+          ? { contestableCrossing: outcome.contestableCrossing }
+          : {}),
+      }
     : { content: question.result, status: 'recorded' }
 }
 

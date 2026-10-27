@@ -1,6 +1,10 @@
 import { canPayAction } from '../../shared/domain/action-points.js'
 import type { SoloMatch } from './match.js'
-import { findConfirmedEvidenceRelation, hasInvestigativeRelation } from './evidence-relation.js'
+import {
+  findConfirmedEvidenceRelation,
+  hasAvailableContestableStatementRelation,
+  hasInvestigativeRelation,
+} from './evidence-relation.js'
 
 const crossingCardIds = new Set(['route-map', 'comparative-magnifier', 'cross-reference'])
 
@@ -36,7 +40,11 @@ export function canAffordInvestigativeCrossing(match: SoloMatch): boolean {
     ),
   )
   return (
-    hasUnvalidatedRelation &&
+    (hasUnvalidatedRelation ||
+      hasAvailableContestableStatementRelation(
+        match.journalEntries,
+        match.contestableCrossings ?? [],
+      )) &&
     canPayAction(match.actionPoints, {
       action: 'research',
       amount: investigativeCrossingCost(match),

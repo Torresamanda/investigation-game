@@ -98,6 +98,9 @@ export class ResolveConversationUseCase {
       !match.hasUsedPassiveThisRound &&
       outcome.status === 'recorded'
     const statementStatus = usesIsadoraPassive ? 'contestable' : outcome.status
+    const contestableCrossing =
+      outcome.contestableCrossing ??
+      (usesIsadoraPassive ? createIsadoraContestableCrossing(match) : undefined)
     const updated: SoloMatch = {
       ...match,
       actionPoints: spendActionPoints(match.actionPoints, {
@@ -120,6 +123,7 @@ export class ResolveConversationUseCase {
           status: statementStatus,
           recordedWith: card?.definitionId === 'pocket-recorder' ? 'pocket-recorder' : undefined,
           isadoraMarkedContestable: usesIsadoraPassive || undefined,
+          ...(contestableCrossing ? { contestableCrossing } : {}),
         },
       ],
       hasUsedPassiveThisRound: match.hasUsedPassiveThisRound || usesIsadoraPassive,
@@ -149,6 +153,22 @@ export class ResolveConversationUseCase {
     if (!this.caseContentRepository.isPersonAvailableAtLocation(personId, locationId)) {
       throw new DomainError('Esta pessoa não está disponível neste local.')
     }
+  }
+}
+
+function createIsadoraContestableCrossing(match: SoloMatch) {
+  const evidenceKeys = match.journalEntries.flatMap((entry) =>
+    entry.type === 'clue' && entry.status === 'confirmed' && entry.caseEvidenceKey
+      ? [entry.caseEvidenceKey]
+      : [],
+  )
+  if (!evidenceKeys.length) return undefined
+
+  return {
+    evidenceKeys,
+    result: 'inconclusive' as const,
+    observation:
+      'A comparação registra uma inconsistência possível, mas a declaração precisa de mais contexto antes de ser refutada.',
   }
 }
 

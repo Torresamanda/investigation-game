@@ -20,6 +20,7 @@ export interface MatchJournalEntry {
     | 'blocked'
   readonly recordedWith?: 'pocket-recorder'
   readonly isadoraMarkedContestable?: boolean
+  readonly contestableWithEntryIds?: readonly string[]
   readonly relatedEntryIds?: readonly string[]
   readonly protectedUntilRound?: number
   readonly markedForFollowUp?: boolean

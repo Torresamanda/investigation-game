@@ -39,7 +39,9 @@ export const MatchPresenter = {
       hasDiscardedCardThisRound: match.hasDiscardedCardThisRound,
       hasUsedSupportThisRound: match.hasUsedSupportThisRound,
       actionPoints: match.actionPoints,
-      journalEntries: match.journalEntries.map(toPublicJournalEntry),
+      journalEntries: match.journalEntries.map((entry) =>
+        toPublicJournalEntry(entry, match.journalEntries),
+      ),
       notificationEvents: match.notificationEvents ?? [],
       ...(actionOpportunities ? { actionOpportunities } : {}),
       muralLinks: match.muralLinks.map(({ id, fromClueId, toClueId, round }) => ({
@@ -65,15 +67,30 @@ export const MatchPresenter = {
   },
 }
 
-function toPublicJournalEntry({
-  caseEvidenceKey: _caseEvidenceKey,
-  notificationSignal,
-  actionAttempt: _actionAttempt,
-  ...entry
-}: SoloMatch['journalEntries'][number]) {
+function toPublicJournalEntry(
+  {
+    caseEvidenceKey: _caseEvidenceKey,
+    contestableCrossing,
+    notificationSignal,
+    actionAttempt: _actionAttempt,
+    ...entry
+  }: SoloMatch['journalEntries'][number],
+  entries: SoloMatch['journalEntries'],
+) {
+  void _caseEvidenceKey
   void notificationSignal
   void _actionAttempt
-  return _caseEvidenceKey ? entry : { ...entry }
+  const contestableWithEntryIds = contestableCrossing
+    ? entries.flatMap((candidate) =>
+        candidate.type === 'clue' &&
+        candidate.status === 'confirmed' &&
+        candidate.caseEvidenceKey &&
+        contestableCrossing.evidenceKeys.includes(candidate.caseEvidenceKey)
+          ? [candidate.id]
+          : [],
+      )
+    : undefined
+  return contestableWithEntryIds?.length ? { ...entry, contestableWithEntryIds } : entry
 }
 
 function toPublicCard(card: MatchCard) {

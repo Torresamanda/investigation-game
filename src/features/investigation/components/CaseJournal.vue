@@ -26,9 +26,27 @@ const emit = defineEmits<{
 
 const fromClueId = ref('')
 const toClueId = ref('')
+const crossingFromEntryId = ref('')
+const crossingToEntryId = ref('')
 const availableClues = computed(() =>
   props.journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
 )
+const contestableStatements = computed(() =>
+  props.journalEntries.filter(
+    (entry) => entry.type === 'statement' && entry.status === 'contestable',
+  ),
+)
+const availableCrossingEntries = computed(() => [
+  ...availableClues.value,
+  ...contestableStatements.value,
+])
+const crossingTargets = computed(() => {
+  const source = props.journalEntries.find((entry) => entry.id === crossingFromEntryId.value)
+  if (source?.status === 'contestable') {
+    return availableClues.value.filter((clue) => source.contestableWithEntryIds?.includes(clue.id))
+  }
+  return availableCrossingEntries.value.filter((entry) => entry.id !== crossingFromEntryId.value)
+})
 
 const muralLinksWithTitles = computed(() =>
   props.muralLinks.map((muralLink) => ({
@@ -62,8 +80,14 @@ function createMuralLink() {
 }
 
 function createInvestigativeCrossing() {
-  if (!fromClueId.value || !toClueId.value || fromClueId.value === toClueId.value) return
-  emit('createInvestigativeCrossing', fromClueId.value, toClueId.value)
+  if (
+    !crossingFromEntryId.value ||
+    !crossingToEntryId.value ||
+    crossingFromEntryId.value === crossingToEntryId.value
+  ) {
+    return
+  }
+  emit('createInvestigativeCrossing', crossingFromEntryId.value, crossingToEntryId.value)
 }
 </script>
 
@@ -218,17 +242,32 @@ function createInvestigativeCrossing() {
       <section class="investigative-crossing-form">
         <h4>Cruzamento investigativo</h4>
         <p class="muted">
-          Valide a relação entre as pistas e registre o resultado no diário. Custo:
+          Valide uma relação entre pistas ou confronte uma declaração contestável com uma evidência.
+          Custo:
           {{ investigativeCrossingCost }} PA de pesquisa.
         </p>
+        <label class="field-label" for="crossing-from">Registro para cruzar</label>
+        <select id="crossing-from" v-model="crossingFromEntryId">
+          <option value="" disabled>Escolha uma pista ou declaração</option>
+          <option v-for="entry in availableCrossingEntries" :key="entry.id" :value="entry.id">
+            {{ entry.title }}{{ entry.status === 'contestable' ? ' · Contestável' : '' }}
+          </option>
+        </select>
+        <label class="field-label" for="crossing-to">Evidência relacionada</label>
+        <select id="crossing-to" v-model="crossingToEntryId">
+          <option value="" disabled>Escolha uma evidência</option>
+          <option v-for="entry in crossingTargets" :key="entry.id" :value="entry.id">
+            {{ entry.title }}
+          </option>
+        </select>
         <button
           type="button"
           class="save-note"
           :disabled="
-            availableClues.length < 2 ||
-            !fromClueId ||
-            !toClueId ||
-            fromClueId === toClueId ||
+            availableCrossingEntries.length < 2 ||
+            !crossingFromEntryId ||
+            !crossingToEntryId ||
+            crossingFromEntryId === crossingToEntryId ||
             !canAffordInvestigativeCrossing ||
             isRequestPending
           "

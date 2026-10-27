@@ -159,7 +159,6 @@ resolver, sem calcular prontidão ou consequência localmente.
   - Uma operação incompleta consome o custo, registra consequência narrativa útil, contesta a hipótese relacionada e mantém a missão ativa enquanto houver prazo. Ela nunca encerra a partida automaticamente.
   - O servidor determina disponibilidade, custo e resultado. O cliente recebe apenas título, descrição de risco e estado disponível ou preparado, sem requisito oculto, pista faltante ou solução.
   - Critério de aceite: a decisão final é compreensível em ficção, não pede preenchimento manual de eixos, mantém recuperação após tentativa incompleta e não revela a solução antes da sustentação da hipótese.
-  - **Situação atual:** a operação de encerramento já pode ser preparada e resolvida; ainda faltam a operação de verificação para hipótese `plausible`, troca e cancelamento explícitos da preparação e a retirada completa do fluxo legado de acusação.
 
 ### Contrato de economia de PA e cartas (GD-03)
 
@@ -242,6 +241,14 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Separar os contratos, casos de uso e apresentação das duas intenções para que uma ligação visual nunca seja confundida com uma ação investigativa.
   - Critério de aceite: o jogador pode organizar livremente o mural sem custo; PA só é gasto quando a relação gera consequência mecânica real; não existe conexão de preenchimento para liberar operação.
 
+- [x] **GD-06B — Cruzar declarações contestáveis com evidências** `[Back] [Front] [Definição] [Conteúdo] [Test]`
+  - Tratar uma declaração `contestable` como evidência selecionável no mural. O jogador deve poder ligá-la a uma pista confirmada e iniciar um cruzamento investigativo, mesmo que todas as perguntas da pessoa já tenham sido registradas.
+  - O cruzamento testa a **versão declarada**, e não reabre automaticamente a conversa com a pessoa. Ele usa custo, disponibilidade e resultado decididos pelo servidor, respeitando descontos já previstos para cruzamentos.
+  - Definir resultados públicos possíveis: contradição sustentada (a declaração é refutada ou enfraquecida), relação inconclusiva (a declaração permanece contestável com observação útil) e nova conversa possível somente quando a ficção do caso exigir uma reação da pessoa.
+  - Atualizar o mural, o diário e o progresso da hipótese com o resultado persistido, sem expor requisito futuro, solução, probabilidade ou conteúdo ainda bloqueado.
+  - Aplicar o contrato na definição e validação de conteúdo de todos os casos: todo estado `contestable` deve ter ao menos uma rota de cruzamento com evidência ou uma consequência narrativa recuperável; nenhum caso pode exigir perguntas já esgotadas para resolver a contestação.
+  - Critério de aceite: após obter uma declaração contestável, uma pessoa consegue testar sua coerência no mural sem uma nova pergunta disponível; a mesma garantia é validada automaticamente para cada caso versionado.
+
 - [x] **GD-07 — Implementar preparação e resolução de operação** `[Back] [API]`
   - Criar casos de uso separados para consultar operações disponíveis, preparar uma operação e resolver seu resultado.
   - Operação incompleta deve manter a partida ativa quando ainda houver prazo e registrar consequência útil.
@@ -254,6 +261,19 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Critério de aceite: em testes de orçamento, os quatro investigadores têm margem semelhante para erro e exploração.
 
 ### P2 — Interface, comunicação e experiência
+
+- [ ] **GD-09A — Implementar o Mural em foco** `[Front]`
+  - Substituir o bloco recolhido `Organizar investigação` por um mural persistente, baseado em [wireframes/mural-investigacao.html](../wireframes/mural-investigacao.html).
+  - Exibir pistas confirmadas como cartões, ligações visuais no espaço do mural e o detalhe da ligação selecionada sem alterar regras ou estado no cliente.
+  - A criação de ligação permanece gratuita; o cruzamento só pode ser iniciado a partir da ligação selecionada e apresenta o custo autoritativo antes da confirmação.
+  - Manter leitura e operação viáveis em desktop e celular, sem depender exclusivamente de arrastar e soltar.
+  - Critério de aceite: uma pessoa entende onde organizar pistas, qual ligação está selecionada e que desenhar uma ligação é diferente de cruzá-la antes de gastar PA.
+
+- [ ] **GD-09B — Exibir o estado investigativo de cada ligação** `[Front] [Back]`
+  - Expor no DTO público apenas o estado já ocorrido de cada relação: anotação visual, cruzamento validado, resultado inconclusivo ou relação contestada, quando aplicável.
+  - Atualizar o mural, o detalhe da ligação e o diário após o cruzamento, sem expor requisito futuro, eixo faltante, probabilidade ou solução do caso.
+  - Vincular observações persistidas ao par de pistas correspondente para que o jogador identifique o resultado da ligação que selecionou.
+  - Critério de aceite: o jogador distingue no mural uma ligação ainda hipotética de uma relação com consequência investigativa registrada, sem precisar inferir pelo histórico do diário.
 
 - [x] **GD-09 — Criar painel de hipóteses no mural** `[Front]`
   - Mostrar progresso por linhas de raciocínio e evidências já conhecidas, sem barras de “culpado correto” ou indicação do próximo local.
@@ -322,16 +342,17 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Decidir se a pressão adiciona escolhas interessantes sem reduzir a margem mínima para iniciantes; só então definir eventos, ações e cartas que a alteram.
   - Critério de aceite: a pressão é comunicada claramente, tem efeitos concretos e não torna cartas, apoio ou uma rota específica obrigatórios.
 
-## Ordem recomendada
+## Ordem de execução atual
 
-1. D-01 a D-06 e GD-01 a GD-04.
-2. GD-05 e GD-06, com testes de domínio desde o início.
-3. GD-06A; então revalidar GD-07 e GD-08 contra a economia de PA revisada.
-4. GD-09 a GD-12, incluindo GD-11A.
-5. GD-13, GD-13A e GD-14.
-6. GD-15; ajustar o balanceamento conforme dados.
-7. GD-17 depois de validar a economia de PA.
-8. GD-16 somente depois de validar o fluxo.
+1. **GD-06B** — Cruzar declarações contestáveis com evidências.
+2. Revalidar **GD-07** e **GD-08** diante do contrato de cruzamentos e da economia de PA atualizada.
+3. **GD-09A** — Implementar o Mural em foco.
+4. **GD-09B** — Exibir o estado investigativo de cada ligação.
+5. **GD-15** — Conduzir playtest de iniciantes.
+6. **GD-17** — Avaliar medidor de pressão do caso depois do playtest.
+7. **GD-16** — Atualizar documentos de regra e backlog principal por último, após validar o fluxo.
+
+**GD-14** permanece pendente, mas fica fora desta sequência até nova priorização de produto.
 
 ## Métricas de validação
 
