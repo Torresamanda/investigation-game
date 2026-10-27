@@ -1104,7 +1104,27 @@ describe('MatchService', () => {
 
     const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
 
-    expect(options.questions[0]).toMatchObject({ canResolve: false, cost: 2 })
+    expect(options.questions[0]).toMatchObject({ canResolve: false, cost: 3 })
+
+    const [question] = options.questions
+    if (!question) throw new Error('A pergunta precisa estar disponível para inspeção.')
+    const matchWithEnoughPoints = repository.findById(match.id)
+    if (!matchWithEnoughPoints) throw new Error('A partida precisa permanecer persistida.')
+    repository.save({
+      ...matchWithEnoughPoints,
+      actionPoints: { general: 3, specialty: 0, specialtyPoint: 'social' },
+    })
+
+    const payableOptions = service.getConversationOptions(match.id, 'marta', 'laboratory')
+    expect(payableOptions.questions[0]).toMatchObject({ canResolve: true, cost: 3 })
+
+    const updated = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: question.id,
+    })
+    expect(updated.actionPoints.general).toBe(0)
   })
 
   it('usa Pausa Calculada para liberar uma pergunta adicional gratuita', () => {

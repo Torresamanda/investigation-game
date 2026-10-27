@@ -161,7 +161,46 @@ resolver, sem calcular prontidão ou consequência localmente.
   - Critério de aceite: a decisão final é compreensível em ficção, não pede preenchimento manual de eixos, mantém recuperação após tentativa incompleta e não revela a solução antes da sustentação da hipótese.
   - **Situação atual:** a operação de encerramento já pode ser preparada e resolvida; ainda faltam a operação de verificação para hipótese `plausible`, troca e cancelamento explícitos da preparação e a retirada completa do fluxo legado de acusação.
 
-- [ ] **GD-03 — Consolidar economia de PA e cartas** `[Definição] [Back]`
+### Contrato de economia de PA e cartas (GD-03)
+
+O servidor é a fonte única para mão, preparação, compra, descarte, custos e uso de
+cartas. O cliente recebe somente a mão ativa, custos já públicos e disponibilidade;
+nunca calcula compra, desconto ou efeito de carta localmente.
+
+Cada turno forma quatro cartas regulares do investigador ativo. Ao encerrar, as
+regulares não usadas retornam ao ciclo de compra, que é embaralhado pelo gerador
+injetado; o descarte só é embaralhado para completar a mão. A ordem das pilhas e o
+baralho do apoio permanecem privados.
+
+Cartas temporárias e do apoio são extras: não ocupam as quatro vagas regulares,
+persistem até uso ou descarte e não impedem a renovação regular. Temporárias são
+removidas ao consumo; cartas do apoio retornam ao descarte do dono com custo original.
+
+Preparar ou cancelar carta custa 0 PA. Para uma ação compatível, calcule primeiro o custo
+base contextual, some o custo efetivo da carta e sobretaxas da ação, aplique descontos de
+contexto ou habilidade e cobre o resultado, com mínimo de 1 PA. Uma pergunta adicional
+explicitamente gratuita por habilidade ou carta mantém custo 0; carta de custo 0, sozinha,
+nunca torna gratuita uma ação básica. A incompatibilidade é rejeitada antes de gasto ou
+consumo. Em ações compatíveis, PA de especialidade válidos são gastos antes dos gerais.
+Operação é exceção: custa exatamente 2 PA gerais, sem carta, apoio ou especialidade.
+
+O descarte voluntário aceita somente uma carta preparada por rodada. Cartas temporárias
+são removidas ao usar ou descartar; cartas do apoio voltam ao descarte do dono, com custo
+original restaurado. Após descarte, somente a mão regular é recomposta até quatro cartas.
+No encerramento do turno, cartas regulares não usadas retornam ao ciclo de compra, o monte
+é embaralhado com o gerador injetado e o descarte só é embaralhado se necessário para
+completar quatro. Temporárias e cartas do apoio ficam como extras e não contam nessas
+quatro vagas.
+
+O apoio é opcional, pode ser acionado uma vez por rodada e acrescenta uma carta extra do
+baralho do investigador de apoio. Seu desconto de 1 PA reduz apenas o custo da carta
+recebida (sem custo negativo); a carta usada ou descartada retorna ao descarte do dono
+com o custo original. Mão, compra, custo efetivo e disponibilidade são decididos pelo
+servidor. O cliente apresenta a mão ativa e custos públicos calculados pela mesma regra
+pura compartilhada; o presenter expõe apenas o resultado resolvido, carta preparada e
+contagens públicas, nunca a ordem das pilhas ou o baralho do apoio.
+
+- [x] **GD-03 — Consolidar economia de PA e cartas** `[Definição] [Back]`
   - Tornar uma única regra oficial para renovação de mão, descarte voluntário, cartas temporárias e apoio de plantão.
   - Confirmar a prioridade de descontos, custos de cartas e gastos especializados.
   - Critério de aceite: documentação, UI e motor calculam o mesmo custo e a mesma disponibilidade de carta.

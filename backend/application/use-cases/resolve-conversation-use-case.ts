@@ -1,4 +1,8 @@
-import { canPayAction, spendActionPoints } from '../../../shared/domain/action-points.js'
+import {
+  calculateEffectiveActionCost,
+  canPayAction,
+  spendActionPoints,
+} from '../../../shared/domain/action-points.js'
 import type { ResolveConversationCommand } from '../commands.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import type { MatchRepository } from '../ports/match-repository.js'
@@ -63,7 +67,12 @@ export class ResolveConversationUseCase {
       command.personId,
       Boolean(card?.compatibleActions.includes('converse')),
     )
-    const totalCost = questionCost + pressLeakSurcharge + (card?.cost ?? 0)
+    const totalCost = calculateEffectiveActionCost({
+      baseCost: questionCost,
+      preparedCardCost: card?.cost,
+      surcharge: pressLeakSurcharge,
+      minimumCost: questionCost === 0 ? 0 : 1,
+    })
     if (
       !canPayAction(match.actionPoints, {
         action: 'converse',

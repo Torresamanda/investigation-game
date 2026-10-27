@@ -1,11 +1,31 @@
 import { describe, expect, it } from 'vitest'
 import {
+  calculateEffectiveActionCost,
   canPayAction,
   investigatorActionCost,
   spendActionPoints,
 } from '../../../shared/domain/action-points'
 
 describe('action points', () => {
+  it('combina custo base, carta, sobretaxa e desconto antes de cobrar', () => {
+    expect(
+      calculateEffectiveActionCost({
+        baseCost: 2,
+        preparedCardCost: 1,
+        surcharge: 1,
+        discount: 2,
+      }),
+    ).toBe(2)
+    expect(
+      calculateEffectiveActionCost({
+        baseCost: 1,
+        preparedCardCost: 0,
+        discount: 2,
+      }),
+    ).toBe(1)
+    expect(calculateEffectiveActionCost({ baseCost: 0, minimumCost: 0 })).toBe(0)
+  })
+
   it('reserva o ponto técnico para análise', () => {
     const points = { general: 4, specialty: 1, specialtyPoint: 'technical' as const }
 

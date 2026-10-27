@@ -58,7 +58,7 @@ export function useTableConversation(
       feedback.value = feedbackFromEntry(
         entry,
         `Conversar · ${activeConversation.personName}`,
-        questionCost + (preparedCard?.cost ?? 0),
+        questionCost,
         preparedCard?.name ?? null,
       )
       conversation.value = await session.loadConversationOptions(

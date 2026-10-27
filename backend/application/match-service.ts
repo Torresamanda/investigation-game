@@ -1,4 +1,4 @@
-import { canPayAction } from '../../shared/domain/action-points.js'
+import { calculateEffectiveActionCost, canPayAction } from '../../shared/domain/action-points.js'
 import { locationIds, type InvestigatorId, type PersonId } from '../../shared/domain/identifiers.js'
 import type { InvestigationAction as SharedInvestigationAction } from '../../shared/domain/identifiers.js'
 import { investigatorIds, type LocationId, type SoloMatch } from '../domain/match.js'
@@ -139,12 +139,16 @@ export class MatchService {
             personId,
             Boolean(preparedCard?.compatibleActions.includes('converse')),
           )
-          const totalCost =
-            (bonusQuestion ? 0 : cost) + pressLeakSurcharge + (preparedCard?.cost ?? 0)
+          const totalCost = calculateEffectiveActionCost({
+            baseCost: bonusQuestion ? 0 : cost,
+            preparedCardCost: preparedCard?.cost,
+            surcharge: pressLeakSurcharge,
+            minimumCost: bonusQuestion ? 0 : 1,
+          })
           return {
             id,
             text,
-            cost: (bonusQuestion ? 0 : cost) + pressLeakSurcharge,
+            cost: totalCost,
             approach,
             isEvidenceBlocked: Boolean(blockedReason),
             canResolve:
