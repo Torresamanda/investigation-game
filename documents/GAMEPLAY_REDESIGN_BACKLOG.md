@@ -106,9 +106,15 @@ somente para uma hipótese mecânica `sustained`, sem expor a regra que a susten
   - Critério de aceite: o estado da hipótese pode ser apresentado sem expor condições futuras ou a solução do caso.
 
 - [ ] **GD-02 — Definir operações investigativas** `[Definição] [Back] [Front]`
-  - Substituir o comando de acusação por uma ou mais operações narrativas de fim de caso.
-  - Estabelecer pré-requisitos, custo, consequência de sucesso, consequência de tentativa incompleta e disponibilidade na Rodada 6.
-  - Critério de aceite: a decisão final é compreensível em ficção e não pede que o jogador preencha eixos manualmente.
+  - Substituir o comando de acusação por operações narrativas específicas de cada caso, como seguir uma rota, preservar uma prova ou confrontar uma inconsistência. A interface não pede suspeito ou eixos de prova.
+  - Definir dois níveis de operação:
+    1. **Verificar linha de raciocínio:** fica disponível para hipótese plausível; não vence a missão e pode confirmar parcialmente a teoria, registrar uma observação útil ou revelar uma inconsistência recuperável.
+    2. **Operação de encerramento:** fica disponível somente para hipótese sustentada; pode resolver a missão.
+  - Preparar uma operação é gratuito. Resolver uma operação custa 2 PA gerais; o jogador pode trocar a operação preparada antes de resolvê-la.
+  - Permitir no máximo uma resolução de operação por rodada. Na Rodada 6, permitir uma última confirmação e a resolução de operação no mesmo turno, quando os PA permitirem.
+  - Uma operação incompleta consome o custo, registra consequência narrativa útil, contesta a hipótese relacionada e mantém a missão ativa enquanto houver prazo. Ela nunca encerra a partida automaticamente.
+  - O servidor determina disponibilidade, custo e resultado. O cliente recebe apenas título, descrição de risco e estado disponível ou preparado, sem requisito oculto, pista faltante ou solução.
+  - Critério de aceite: a decisão final é compreensível em ficção, não pede preenchimento manual de eixos, mantém recuperação após tentativa incompleta e não revela a solução antes da sustentação da hipótese.
 
 - [ ] **GD-03 — Consolidar economia de PA e cartas** `[Definição] [Back]`
   - Tornar uma única regra oficial para renovação de mão, descarte voluntário, cartas temporárias e apoio de plantão.
