@@ -1,13 +1,14 @@
 import type { PublicMatchDto } from '../../shared/contracts/match.js'
 import type { MatchCard } from '../domain/match-deck.js'
 import type { SoloMatch } from '../domain/match.js'
+import type { ActionOpportunities } from '../../shared/contracts/investigation-opportunity.js'
 import {
   canAffordInvestigativeCrossing,
   investigativeCrossingCost,
 } from '../domain/investigative-crossing.js'
 
 export const MatchPresenter = {
-  toPublicDto(match: SoloMatch): PublicMatchDto {
+  toPublicDto(match: SoloMatch, actionOpportunities?: ActionOpportunities): PublicMatchDto {
     const activeDeck = match.decks[match.activeInvestigatorId]
 
     return {
@@ -40,6 +41,7 @@ export const MatchPresenter = {
       actionPoints: match.actionPoints,
       journalEntries: match.journalEntries.map(toPublicJournalEntry),
       notificationEvents: match.notificationEvents ?? [],
+      ...(actionOpportunities ? { actionOpportunities } : {}),
       muralLinks: match.muralLinks.map(({ id, fromClueId, toClueId, round }) => ({
         id,
         fromClueId,
@@ -66,9 +68,11 @@ export const MatchPresenter = {
 function toPublicJournalEntry({
   caseEvidenceKey: _caseEvidenceKey,
   notificationSignal,
+  actionAttempt: _actionAttempt,
   ...entry
 }: SoloMatch['journalEntries'][number]) {
   void notificationSignal
+  void _actionAttempt
   return _caseEvidenceKey ? entry : { ...entry }
 }
 

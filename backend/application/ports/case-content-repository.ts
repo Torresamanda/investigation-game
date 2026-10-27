@@ -5,6 +5,10 @@ import type {
 } from '../../../shared/domain/identifiers.js'
 import type { JournalEntry, SoloMatch } from '../../domain/match.js'
 import type { OperationOption } from '../../domain/investigation-operation.js'
+import type {
+  BasicInvestigationAction,
+  InvestigationOpportunity,
+} from '../../../shared/contracts/investigation-opportunity.js'
 
 export type NewJournalEntry = Omit<JournalEntry, 'id'>
 
@@ -68,4 +72,9 @@ export interface CaseContentRepository {
     action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
     locationId: LocationId,
   ): CaseActionResolution
+  getActionOpportunity(
+    match: SoloMatch,
+    action: BasicInvestigationAction,
+    locationId: LocationId,
+  ): InvestigationOpportunity
 }

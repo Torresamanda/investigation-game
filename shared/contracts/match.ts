@@ -1,5 +1,6 @@
 import type { ActionPointPool } from '../domain/action-points'
 import type { InvestigatorId, LocationId } from '../domain/identifiers'
+import type { ActionOpportunities } from './investigation-opportunity'
 
 export interface MatchJournalEntry {
   readonly id: string
@@ -87,6 +88,7 @@ export interface PublicMatchDto {
   readonly muralLinks: readonly MatchMuralLink[]
   readonly hypotheses?: readonly MatchHypothesisProgress[]
   readonly notificationEvents?: readonly MatchNotificationEvent[]
+  readonly actionOpportunities?: ActionOpportunities
   readonly decks: Readonly<
     Partial<
       Record<

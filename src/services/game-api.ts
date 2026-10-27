@@ -1,4 +1,5 @@
 import type { PublicMatchDto, MatchJournalEntry } from '../../shared/contracts/match'
+import type { InvestigationOpportunity } from '../../shared/contracts/investigation-opportunity'
 import type {
   InvestigatorId,
   InvestigationAction,
@@ -28,6 +29,7 @@ export interface ConversationOptions {
   readonly personId: PersonId
   readonly personName: string
   readonly locationId: LocationId
+  readonly opportunity: InvestigationOpportunity
   readonly questions: readonly ConversationQuestion[]
 }
 

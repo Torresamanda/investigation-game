@@ -53,6 +53,7 @@ it('conversa no painel, atualiza opções ao preparar na mão e mantém a respos
     personId: 'davi',
     personName: 'Davi Orsini',
     locationId: 'gallery',
+    opportunity: { status: 'promising', message: 'A conversa pode acrescentar contexto.' },
     questions: [
       {
         id: 'question',

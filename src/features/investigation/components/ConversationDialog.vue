@@ -5,6 +5,7 @@ import { PhArrowLeft } from '../../../components/icons'
 import CharacterPortrait from '../../../components/ui/CharacterPortrait.vue'
 import { getPortrait } from '../../../content/portraits'
 import { suspectProfiles } from '../../../content/case01'
+import { opportunityStatusLabels } from '../opportunity-labels'
 
 const props = defineProps<{
   conversation: ConversationOptions
@@ -45,6 +46,14 @@ const conversationPerson = computed(() =>
       <strong>Declaração registrada no diário</strong>
       <p>{{ answer }}</p>
     </div>
+
+    <p
+      class="conversation-opportunity"
+      :class="`conversation-opportunity--${conversation.opportunity.status}`"
+    >
+      <strong>{{ opportunityStatusLabels[conversation.opportunity.status] }}</strong>
+      {{ conversation.opportunity.message }}
+    </p>
 
     <p v-if="conversation.questions.length" class="conversation-help">
       Escolha uma pergunta. Para usar uma carta social, basta prepará-la na sua mão ao lado.

@@ -37,6 +37,8 @@ import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 import { DomainError } from '../domain/errors.js'
 import type { RandomGenerator } from './ports/random-generator.js'
 import { WebCryptoRandomGenerator } from '../infrastructure/crypto/web-crypto-random-generator.js'
+import type { InvestigationOpportunity } from '../../shared/contracts/investigation-opportunity.js'
+import { GetActionOpportunitiesUseCase } from './use-cases/get-action-opportunities-use-case.js'
 
 export type {
   CreateInvestigativeCrossingCommand,
@@ -50,6 +52,7 @@ export interface ConversationOptions {
   readonly personId: PersonId
   readonly personName: string
   readonly locationId: LocationId
+  readonly opportunity: InvestigationOpportunity
   readonly questions: readonly (Omit<ConversationQuestionContent, 'cost'> & {
     readonly cost: number
     readonly canResolve: boolean
@@ -72,6 +75,7 @@ export class MatchService {
   private readonly prepareOperationUseCase: PrepareOperationUseCase
   private readonly resolveOperationUseCase: ResolveOperationUseCase
   private readonly cancelOperationUseCase: CancelOperationUseCase
+  private readonly getActionOpportunitiesUseCase: GetActionOpportunitiesUseCase
 
   constructor(
     repository: MatchRepository,
@@ -121,6 +125,10 @@ export class MatchService {
       caseContentRepository,
     )
     this.cancelOperationUseCase = new CancelOperationUseCase(notificationRepository)
+    this.getActionOpportunitiesUseCase = new GetActionOpportunitiesUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -152,44 +160,68 @@ export class MatchService {
     const bonusQuestion =
       hasConversationBonus(match, personId) ||
       (hasAskedQuestionThisTurn && preparedCard?.definitionId === 'calculated-pause')
+    const questions = conversation.questions
+      .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
+      .map(({ id, text, cost, approach }) => {
+        const blockedReason = this.caseContentRepository.getConversationBlockReason(
+          personId,
+          id,
+          match,
+        )
+        const pressLeakSurcharge = pressLeakConversationSurcharge(
+          match,
+          personId,
+          Boolean(preparedCard?.compatibleActions.includes('converse')),
+        )
+        const totalCost = calculateEffectiveActionCost({
+          baseCost: bonusQuestion ? 0 : cost,
+          preparedCardCost: preparedCard?.cost,
+          surcharge: pressLeakSurcharge,
+          minimumCost: bonusQuestion ? 0 : 1,
+        })
+        return {
+          id,
+          text,
+          cost: totalCost,
+          approach,
+          isEvidenceBlocked: Boolean(blockedReason),
+          canResolve:
+            !blockedReason &&
+            canPayAction(match.actionPoints, {
+              action: 'converse',
+              amount: totalCost,
+            }),
+        }
+      })
+    const availableQuestions = questions.filter((question) => !question.isEvidenceBlocked)
+    const opportunity: InvestigationOpportunity = !questions.length
+      ? {
+          status: 'exhausted',
+          message:
+            'Os assuntos já tratados não trouxeram novos elementos. Reavalie as anotações antes de retomar a conversa.',
+        }
+      : availableQuestions.length
+        ? {
+            status: 'promising',
+            message:
+              'Esta conversa pode acrescentar contexto, mas nenhuma resposta garante um avanço.',
+          }
+        : {
+            status: 'exploratory',
+            message:
+              'Os assuntos disponíveis ainda pedem mais contexto. O diálogo pode orientar a busca, sem garantir avanço.',
+          }
     return {
       personId,
       personName: conversation.personName,
       locationId,
-      questions: conversation.questions
-        .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
-        .map(({ id, text, cost, approach }) => {
-          const blockedReason = this.caseContentRepository.getConversationBlockReason(
-            personId,
-            id,
-            match,
-          )
-          const pressLeakSurcharge = pressLeakConversationSurcharge(
-            match,
-            personId,
-            Boolean(preparedCard?.compatibleActions.includes('converse')),
-          )
-          const totalCost = calculateEffectiveActionCost({
-            baseCost: bonusQuestion ? 0 : cost,
-            preparedCardCost: preparedCard?.cost,
-            surcharge: pressLeakSurcharge,
-            minimumCost: bonusQuestion ? 0 : 1,
-          })
-          return {
-            id,
-            text,
-            cost: totalCost,
-            approach,
-            isEvidenceBlocked: Boolean(blockedReason),
-            canResolve:
-              !blockedReason &&
-              canPayAction(match.actionPoints, {
-                action: 'converse',
-                amount: totalCost,
-              }),
-          }
-        }),
+      opportunity,
+      questions,
     }
+  }
+
+  getActionOpportunities(matchId: string) {
+    return this.getActionOpportunitiesUseCase.execute(matchId)
   }
 
   resolveConversation(command: ResolveConversationCommand): SoloMatch {

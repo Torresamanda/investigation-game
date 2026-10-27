@@ -17,8 +17,66 @@ import type {
 import type { SoloMatch } from '../../domain/match.js'
 import { resolveCase01CardEffect } from './case01-card-effects.js'
 import type { OperationOption } from '../../domain/investigation-operation.js'
+import type {
+  BasicInvestigationAction,
+  InvestigationOpportunity,
+} from '../../../shared/contracts/investigation-opportunity.js'
 
 export class Case01ContentRepository implements CaseContentRepository {
+  getActionOpportunity(
+    match: SoloMatch,
+    action: BasicInvestigationAction,
+    locationId: LocationId,
+  ): InvestigationOpportunity {
+    if (match.round === 6 && action !== 'analyse') {
+      return {
+        status: 'exhausted',
+        message: 'O prazo final limita novas explorações. Organize as informações já registradas.',
+      }
+    }
+
+    const resolution = this.resolveAction(match, action, locationId)
+    if (resolution.errorMessage) {
+      return {
+        status: 'exploratory',
+        message:
+          'Ainda não há sinais claros sobre esta abordagem. Compare as anotações antes de agir.',
+      }
+    }
+
+    if (
+      resolution.entry.type === 'clue' ||
+      resolution.additionalEntries?.length ||
+      resolution.journalEntryUpdates?.length ||
+      resolution.unlockedLocationIds?.length ||
+      resolution.resolvedKeys?.length
+    ) {
+      return {
+        status: 'promising',
+        message:
+          'Os registros sugerem que esta abordagem pode acrescentar contexto, sem garantir uma descoberta.',
+      }
+    }
+
+    const hasRepeatedAttempt = match.journalEntries.some(
+      (entry) =>
+        entry.type === 'observation' &&
+        entry.actionAttempt === action &&
+        entry.locationId === locationId,
+    )
+    return hasRepeatedAttempt
+      ? {
+          status: 'exhausted',
+          message:
+            'As tentativas recentes não trouxeram novos elementos. Compare as anotações ou mude de abordagem.',
+        }
+      : {
+          status: 'exploratory',
+          message:
+            'Ainda não há sinais claros sobre esta abordagem. A tentativa pode orientar a busca, sem garantir avanço.',
+        }
+  }
+
   getAvailableOperations(match: SoloMatch): readonly OperationOption[] {
     const hasPlausibleHypothesis = match.hypotheses?.some(
       (hypothesis) => hypothesis.status === 'plausible' || hypothesis.status === 'sustained',
@@ -138,10 +196,18 @@ export class Case01ContentRepository implements CaseContentRepository {
         id: entryId,
         type: 'observation',
         title: `Sem nova descoberta: ${locationName(locationId)}`,
-        content: `A ação ${actionLabel(action)} não revelou informação nova neste local.`,
+        content: match.journalEntries.some(
+          (entry) =>
+            entry.type === 'observation' &&
+            entry.actionAttempt === action &&
+            entry.locationId === locationId,
+        )
+          ? `A equipe já tentou ${actionLabel(action)} neste local sem encontrar novos elementos. Compare as anotações ou escolha outra abordagem.`
+          : `A abordagem de ${actionLabel(action)} não trouxe elementos novos neste local. Compare as anotações ou tente um método diferente.`,
         locationId,
         round: match.round,
         status: 'note',
+        actionAttempt: action,
       },
     }
 

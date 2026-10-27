@@ -246,6 +246,28 @@
   margin: 0;
 }
 
+.conversation-opportunity {
+  border-left: 2px solid var(--gold);
+  padding-left: 8px;
+  color: #afc7d3;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.conversation-opportunity strong {
+  display: block;
+  color: var(--gold);
+}
+
+.conversation-opportunity--exhausted {
+  border-color: #e7b3a2;
+}
+
+.conversation-opportunity--exhausted strong {
+  color: #e7b3a2;
+}
+
 .conversation-questions {
   display: grid;
   gap: 8px;

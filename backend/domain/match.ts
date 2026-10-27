@@ -35,6 +35,7 @@ export interface JournalEntry {
     | 'contestable'
     | 'blocked'
   readonly notificationSignal?: 'action-failure'
+  readonly actionAttempt?: 'examine' | 'analyse' | 'research'
   readonly recordedWith?: 'pocket-recorder'
   readonly isadoraMarkedContestable?: boolean
   readonly relatedEntryIds?: readonly string[]

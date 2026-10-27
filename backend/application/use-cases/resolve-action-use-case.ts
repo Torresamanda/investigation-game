@@ -92,6 +92,7 @@ export class ResolveActionUseCase {
               locationId: command.locationId,
               round: match.round,
               status: 'note' as const,
+              actionAttempt: command.action,
             },
           }
         : caseResolution

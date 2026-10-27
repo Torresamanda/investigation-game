@@ -5,6 +5,31 @@ import type { InvestigatorId } from '../domain/match.js'
 import type { MatchCard } from '../domain/match-deck.js'
 
 describe('MatchService', () => {
+  it('sinaliza uma abordagem plausível e orienta após uma tentativa sem descoberta', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    expect(service.getActionOpportunities(match.id).examine.status).toBe('promising')
+    expect(service.getActionOpportunities(match.id).analyse.status).toBe('exploratory')
+
+    const attempted = service.resolveAction({
+      matchId: match.id,
+      action: 'analyse',
+      locationId: 'gallery',
+    })
+    const observation = attempted.journalEntries.at(-1)
+    expect(observation).toMatchObject({
+      type: 'observation',
+      actionAttempt: 'analyse',
+    })
+    expect(observation?.content).toContain('tente um método diferente')
+    expect(service.getActionOpportunities(match.id).analyse.status).toBe('exhausted')
+  })
+
   it('cria uma partida solo com dupla fixa e estado inicial', () => {
     const service = new MatchService(
       new InMemoryMatchRepository(),

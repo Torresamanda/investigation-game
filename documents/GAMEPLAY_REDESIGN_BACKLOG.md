@@ -280,7 +280,7 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Diferenciar visualmente linha em apuração, plausível, sustentada e contestada, deixando claro quando uma operação de verificação ou de encerramento passou a estar disponível.
   - Critério de aceite: uma pessoa nova entende o que significa “organizar evidências e conexões” e qual é o objetivo investigativo imediato, sem receber uma rota pronta até a solução.
 
-- [ ] **GD-11C — Sinalizar oportunidades de investigação antes do gasto** `[Front] [Back] [Definição]`
+- [x] **GD-11C — Sinalizar oportunidades de investigação antes do gasto** `[Front] [Back] [Definição]`
   - Comunicar, com pistas diegéticas e sem garantia de resultado, quando um local, pessoa ou método parece uma abordagem promissora, esgotada ou apenas exploratória para o estado atual do caso.
   - Toda ação sem descoberta deve registrar uma observação que reduza incerteza ou indique uma mudança de abordagem; evitar consumir PA em retornos puramente genéricos.
   - Critério de aceite: um iniciante consegue distinguir tentativa de exploração de uma oportunidade investigativa plausível e não perde PA relevante sem receber orientação aproveitável.

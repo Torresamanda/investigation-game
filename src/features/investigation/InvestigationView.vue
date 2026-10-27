@@ -263,6 +263,7 @@ async function cancelOperation() {
             :class="{ 'tour-highlight': tourStep?.target === 'actions' }"
             :available-actions="availableActions"
             :action-costs="actionCosts"
+            :action-opportunities="session.remoteMatch?.actionOpportunities"
             :feedback="feedback"
             :can-end-turn="session.canEndTurn"
             :has-usable-action-points="hasUsableActionPoints"

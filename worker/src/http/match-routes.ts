@@ -141,13 +141,18 @@ async function createMatch(request: Request, database: D1DatabaseConnection): Pr
     return jsonResponse({ message: 'Investigadores inválidos.' }, 400)
   }
   try {
-    const match = createWorkerMatchService(new InMemoryMatchRepository()).createSoloMatch({
+    const service = createWorkerMatchService(new InMemoryMatchRepository())
+    const match = service.createSoloMatch({
       activeInvestigatorId,
       supportInvestigatorId,
     })
     await new D1MatchStore(database).save(match)
     const token = await new D1MatchSessionStore(database).issue(match.id)
-    return jsonResponse(MatchPresenter.toPublicDto(match), 201, { [matchTokenHeader]: token })
+    return jsonResponse(
+      MatchPresenter.toPublicDto(match, service.getActionOpportunities(match.id)),
+      201,
+      { [matchTokenHeader]: token },
+    )
   } catch {
     return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
   }
@@ -158,9 +163,11 @@ async function getMatch(id: string, database: D1DatabaseConnection): Promise<Res
   if (!matchId) return jsonResponse({ message: 'Partida inválida.' }, 400)
   try {
     const match = await new D1MatchStore(database).findById(matchId)
-    return match
-      ? jsonResponse(MatchPresenter.toPublicDto(match))
-      : jsonResponse({ message: 'Partida não encontrada.' }, 404)
+    if (!match) return jsonResponse({ message: 'Partida não encontrada.' }, 404)
+    const repository = new InMemoryMatchRepository()
+    repository.save(match)
+    const service = createWorkerMatchService(repository)
+    return jsonResponse(MatchPresenter.toPublicDto(match, service.getActionOpportunities(match.id)))
   } catch {
     return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
   }
@@ -396,10 +403,11 @@ async function mutateMatch(
     if (!match) throw new MatchNotFoundError()
     const repository = new InMemoryMatchRepository()
     repository.save(match)
-    const updated = mutate(createWorkerMatchService(repository), matchId)
+    const service = createWorkerMatchService(repository)
+    const updated = mutate(service, matchId)
     const saved = await store.save(updated)
     if (saved.status !== 'active') await store.delete(saved.id)
-    return jsonResponse(MatchPresenter.toPublicDto(saved))
+    return jsonResponse(MatchPresenter.toPublicDto(saved, service.getActionOpportunities(saved.id)))
   } catch (error) {
     return matchErrorResponse(error, 'Não foi possível processar a requisição.')
   }
