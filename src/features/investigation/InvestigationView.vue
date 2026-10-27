@@ -343,6 +343,7 @@ async function cancelOperation() {
             v-if="session.remoteMatch"
             v-show="panelMode === 'operation'"
             :operations="session.availableOperations"
+            :hypotheses="session.remoteMatch.hypotheses ?? []"
             :is-prepared="Boolean(session.remoteMatch.preparedOperation)"
             :is-final-round="session.remoteMatch.round === 6"
             :is-request-pending="session.isRequestPending"

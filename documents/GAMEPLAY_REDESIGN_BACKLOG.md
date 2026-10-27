@@ -275,7 +275,7 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Notificar descoberta, pista refutada, hipótese fortalecida ou contestada, operação disponível, falha de ação e evento de rodada.
   - Critério de aceite: as mensagens derivam de eventos persistidos no estado autoritativo e têm a mesma sequência para os participantes.
 
-- [ ] **GD-11B — Orientar prontidão da operação sem spoiler** `[Front] [Back] [Definição]`
+- [x] **GD-11B — Orientar prontidão da operação sem spoiler** `[Front] [Back] [Definição]`
   - Quando não houver operação disponível, o painel deve explicar o próximo tipo de avanço em linguagem ficcional e neutra, sem revelar local, pessoa, carta, eixo específico ou solução.
   - Diferenciar visualmente linha em apuração, plausível, sustentada e contestada, deixando claro quando uma operação de verificação ou de encerramento passou a estar disponível.
   - Critério de aceite: uma pessoa nova entende o que significa “organizar evidências e conexões” e qual é o objetivo investigativo imediato, sem receber uma rota pronta até a solução.

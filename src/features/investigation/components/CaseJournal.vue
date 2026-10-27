@@ -4,6 +4,7 @@ import { locations, type LocationId } from '../../../content/case01'
 import type { MatchJournalEntry } from '../../../services/game-api'
 import type { MatchHypothesisProgress } from '../../../../shared/contracts/match'
 import { journalStatusLabels } from '../action-feedback'
+import { hypothesisStatusLabel } from '../operation-readiness'
 const notes = defineModel<string>('notes', { required: true })
 const props = defineProps<{
   hypotheses: readonly { id: number; text: string }[]
@@ -45,16 +46,6 @@ function statusLabel(entry: MatchJournalEntry): string {
   return journalStatusLabels[entry.status]
 }
 
-function hypothesisStatusLabel(status: MatchHypothesisProgress['status']): string {
-  return {
-    inquiry: 'Em apuração',
-    plausible: 'Plausível',
-    sustained: 'Sustentada',
-    contested: 'Contestada',
-    discarded: 'Descartada',
-  }[status]
-}
-
 function hypothesisEvidenceTitles(hypothesis: MatchHypothesisProgress): string[] {
   return hypothesis.evidenceEntryIds
     .map((entryId) => props.journalEntries.find((entry) => entry.id === entryId)?.title)
@@ -93,7 +84,9 @@ function createInvestigativeCrossing() {
       <article v-for="(hypothesis, index) in hypothesisProgress" :key="index" class="journal-entry">
         <header class="journal-entry-heading">
           <strong>Linha de raciocínio {{ index + 1 }}</strong>
-          <span class="journal-status">{{ hypothesisStatusLabel(hypothesis.status) }}</span>
+          <span class="journal-status" :class="`journal-status--${hypothesis.status}`">
+            {{ hypothesisStatusLabel(hypothesis.status) }}
+          </span>
         </header>
         <p>
           {{ hypothesis.coveredAxes.length }} aspecto(s) investigativo(s) confirmado(s) ·

@@ -204,6 +204,33 @@
   color: #a9e6c8;
 }
 
+.journal-status--inquiry {
+  border-color: #8097a8;
+  color: #c4d5de;
+}
+
+.journal-status--plausible {
+  border-color: var(--gold);
+  color: #f3d7a6;
+}
+
+.journal-status--sustained {
+  border-color: #70b99a;
+  color: #a9e6c8;
+  background: #183c35;
+}
+
+.journal-status--contested {
+  border-color: #d38e82;
+  color: #f0b7ac;
+  background: #482b2c;
+}
+
+.journal-status--discarded {
+  border-color: #667784;
+  color: #a9b7bf;
+}
+
 .journal-status--refuted {
   border-color: #d38e82;
   color: #f0b7ac;

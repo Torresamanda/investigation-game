@@ -136,6 +136,58 @@
   line-height: 1.5;
 }
 
+.operation-readiness-list,
+.operation-hypothesis-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.operation-readiness {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #49606e;
+  border-radius: 8px;
+  background: #142533;
+}
+
+.operation-readiness--available {
+  border-color: #70b99a;
+  background: #183c35;
+}
+
+.operation-readiness p {
+  margin: 0;
+}
+
+.operation-hypothesis-progress h3 {
+  margin: 0;
+  color: var(--paper);
+  font-size: 13px;
+}
+
+.operation-hypothesis-progress ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.operation-hypothesis-progress li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.operation-kind {
+  color: #a9bbc5;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 .operation-readiness span {
   display: block;
   margin-top: 4px;
