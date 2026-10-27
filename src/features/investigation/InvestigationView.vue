@@ -15,6 +15,7 @@ import CaseJournal from './components/CaseJournal.vue'
 import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
 import OperationPanel from './components/OperationPanel.vue'
+import InvestigationMural from './components/InvestigationMural.vue'
 import AppToast from '../../components/ui/AppToast.vue'
 import AppModal from '../../components/ui/AppModal.vue'
 import { statusFeedback } from './action-feedback'
@@ -29,6 +30,7 @@ const session = useInvestigationStore()
 const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigação.'))
 const cards = computed(() => session.hand)
 const panelMode = ref<'people' | 'journal' | 'operation'>('people')
+const isMuralFocusOpen = ref(false)
 const { tourStep, tourIndex, startTour, startTourOnFirstVisit, closeTour, stepTour } =
   useTableTour()
 
@@ -103,6 +105,10 @@ function openDiscoveryInJournal(id: string) {
 function openOperationPanel() {
   panelMode.value = 'operation'
   void session.loadAvailableOperations()
+}
+
+function openMuralFocus() {
+  isMuralFocusOpen.value = true
 }
 
 function executeSelectedAction(action: InvestigationAction) {
@@ -238,6 +244,39 @@ async function cancelOperation() {
         </button>
       </div>
     </AppModal>
+    <AppModal
+      v-if="isMuralFocusOpen"
+      class="mural-focus-modal"
+      labelled-by="mural-focus-title"
+      @close="isMuralFocusOpen = false"
+    >
+      <section class="mural-focus-dialog">
+        <header class="mural-focus-heading">
+          <div>
+            <p class="eyebrow">Organizar investigação</p>
+            <h2 id="mural-focus-title">Mural de investigação</h2>
+            <p>Organize pistas e confronte relações sem sair da partida em andamento.</p>
+          </div>
+          <button type="button" @click="isMuralFocusOpen = false">Voltar à investigação</button>
+        </header>
+        <InvestigationMural
+          :journal-entries="session.journalEntries"
+          :mural-links="session.muralLinks"
+          :investigative-crossing-cost="investigativeCrossingCost"
+          :can-afford-investigative-crossing="canAffordInvestigativeCrossing"
+          :is-request-pending="session.isRequestPending"
+          @create-mural-link="createMuralLink"
+          @create-investigative-crossing="createInvestigativeCrossing"
+        />
+        <footer class="mural-focus-footer">
+          <span
+            ><strong>Partida permanece ativa.</strong> Fechar o mural preserva local, turno e
+            mão.</span
+          >
+          <span>PA disponíveis · {{ session.pointsLabel }}</span>
+        </footer>
+      </section>
+    </AppModal>
     <div class="investigation-layout">
       <LocationsPanel
         v-model="locationId"
@@ -306,6 +345,7 @@ async function cancelOperation() {
               >{{ unreadCount }}</span
             >
           </button>
+          <button class="mural-mode-tab" type="button" @click="openMuralFocus">Mural</button>
           <button :aria-pressed="panelMode === 'operation'" @click="openOperationPanel">
             Operação
           </button>
@@ -338,8 +378,6 @@ async function cancelOperation() {
             :can-afford-investigative-crossing="canAffordInvestigativeCrossing"
             :is-request-pending="session.isRequestPending"
             @save="session.saveNote()"
-            @create-mural-link="createMuralLink"
-            @create-investigative-crossing="createInvestigativeCrossing"
           />
           <OperationPanel
             v-if="session.remoteMatch"

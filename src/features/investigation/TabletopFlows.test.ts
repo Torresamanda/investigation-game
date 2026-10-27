@@ -159,7 +159,7 @@ it('mantém o dossiê dentro do painel e permite percorrer o tour sem alterar a 
   const { session, view } = setupTable()
   const loadAvailableOperations = vi.spyOn(session, 'loadAvailableOperations').mockResolvedValue()
   expect(view.findAll('.mode-tabs button')[2]!.attributes('disabled')).toBeUndefined()
-  await view.findAll('.mode-tabs button')[2]!.trigger('click')
+  await view.findAll('.mode-tabs button')[3]!.trigger('click')
   await flushPromises()
   expect(view.get('.contextual-panel .operation-dialog').isVisible()).toBe(true)
   expect(loadAvailableOperations).toHaveBeenCalledTimes(1)

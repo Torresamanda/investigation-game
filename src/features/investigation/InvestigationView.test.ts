@@ -106,12 +106,12 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
-  it('mantém o mural em foco no diário e orienta o cruzamento pela ligação selecionada', async () => {
+  it('abre o mural em foco sem trocar de tela', async () => {
     const view = createView()
-    await view.get('.journal-mode-tab').trigger('click')
-    expect(view.get('.investigation-mural').text()).toContain('Mural de investigação')
+    await view.get('.mural-mode-tab').trigger('click')
+    expect(view.get('.mural-focus-dialog').text()).toContain('Mural de investigação')
     expect(view.find('.journal-details').exists()).toBe(false)
-    expect(view.get('.investigation-mural').text()).toContain('Selecione duas pistas confirmadas')
+    expect(view.get('.mural-focus-dialog').text()).toContain('Selecione duas pistas confirmadas')
     view.unmount()
   })
 

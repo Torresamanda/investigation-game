@@ -119,13 +119,13 @@ describe('CaseJournal', () => {
     expect(view.text()).not.toContain('Nenhum registro no diário ainda.')
   })
 
-  it('mantém o mural visível sem recolher a organização da investigação', () => {
+  it('mantém o diário sem um organizador recolhido', () => {
     const view = mountJournal()
 
     expect(view.text()).toContain('22h13')
     expect(view.text()).toContain('22h16')
     expect(view.find('.journal-details').exists()).toBe(false)
-    expect(view.get('.investigation-mural').text()).toContain('Mural de investigação')
+    expect(view.find('.investigation-mural').exists()).toBe(false)
   })
 
   it('mostra progresso de hipótese sem indicar a evidência ou o local que falta', async () => {

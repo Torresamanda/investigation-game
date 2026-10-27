@@ -249,6 +249,118 @@
   gap: 6px;
 }
 
+.mural-focus-modal.app-modal {
+  width: min(1120px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+}
+
+.mural-focus-modal .app-modal-content {
+  padding: 0;
+  gap: 0;
+}
+
+.mural-focus-dialog {
+  display: grid;
+  min-height: min(760px, calc(100dvh - 32px));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.mural-focus-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--ink);
+}
+
+.mural-focus-heading h2,
+.mural-focus-heading p {
+  margin: 0;
+}
+
+.mural-focus-heading h2 {
+  margin-top: 3px;
+  font-size: 26px;
+}
+
+.mural-focus-heading > div > p:last-child {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mural-focus-dialog .investigation-mural {
+  grid-template-columns: minmax(0, 1fr) 260px;
+  align-content: start;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: 0;
+  background: radial-gradient(ellipse at 52% 43%, #2e677223, transparent 60%), var(--ink-deep);
+}
+
+.mural-focus-dialog .mural-heading,
+.mural-focus-dialog > .investigation-mural > .mural-help,
+.mural-focus-dialog > .investigation-mural > .mural-board,
+.mural-focus-dialog > .investigation-mural > .mural-draw-button,
+.mural-focus-dialog > .investigation-mural > .mural-empty-state {
+  grid-column: 1;
+}
+
+.mural-focus-dialog .mural-board {
+  min-height: 430px;
+  grid-auto-rows: 145px;
+  padding: var(--space-3);
+}
+
+.mural-focus-dialog .mural-lines {
+  inset: var(--space-3) 0 auto;
+}
+
+.mural-focus-dialog .mural-evidence-card {
+  padding: 12px;
+}
+
+.mural-focus-dialog .mural-evidence-card strong {
+  font-size: 13px;
+}
+
+.mural-focus-dialog .mural-connections,
+.mural-focus-dialog .mural-selection-detail {
+  grid-column: 2;
+}
+
+.mural-focus-dialog .mural-connections {
+  grid-row: 1 / span 3;
+  align-content: start;
+  padding: 0 0 0 var(--space-3);
+  border-left: 1px solid var(--line);
+}
+
+.mural-focus-dialog .mural-selection-detail {
+  align-self: start;
+  margin-left: var(--space-3);
+  border-left: 3px solid var(--gold);
+}
+
+.mural-focus-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--ink);
+  font-size: 11px;
+}
+
+.mural-focus-footer strong {
+  color: var(--paper);
+}
+
 @media (max-width: 390px) {
   .investigation-mural {
     padding: 9px;
@@ -261,5 +373,46 @@
 
   .mural-evidence-card {
     padding: 6px;
+  }
+}
+
+@media (max-width: 760px) {
+  .mural-focus-modal.app-modal {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .mural-focus-dialog {
+    min-height: 100dvh;
+  }
+
+  .mural-focus-heading {
+    padding: var(--space-2);
+  }
+
+  .mural-focus-heading h2 {
+    font-size: 22px;
+  }
+
+  .mural-focus-heading > div > p:last-child,
+  .mural-focus-footer {
+    display: none;
+  }
+
+  .mural-focus-dialog .investigation-mural {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: var(--space-2);
+  }
+
+  .mural-focus-dialog .mural-connections,
+  .mural-focus-dialog .mural-selection-detail {
+    grid-column: 1;
+    grid-row: auto;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
   }
 }

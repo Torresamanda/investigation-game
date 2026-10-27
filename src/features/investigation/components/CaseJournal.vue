@@ -5,7 +5,6 @@ import type { MatchJournalEntry } from '../../../services/game-api'
 import type { MatchHypothesisProgress, MatchMuralLink } from '../../../../shared/contracts/match'
 import { journalStatusLabels } from '../action-feedback'
 import { hypothesisStatusLabel } from '../operation-readiness'
-import InvestigationMural from './InvestigationMural.vue'
 const notes = defineModel<string>('notes', { required: true })
 const props = defineProps<{
   hypotheses: readonly { id: number; text: string }[]
@@ -21,8 +20,6 @@ const emit = defineEmits<{
   leave: []
   pin: []
   save: []
-  createMuralLink: [fromClueId: string, toClueId: string]
-  createInvestigativeCrossing: [fromClueId: string, toClueId: string]
 }>()
 
 const muralLinksWithTitles = computed(() =>
@@ -50,14 +47,6 @@ function save() {
   if (!notes.value.trim()) return
   emit('save')
 }
-
-function createMuralLink(fromClueId: string, toClueId: string) {
-  emit('createMuralLink', fromClueId, toClueId)
-}
-
-function createInvestigativeCrossing(fromEntryId: string, toEntryId: string) {
-  emit('createInvestigativeCrossing', fromEntryId, toEntryId)
-}
 </script>
 
 <template>
@@ -72,15 +61,6 @@ function createInvestigativeCrossing(fromEntryId: string, toEntryId: string) {
     <header class="journal-heading">
       <h2>Diário do caso</h2>
     </header>
-    <InvestigationMural
-      :journal-entries="journalEntries"
-      :mural-links="muralLinks"
-      :investigative-crossing-cost="investigativeCrossingCost"
-      :can-afford-investigative-crossing="canAffordInvestigativeCrossing"
-      :is-request-pending="isRequestPending ?? false"
-      @create-mural-link="createMuralLink"
-      @create-investigative-crossing="createInvestigativeCrossing"
-    />
     <section class="journal-guide" aria-labelledby="journal-guide-title">
       <h3 id="journal-guide-title">Como avançar</h3>
       <dl>
