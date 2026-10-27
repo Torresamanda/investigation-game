@@ -16,8 +16,6 @@ export function useTableActions(
   location: Ref<CaseLocation>,
   locationId: Ref<LocationId>,
   selectedSuspectId: Ref<SuspectId | null>,
-  hasFreeJournalConnection: Ref<boolean>,
-  hasPreparedConnectionCard: Ref<boolean>,
 ) {
   async function executeAction(action: InvestigationAction) {
     const labels: Record<InvestigationAction, string> = {
@@ -64,13 +62,10 @@ export function useTableActions(
     }
   }
 
-  async function createJournalConnection(fromClueId: string, toClueId: string) {
-    const isFree = hasFreeJournalConnection.value || hasPreparedConnectionCard.value
+  async function createMuralLink(fromClueId: string, toClueId: string) {
     try {
-      await session.createJournalConnection(fromClueId, toClueId)
-      feedback.value = statusFeedback(
-        `Conexão formal criada · ${isFree ? 'Grátis' : '1 PA de pesquisa gasto.'}`,
-      )
+      await session.createMuralLink(fromClueId, toClueId)
+      feedback.value = statusFeedback('Ligação registrada no mural · Grátis.')
     } catch (error) {
       feedback.value = statusFeedback(
         error instanceof Error ? error.message : 'Não foi possível criar a conexão.',
@@ -78,5 +73,19 @@ export function useTableActions(
     }
   }
 
-  return { executeAction, moveToLocation, createJournalConnection }
+  async function createInvestigativeCrossing(fromClueId: string, toClueId: string) {
+    const cost = session.remoteMatch?.investigativeCrossingCost ?? 1
+    try {
+      await session.createInvestigativeCrossing(fromClueId, toClueId)
+      feedback.value = statusFeedback(
+        `Cruzamento investigativo validado · ${cost === 0 ? 'Grátis' : `${cost} PA de pesquisa gasto.`}`,
+      )
+    } catch (error) {
+      feedback.value = statusFeedback(
+        error instanceof Error ? error.message : 'Não foi possível cruzar as evidências.',
+      )
+    }
+  }
+
+  return { executeAction, moveToLocation, createMuralLink, createInvestigativeCrossing }
 }

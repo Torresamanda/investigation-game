@@ -17,7 +17,7 @@ const sustainedHypothesis: InvestigationHypothesis = {
   id: 'route',
   status: 'sustained',
   evidence: [],
-  connectionIds: ['connection-1', 'connection-2'],
+  coherentRelationIds: ['connection-1', 'connection-2'],
   hasOperationalInconsistency: false,
 }
 

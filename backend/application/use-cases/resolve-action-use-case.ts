@@ -10,7 +10,7 @@ import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import { recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import type { InvestigatorId } from '../../domain/match.js'
-import { findClueConnectionCandidate } from '../../domain/clue-connection.js'
+import { findOtavioInvestigativeCrossingCandidate } from '../../domain/otavio-investigative-crossing.js'
 import { legacyCaseEvidenceMetadata } from '../../domain/coherent-connection.js'
 import { synchronizeInvestigationHypotheses } from '../../domain/investigation-hypothesis.js'
 import {
@@ -46,9 +46,9 @@ export class ResolveActionUseCase {
     ) {
       throw new InvalidActionError('A carta não pode ser usada nesta ação.')
     }
-    const connectionCandidate =
+    const crossingCandidate =
       match.activeInvestigatorId === 'otavio' && command.action === 'research'
-        ? findClueConnectionCandidate(match)
+        ? findOtavioInvestigativeCrossingCandidate(match)
         : undefined
     const cost = investigatorActionCost({
       investigatorId: match.activeInvestigatorId,
@@ -81,7 +81,7 @@ export class ResolveActionUseCase {
     )
     if (caseResolution.errorMessage) throw new InvalidActionError(caseResolution.errorMessage)
     const resolution =
-      match.round === 6 && connectionCandidate && caseResolution.entry.type === 'clue'
+      match.round === 6 && crossingCandidate && caseResolution.entry.type === 'clue'
         ? {
             entry: {
               id: `journal-${match.journalEntries.length + 1}`,
@@ -178,37 +178,30 @@ export class ResolveActionUseCase {
       receivedSocialBonus = true
     }
 
-    if (connectionCandidate) {
+    if (crossingCandidate) {
       journalEntries.push({
         id: `journal-${journalEntries.length + 1}`,
         type: 'observation',
-        title: 'Conexão de Otávio',
-        content: `“${connectionCandidate.fromEntry.title}” se relaciona a “${connectionCandidate.toEntry.title}”. A ligação foi registrada no mural.`,
+        title: 'Cruzamento investigativo de Otávio',
+        content: `O cruzamento confirmou uma relação coerente entre “${crossingCandidate.fromEntry.title}” e “${crossingCandidate.toEntry.title}”.`,
         locationId: command.locationId,
         round: match.round,
         status: 'note',
-        relatedEntryIds: [connectionCandidate.fromEntry.id, connectionCandidate.toEntry.id],
+        relatedEntryIds: [crossingCandidate.fromEntry.id, crossingCandidate.toEntry.id],
       })
-      resolvedKeys.push(connectionCandidate.key)
+      resolvedKeys.push(crossingCandidate.key)
     }
 
-    const journalConnections = [...match.journalConnections]
-    if (connectionCandidate) {
-      addFormalConnection(journalConnections, {
-        id: `journal-connection:${[connectionCandidate.fromEntry.id, connectionCandidate.toEntry.id].sort().join(':')}`,
-        fromClueId: connectionCandidate.fromEntry.id,
-        toClueId: connectionCandidate.toEntry.id,
+    const investigativeRelations = [...(match.investigativeRelations ?? [])]
+    if (crossingCandidate) {
+      investigativeRelations.push({
+        id: `investigative-relation:${[crossingCandidate.fromEntry.id, crossingCandidate.toEntry.id].sort().join(':')}`,
+        fromClueId: crossingCandidate.fromEntry.id,
+        toClueId: crossingCandidate.toEntry.id,
         round: match.round,
-        hypothesisThreadId: connectionCandidate.hypothesisThreadId,
+        hypothesisThreadId: crossingCandidate.hypothesisThreadId,
       })
     }
-    if (resolution.journalConnection) {
-      addFormalConnection(journalConnections, {
-        ...resolution.journalConnection,
-        round: match.round,
-      })
-    }
-
     const updated: SoloMatch = {
       ...match,
       actionPoints: updatedActionPoints,
@@ -217,10 +210,10 @@ export class ResolveActionUseCase {
         : match.decks,
       preparedCardInstanceId: null,
       journalEntries,
-      journalConnections,
+      investigativeRelations,
       hypotheses: synchronizeInvestigationHypotheses(
         journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
-        journalConnections,
+        investigativeRelations,
         match.hypotheses ?? [],
       ),
       resolvedKeys,
@@ -277,20 +270,6 @@ function clearConsumedFollowUpMark(
   return entry.markedForFollowUp && (isConfirmedInLocation || actionConfirmedInLocation)
     ? { ...entry, markedForFollowUp: false }
     : entry
-}
-
-function addFormalConnection(
-  connections: SoloMatch['journalConnections'][number][],
-  candidate: SoloMatch['journalConnections'][number],
-): void {
-  const exists = connections.some(
-    (connection) =>
-      (connection.fromClueId === candidate.fromClueId &&
-        connection.toClueId === candidate.toClueId) ||
-      (connection.fromClueId === candidate.toClueId &&
-        connection.toClueId === candidate.fromClueId),
-  )
-  if (!exists) connections.push(candidate)
 }
 
 function recyclePreparedCard(

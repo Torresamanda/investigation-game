@@ -178,16 +178,25 @@ describe('D1 match routes', () => {
       database,
     )
     const connection = await handleMatchRequest(
-      new Request(`https://game.test/api/matches/${match.id}/connections`, {
+      new Request(`https://game.test/api/matches/${match.id}/mural-links`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...authorizedHeaders(match.token) },
         body: JSON.stringify({ fromClueId: '', toClueId: 'clue-2' }),
       }),
       database,
     )
+    const crossing = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/crossings`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authorizedHeaders(match.token) },
+        body: JSON.stringify({ fromClueId: 'clue-1', toClueId: '' }),
+      }),
+      database,
+    )
 
     expect(conversation.status).toBe(400)
     expect(connection.status).toBe(400)
+    expect(crossing.status).toBe(400)
   })
 
   it('keeps operations protected and does not disclose unavailable options', async () => {

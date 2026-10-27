@@ -9,7 +9,7 @@ export interface HypothesisEvidence {
   readonly axis: EvidenceAxis
 }
 
-export interface HypothesisConnection {
+export interface HypothesisRelation {
   readonly id: string
   readonly fromEntryId: string
   readonly toEntryId: string
@@ -19,7 +19,7 @@ export interface InvestigationHypothesis {
   readonly id: string
   readonly status: HypothesisStatus
   readonly evidence: readonly HypothesisEvidence[]
-  readonly connectionIds: readonly string[]
+  readonly coherentRelationIds: readonly string[]
   readonly hasOperationalInconsistency: boolean
 }
 
@@ -29,49 +29,51 @@ interface HypothesisEvidenceSource {
   readonly hypothesisThreadIds?: readonly string[]
 }
 
-interface HypothesisConnectionSource {
+interface HypothesisRelationSource {
   readonly id: string
   readonly hypothesisThreadId?: string
+  readonly fromClueId: string
+  readonly toClueId: string
 }
 
 export function evaluateHypothesisStatus(
   hypothesis: Pick<
     InvestigationHypothesis,
-    'evidence' | 'connectionIds' | 'hasOperationalInconsistency'
+    'evidence' | 'coherentRelationIds' | 'hasOperationalInconsistency'
   >,
 ): HypothesisStatus {
   if (hypothesis.hasOperationalInconsistency) return 'contested'
 
   const coveredAxes = new Set(hypothesis.evidence.map((evidence) => evidence.axis))
-  if (coveredAxes.size === evidenceAxes.length && hypothesis.connectionIds.length >= 2) {
+  if (coveredAxes.size === evidenceAxes.length && hypothesis.coherentRelationIds.length >= 2) {
     return 'sustained'
   }
-  if (coveredAxes.size >= 2 && hypothesis.connectionIds.length >= 1) return 'plausible'
+  if (coveredAxes.size >= 2 && hypothesis.coherentRelationIds.length >= 1) return 'plausible'
   return 'inquiry'
 }
 
 export function createInvestigationHypothesis(
   id: string,
   evidence: readonly HypothesisEvidence[],
-  connections: readonly HypothesisConnection[],
+  relations: readonly HypothesisRelation[],
   hasOperationalInconsistency = false,
 ): InvestigationHypothesis {
   return {
     id,
     status: evaluateHypothesisStatus({
       evidence,
-      connectionIds: connections.map((connection) => connection.id),
+      coherentRelationIds: relations.map((relation) => relation.id),
       hasOperationalInconsistency,
     }),
     evidence,
-    connectionIds: connections.map((connection) => connection.id),
+    coherentRelationIds: relations.map((relation) => relation.id),
     hasOperationalInconsistency,
   }
 }
 
 export function synchronizeInvestigationHypotheses(
   evidenceSources: readonly HypothesisEvidenceSource[],
-  connectionSources: readonly HypothesisConnectionSource[],
+  relationSources: readonly HypothesisRelationSource[],
   existingHypotheses: readonly InvestigationHypothesis[],
 ): readonly InvestigationHypothesis[] {
   const threadIds = new Set(evidenceSources.flatMap((source) => source.hypothesisThreadIds ?? []))
@@ -81,19 +83,44 @@ export function synchronizeInvestigationHypotheses(
         ? (source.evidenceAxes ?? []).map((axis) => ({ entryId: source.id, axis }))
         : [],
     )
-    const connections = connectionSources
-      .filter((connection) => connection.hypothesisThreadId === threadId)
-      .map((connection) => ({
-        id: connection.id,
-        fromEntryId: '',
-        toEntryId: '',
+    const relations = relationSources
+      .filter(
+        (relation) =>
+          relation.hypothesisThreadId === threadId &&
+          isCoherentRelationForThread(relation, evidenceSources, threadId),
+      )
+      .map((relation) => ({
+        id: relation.id,
+        fromEntryId: relation.fromClueId,
+        toEntryId: relation.toClueId,
       }))
     const previous = existingHypotheses.find((hypothesis) => hypothesis.id === threadId)
     return createInvestigationHypothesis(
       threadId,
       evidence,
-      connections,
+      relations,
       previous?.hasOperationalInconsistency ?? false,
     )
   })
+}
+
+function isCoherentRelationForThread(
+  relation: HypothesisRelationSource,
+  evidenceSources: readonly HypothesisEvidenceSource[],
+  threadId: string,
+): boolean {
+  if (relation.fromClueId === relation.toClueId) return false
+
+  const fromEvidence = evidenceSources.find((source) => source.id === relation.fromClueId)
+  const toEvidence = evidenceSources.find((source) => source.id === relation.toClueId)
+  if (
+    !fromEvidence?.hypothesisThreadIds?.includes(threadId) ||
+    !toEvidence?.hypothesisThreadIds?.includes(threadId)
+  ) {
+    return false
+  }
+
+  return (
+    fromEvidence.evidenceAxes?.some((axis) => !toEvidence.evidenceAxes?.includes(axis)) ?? false
+  )
 }

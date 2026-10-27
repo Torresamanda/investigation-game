@@ -231,10 +231,18 @@ export const useMatchStore = defineStore('match', () => {
     return updated.journalEntries.at(-1) ?? null
   }
 
-  async function createJournalConnection(fromClueId: string, toClueId: string): Promise<void> {
+  async function createMuralLink(fromClueId: string, toClueId: string): Promise<void> {
     if (!remoteMatch.value) throw new Error('A conexão exige uma partida conectada à API.')
     remoteMatch.value = await performApiRequest(() =>
-      gameApi.createJournalConnection(remoteMatch.value!.id, fromClueId, toClueId),
+      gameApi.createMuralLink(remoteMatch.value!.id, fromClueId, toClueId),
+    )
+    preparedCardId.value = remoteMatch.value.preparedCardInstanceId
+  }
+
+  async function createInvestigativeCrossing(fromClueId: string, toClueId: string): Promise<void> {
+    if (!remoteMatch.value) throw new Error('O cruzamento exige uma partida conectada à API.')
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.createInvestigativeCrossing(remoteMatch.value!.id, fromClueId, toClueId),
     )
     preparedCardId.value = remoteMatch.value.preparedCardInstanceId
   }
@@ -374,7 +382,8 @@ export const useMatchStore = defineStore('match', () => {
     deleteRemoteMatch,
     retryConnection,
     resolveAction,
-    createJournalConnection,
+    createMuralLink,
+    createInvestigativeCrossing,
     loadAvailableOperations,
     prepareOperation,
     resolveOperation,

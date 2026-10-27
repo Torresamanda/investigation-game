@@ -49,8 +49,8 @@ const {
   availableActions,
   actionCosts,
   hasUsableActionPoints,
-  hasFreeJournalConnection,
-  hasPreparedConnectionCard,
+  investigativeCrossingCost,
+  canAffordInvestigativeCrossing,
 } = useTableContext(session)
 
 const {
@@ -78,15 +78,8 @@ const {
   endTurn,
 } = useCaseLifecycle(session, feedback)
 
-const { executeAction, moveToLocation, createJournalConnection } = useTableActions(
-  session,
-  feedback,
-  location,
-  locationId,
-  selectedSuspectId,
-  hasFreeJournalConnection,
-  hasPreparedConnectionCard,
-)
+const { executeAction, moveToLocation, createMuralLink, createInvestigativeCrossing } =
+  useTableActions(session, feedback, location, locationId, selectedSuspectId)
 
 const { notifications, unreadCount, dismissNotification } = useTableNotifications(
   () => session.remoteMatch,
@@ -329,11 +322,12 @@ async function cancelOperation() {
             :hypotheses="session.hypotheses"
             :hypothesis-progress="session.remoteMatch?.hypotheses ?? []"
             :journal-entries="session.journalEntries"
-            :journal-connections="session.journalConnections"
-            :has-free-connection="hasFreeJournalConnection"
-            :has-prepared-connection-card="hasPreparedConnectionCard"
+            :mural-links="session.muralLinks"
+            :investigative-crossing-cost="investigativeCrossingCost"
+            :can-afford-investigative-crossing="canAffordInvestigativeCrossing"
             @save="session.saveNote()"
-            @create-connection="createJournalConnection"
+            @create-mural-link="createMuralLink"
+            @create-investigative-crossing="createInvestigativeCrossing"
           />
           <OperationPanel
             v-if="session.remoteMatch"

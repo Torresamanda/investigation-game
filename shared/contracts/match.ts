@@ -24,7 +24,7 @@ export interface MatchJournalEntry {
   readonly markedForFollowUp?: boolean
 }
 
-export interface MatchJournalConnection {
+export interface MatchMuralLink {
   readonly id: string
   readonly fromClueId: string
   readonly toClueId: string
@@ -35,7 +35,7 @@ export interface MatchHypothesisProgress {
   readonly status: 'inquiry' | 'plausible' | 'sustained' | 'contested' | 'discarded'
   readonly evidenceEntryIds: readonly string[]
   readonly coveredAxes: readonly ('means' | 'opportunity' | 'link')[]
-  readonly coherentConnectionCount: number
+  readonly coherentRelationCount: number
 }
 
 export interface PublicMatchDto {
@@ -56,7 +56,8 @@ export interface PublicMatchDto {
   readonly hasUsedPressLeakConversationThisRound: boolean
   readonly hasFreeConnectionThisRound: boolean
   readonly hasUsedFreeConnectionThisRound: boolean
-  readonly canCreateInvestigatorConnection: boolean
+  readonly investigativeCrossingCost: number
+  readonly canAffordInvestigativeCrossing: boolean
   readonly currentLocationId: LocationId
   readonly unlockedLocations: readonly LocationId[]
   readonly hasUsedFreeMoveThisRound: boolean
@@ -64,7 +65,7 @@ export interface PublicMatchDto {
   readonly hasUsedSupportThisRound: boolean
   readonly actionPoints: ActionPointPool
   readonly journalEntries: readonly MatchJournalEntry[]
-  readonly journalConnections: readonly MatchJournalConnection[]
+  readonly muralLinks: readonly MatchMuralLink[]
   readonly hypotheses?: readonly MatchHypothesisProgress[]
   readonly decks: Readonly<
     Partial<

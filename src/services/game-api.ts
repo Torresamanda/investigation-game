@@ -140,8 +140,16 @@ export const gameApi = {
     })
   },
 
-  createJournalConnection(matchId: string, fromClueId: string, toClueId: string) {
-    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/connections`, {
+  createMuralLink(matchId: string, fromClueId: string, toClueId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/mural-links`, {
+      method: 'POST',
+      body: JSON.stringify({ fromClueId, toClueId }),
+      headers: matchSessionHeaders(matchId),
+    })
+  },
+
+  createInvestigativeCrossing(matchId: string, fromClueId: string, toClueId: string) {
+    return request<RemoteMatch>(`/api/matches/${encodePathSegment(matchId)}/crossings`, {
       method: 'POST',
       body: JSON.stringify({ fromClueId, toClueId }),
       headers: matchSessionHeaders(matchId),

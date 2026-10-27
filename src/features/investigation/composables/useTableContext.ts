@@ -62,32 +62,18 @@ export function useTableContext(session: ReturnType<typeof useInvestigationStore
       match.unlockedLocations.some(
         (unlockedLocation) => unlockedLocation !== match.currentLocationId,
       )
-    const canPayForJournalConnection =
-      confirmedClues.value.length >= 2 &&
-      match.actionPoints.general +
-        (match.actionPoints.specialtyPoint === 'research' ? match.actionPoints.specialty : 0) >=
-        1
-
     return (
       hasAvailableInvestigationAction ||
       hasAvailableConversation ||
       canPayForMovement ||
-      canPayForJournalConnection
+      match.canAffordInvestigativeCrossing
     )
   })
-  const confirmedClues = computed(() =>
-    session.journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
+  const investigativeCrossingCost = computed(
+    () => session.remoteMatch?.investigativeCrossingCost ?? 1,
   )
-  const hasFreeJournalConnection = computed(() =>
-    Boolean(
-      session.remoteMatch?.hasFreeConnectionThisRound &&
-      !session.remoteMatch.hasUsedFreeConnectionThisRound,
-    ),
-  )
-  const hasPreparedConnectionCard = computed(() =>
-    ['route-map', 'comparative-magnifier', 'cross-reference'].includes(
-      session.preparedCard?.id ?? '',
-    ),
+  const canAffordInvestigativeCrossing = computed(
+    () => session.remoteMatch?.canAffordInvestigativeCrossing ?? false,
   )
 
   return {
@@ -98,8 +84,7 @@ export function useTableContext(session: ReturnType<typeof useInvestigationStore
     availableActions,
     actionCosts,
     hasUsableActionPoints,
-    confirmedClues,
-    hasFreeJournalConnection,
-    hasPreparedConnectionCard,
+    investigativeCrossingCost,
+    canAffordInvestigativeCrossing,
   }
 }

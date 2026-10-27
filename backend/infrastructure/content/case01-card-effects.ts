@@ -81,7 +81,6 @@ export function resolveCase01CardEffect(
           ),
           resolvedKeys: ['gallery-service-door'],
           unlockedLocationIds: ['service-corridor'],
-          ...connectionForMap(match, resolution.entry),
         }
       }
       return addObservation(
@@ -161,7 +160,6 @@ export function resolveCase01CardEffect(
         cardId === 'comparative-magnifier'
           ? 'A comparação destaca uma característica material em comum entre as duas pistas.'
           : 'O cruzamento relaciona uma evidência confirmada a outra ainda em verificação.'
-      const connectionId = `journal-connection:${[pair[0].id, pair[1].id].sort().join(':')}`
       return {
         ...addObservation(
           resolution,
@@ -169,8 +167,8 @@ export function resolveCase01CardEffect(
           locationId,
           cardId === 'comparative-magnifier' ? 'Pistas comparadas' : 'Registros cruzados',
           note,
+          [pair[0].id, pair[1].id],
         ),
-        journalConnection: { id: connectionId, fromClueId: pair[0].id, toClueId: pair[1].id },
       }
     }
 
@@ -411,6 +409,7 @@ function addObservation(
   locationId: LocationId,
   title: string,
   content: string,
+  relatedEntryIds?: readonly string[],
 ): CaseActionResolution {
   const entry: NewJournalEntry = {
     type: 'observation',
@@ -419,6 +418,7 @@ function addObservation(
     locationId,
     round: match.round,
     status: 'note',
+    ...(relatedEntryIds ? { relatedEntryIds } : {}),
   }
   return { ...resolution, additionalEntries: [...(resolution.additionalEntries ?? []), entry] }
 }
@@ -560,21 +560,6 @@ function locationName(locationId: LocationId): string {
   return names[locationId]
 }
 
-function connectionForMap(
-  match: SoloMatch,
-  currentEntry: JournalEntry,
-): Pick<CaseActionResolution, 'journalConnection'> {
-  const pair = findCluePair(match, currentEntry, currentEntry.locationId)
-  if (!pair) return {}
-  return {
-    journalConnection: {
-      id: `journal-connection:${[pair[0].id, pair[1].id].sort().join(':')}`,
-      fromClueId: pair[0].id,
-      toClueId: pair[1].id,
-    },
-  }
-}
-
 function findCluePair(
   match: SoloMatch,
   currentEntry: JournalEntry,
@@ -607,10 +592,16 @@ function findCluePair(
 }
 
 function hasConnection(match: SoloMatch, firstId: string, secondId: string): boolean {
-  return match.journalConnections.some(
-    (connection) =>
-      (connection.fromClueId === firstId && connection.toClueId === secondId) ||
-      (connection.fromClueId === secondId && connection.toClueId === firstId),
+  return (
+    (match.investigativeRelations ?? []).some(
+      (relation) =>
+        (relation.fromClueId === firstId && relation.toClueId === secondId) ||
+        (relation.fromClueId === secondId && relation.toClueId === firstId),
+    ) ||
+    match.journalEntries.some(
+      (entry) =>
+        entry.relatedEntryIds?.includes(firstId) && entry.relatedEntryIds.includes(secondId),
+    )
   )
 }
 

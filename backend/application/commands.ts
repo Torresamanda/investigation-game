@@ -23,7 +23,13 @@ export interface ResolveConversationCommand {
   readonly questionId: string
 }
 
-export interface CreateJournalConnectionCommand {
+export interface CreateMuralLinkCommand {
+  readonly matchId: string
+  readonly fromClueId: string
+  readonly toClueId: string
+}
+
+export interface CreateInvestigativeCrossingCommand {
   readonly matchId: string
   readonly fromClueId: string
   readonly toClueId: string

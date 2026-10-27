@@ -9,9 +9,9 @@ const props = defineProps<{
   hypotheses: readonly { id: number; text: string }[]
   hypothesisProgress?: readonly MatchHypothesisProgress[]
   journalEntries: readonly MatchJournalEntry[]
-  journalConnections: readonly { id: string; fromClueId: string; toClueId: string; round: number }[]
-  hasFreeConnection: boolean
-  hasPreparedConnectionCard: boolean
+  muralLinks: readonly { id: string; fromClueId: string; toClueId: string; round: number }[]
+  investigativeCrossingCost: number
+  canAffordInvestigativeCrossing: boolean
   isRequestPending?: boolean
 }>()
 const emit = defineEmits<{
@@ -19,20 +19,21 @@ const emit = defineEmits<{
   leave: []
   pin: []
   save: []
-  createConnection: [fromClueId: string, toClueId: string]
+  createMuralLink: [fromClueId: string, toClueId: string]
+  createInvestigativeCrossing: [fromClueId: string, toClueId: string]
 }>()
 
 const fromClueId = ref('')
 const toClueId = ref('')
 const availableClues = computed(() =>
-  props.journalEntries.filter((entry) => entry.type === 'clue' && entry.status !== 'refuted'),
+  props.journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
 )
 
-const formalConnections = computed(() =>
-  props.journalConnections.map((connection) => ({
-    ...connection,
-    fromTitle: props.journalEntries.find((entry) => entry.id === connection.fromClueId)?.title,
-    toTitle: props.journalEntries.find((entry) => entry.id === connection.toClueId)?.title,
+const muralLinksWithTitles = computed(() =>
+  props.muralLinks.map((muralLink) => ({
+    ...muralLink,
+    fromTitle: props.journalEntries.find((entry) => entry.id === muralLink.fromClueId)?.title,
+    toTitle: props.journalEntries.find((entry) => entry.id === muralLink.toClueId)?.title,
   })),
 )
 
@@ -64,9 +65,14 @@ function save() {
   emit('save')
 }
 
-function createConnection() {
+function createMuralLink() {
   if (!fromClueId.value || !toClueId.value || fromClueId.value === toClueId.value) return
-  emit('createConnection', fromClueId.value, toClueId.value)
+  emit('createMuralLink', fromClueId.value, toClueId.value)
+}
+
+function createInvestigativeCrossing() {
+  if (!fromClueId.value || !toClueId.value || fromClueId.value === toClueId.value) return
+  emit('createInvestigativeCrossing', fromClueId.value, toClueId.value)
 }
 </script>
 
@@ -91,7 +97,7 @@ function createConnection() {
         </header>
         <p>
           {{ hypothesis.coveredAxes.length }} aspecto(s) investigativo(s) confirmado(s) ·
-          {{ hypothesis.coherentConnectionCount }} conexão(ões) coerente(s)
+          {{ hypothesis.coherentRelationCount }} relação(ões) coerente(s)
         </p>
         <ul v-if="hypothesisEvidenceTitles(hypothesis).length" class="hypothesis-evidence-list">
           <li v-for="title in hypothesisEvidenceTitles(hypothesis)" :key="title">{{ title }}</li>
@@ -125,15 +131,15 @@ function createConnection() {
           Registrada com Gravador de Bolso
         </small>
       </article>
-      <article v-for="connection in formalConnections" :key="connection.id" class="journal-entry">
+      <article v-for="muralLink in muralLinksWithTitles" :key="muralLink.id" class="journal-entry">
         <header class="journal-entry-heading">
-          <strong>{{ connection.fromTitle }} se relaciona a {{ connection.toTitle }}</strong>
-          <span class="journal-status">Formal</span>
+          <strong>{{ muralLink.fromTitle }} se relaciona a {{ muralLink.toTitle }}</strong>
+          <span class="journal-status">No mural</span>
         </header>
-        <small class="journal-entry-meta">Rodada {{ connection.round }}</small>
+        <small class="journal-entry-meta">Rodada {{ muralLink.round }}</small>
       </article>
       <p
-        v-if="!journalEntries.length && !formalConnections.length && !hypothesisProgress?.length"
+        v-if="!journalEntries.length && !muralLinksWithTitles.length && !hypothesisProgress?.length"
         class="journal-empty-state"
       >
         Nenhum registro no diário ainda.
@@ -147,16 +153,9 @@ function createConnection() {
           <li v-for="hypothesis in hypotheses" :key="hypothesis.id">{{ hypothesis.text }}</li>
         </ol>
       </section>
-      <form class="journal-connection-form" @submit.prevent="createConnection">
-        <h4>Criar conexão formal</h4>
-        <p class="muted">
-          Relacionar pistas custa 1 PA.
-          {{
-            hasFreeConnection || hasPreparedConnectionCard
-              ? 'Você tem uma conexão gratuita disponível.'
-              : ''
-          }}
-        </p>
+      <form class="mural-link-form" @submit.prevent="createMuralLink">
+        <h4>Desenhar ligação no mural</h4>
+        <p class="muted">Organize duas pistas confirmadas e coerentes sem gastar PA.</p>
         <label class="field-label" for="connection-from">Primeira pista</label>
         <select id="connection-from" v-model="fromClueId" required>
           <option value="" disabled>Escolha uma pista</option>
@@ -187,13 +186,31 @@ function createConnection() {
             isRequestPending
           "
         >
-          {{
-            hasFreeConnection || hasPreparedConnectionCard
-              ? 'Criar conexão grátis'
-              : 'Criar conexão · 1 PA'
-          }}
+          Desenhar ligação · Grátis
         </button>
       </form>
+      <section class="investigative-crossing-form">
+        <h4>Cruzamento investigativo</h4>
+        <p class="muted">
+          Valide a relação entre as pistas e registre o resultado no diário. Custo:
+          {{ investigativeCrossingCost }} PA de pesquisa.
+        </p>
+        <button
+          type="button"
+          class="save-note"
+          :disabled="
+            availableClues.length < 2 ||
+            !fromClueId ||
+            !toClueId ||
+            fromClueId === toClueId ||
+            !canAffordInvestigativeCrossing ||
+            isRequestPending
+          "
+          @click="createInvestigativeCrossing"
+        >
+          Cruzar evidências · {{ investigativeCrossingCost }} PA
+        </button>
+      </section>
     </details>
     <form class="journal-notes" @submit.prevent="save">
       <label class="field-label" for="notes">Anotação livre</label

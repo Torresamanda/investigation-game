@@ -106,7 +106,7 @@ describe('efeitos das cartas iniciais do Caso 01', () => {
     }
   })
 
-  it('cria uma conexão formal ao comparar pistas com a Lupa Comparativa', () => {
+  it('registra o resultado da comparação sem criar uma ligação visual no mural', () => {
     const { service, match } = prepareCard('rafael', 'comparative-magnifier', {
       locationId: 'laboratory',
       journalEntries: [
@@ -121,11 +121,14 @@ describe('efeitos das cartas iniciais do Caso 01', () => {
       locationId: 'laboratory',
     })
 
-    expect(updated.journalConnections).toHaveLength(1)
-    expect(updated.journalEntries.at(-1)).toMatchObject({ title: 'Pistas comparadas' })
+    expect(updated.muralLinks).toHaveLength(0)
+    expect(updated.journalEntries.at(-1)).toMatchObject({
+      title: 'Pistas comparadas',
+      relatedEntryIds: ['confirmed-physical', 'pending-physical'],
+    })
   })
 
-  it('registra no Diário o vínculo gerado pelo Mapa de Rotas', () => {
+  it('registra o efeito do Mapa de Rotas sem desenhar uma ligação visual', () => {
     const { service, match } = prepareCard('livia', 'route-map', {
       locationId: 'gallery',
       journalEntries: [
@@ -140,11 +143,9 @@ describe('efeitos das cartas iniciais do Caso 01', () => {
       locationId: 'gallery',
     })
 
-    expect(updated.journalConnections).toContainEqual(
-      expect.objectContaining({
-        fromClueId: 'route-confirmed',
-        toClueId: 'route-pending',
-      }),
+    expect(updated.muralLinks).toHaveLength(0)
+    expect(updated.journalEntries.some((entry) => entry.title === 'Trajeto indicado no mapa')).toBe(
+      true,
     )
   })
 

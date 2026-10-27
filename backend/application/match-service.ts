@@ -12,7 +12,8 @@ import {
   type CreateMatchCommand,
   type ResolveActionCommand,
   type ResolveConversationCommand,
-  type CreateJournalConnectionCommand,
+  type CreateMuralLinkCommand,
+  type CreateInvestigativeCrossingCommand,
   type PrepareOperationCommand,
   type ResolveOperationCommand,
 } from './commands.js'
@@ -24,7 +25,8 @@ import { PrepareCardUseCase } from './use-cases/prepare-card-use-case.js'
 import { ResolveActionUseCase } from './use-cases/resolve-action-use-case.js'
 import { ResolveConversationUseCase } from './use-cases/resolve-conversation-use-case.js'
 import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.js'
-import { CreateJournalConnectionUseCase } from './use-cases/create-journal-connection-use-case.js'
+import { CreateMuralLinkUseCase } from './use-cases/create-mural-link-use-case.js'
+import { CreateInvestigativeCrossingUseCase } from './use-cases/create-investigative-crossing-use-case.js'
 import { RequestSupportCardUseCase } from './use-cases/request-support-card-use-case.js'
 import { PrepareOperationUseCase } from './use-cases/prepare-operation-use-case.js'
 import { ResolveOperationUseCase } from './use-cases/resolve-operation-use-case.js'
@@ -35,7 +37,13 @@ import { DomainError } from '../domain/errors.js'
 import type { RandomGenerator } from './ports/random-generator.js'
 import { WebCryptoRandomGenerator } from '../infrastructure/crypto/web-crypto-random-generator.js'
 
-export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
+export type {
+  CreateInvestigativeCrossingCommand,
+  CreateMatchCommand,
+  CreateMuralLinkCommand,
+  ResolveActionCommand,
+  ResolveConversationCommand,
+}
 
 export interface ConversationOptions {
   readonly personId: PersonId
@@ -57,7 +65,8 @@ export class MatchService {
   private readonly resolveActionUseCase: ResolveActionUseCase
   private readonly resolveConversationUseCase: ResolveConversationUseCase
   private readonly moveInvestigatorUseCase: MoveInvestigatorUseCase
-  private readonly createJournalConnectionUseCase: CreateJournalConnectionUseCase
+  private readonly createMuralLinkUseCase: CreateMuralLinkUseCase
+  private readonly createInvestigativeCrossingUseCase: CreateInvestigativeCrossingUseCase
   private readonly requestSupportCardUseCase: RequestSupportCardUseCase
   private readonly prepareOperationUseCase: PrepareOperationUseCase
   private readonly resolveOperationUseCase: ResolveOperationUseCase
@@ -86,7 +95,11 @@ export class MatchService {
       caseContentRepository,
     )
     this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
-    this.createJournalConnectionUseCase = new CreateJournalConnectionUseCase(repository, createId)
+    this.createMuralLinkUseCase = new CreateMuralLinkUseCase(repository, createId)
+    this.createInvestigativeCrossingUseCase = new CreateInvestigativeCrossingUseCase(
+      repository,
+      createId,
+    )
     this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository, randomGenerator)
     this.prepareOperationUseCase = new PrepareOperationUseCase(repository, operationOptions)
     this.resolveOperationUseCase = new ResolveOperationUseCase(repository, caseContentRepository)
@@ -190,8 +203,12 @@ export class MatchService {
     return this.moveInvestigatorUseCase.execute(matchId, locationId)
   }
 
-  createJournalConnection(command: CreateJournalConnectionCommand): SoloMatch {
-    return this.createJournalConnectionUseCase.execute(command)
+  createMuralLink(command: CreateMuralLinkCommand): SoloMatch {
+    return this.createMuralLinkUseCase.execute(command)
+  }
+
+  createInvestigativeCrossing(command: CreateInvestigativeCrossingCommand): SoloMatch {
+    return this.createInvestigativeCrossingUseCase.execute(command)
   }
 
   getAvailableOperations(matchId: string): readonly OperationOption[] {

@@ -106,10 +106,11 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
-  it('mantém conexões formais acessíveis no diário unificado', async () => {
+  it('mantém ações de mural e cruzamento acessíveis no diário unificado', async () => {
     const view = createView()
     await view.get('.journal-mode-tab').trigger('click')
-    expect(view.get('.journal-connection-form').text()).toContain('Criar conexão formal')
+    expect(view.get('.mural-link-form').text()).toContain('Desenhar ligação no mural')
+    expect(view.get('.investigative-crossing-form').text()).toContain('Cruzamento investigativo')
     view.unmount()
   })
 

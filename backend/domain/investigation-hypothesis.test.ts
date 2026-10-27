@@ -13,7 +13,7 @@ const evidence = [
 ]
 
 describe('createInvestigationHypothesis', () => {
-  it('marks a hypothesis as sustained only with all axes and two coherent connections', () => {
+  it('marks a hypothesis as sustained only with all axes and two validated relations', () => {
     const hypothesis = createInvestigationHypothesis('route', evidence, [
       { id: 'connection-1', fromEntryId: 'means', toEntryId: 'opportunity' },
       { id: 'connection-2', fromEntryId: 'opportunity', toEntryId: 'link' },
@@ -44,7 +44,7 @@ describe('createInvestigationHypothesis', () => {
     expect(hypothesis.status).toBe('contested')
   })
 
-  it('derives public progress from confirmed evidence and coherent connections only', () => {
+  it('derives progress from confirmed evidence and validated coherent relations only', () => {
     const hypotheses = synchronizeInvestigationHypotheses(
       [
         { id: 'means', evidenceAxes: ['means'], hypothesisThreadIds: ['route'] },
@@ -56,8 +56,18 @@ describe('createInvestigationHypothesis', () => {
         { id: 'link', evidenceAxes: ['link'], hypothesisThreadIds: ['route'] },
       ],
       [
-        { id: 'connection-1', hypothesisThreadId: 'route' },
-        { id: 'connection-2', hypothesisThreadId: 'route' },
+        {
+          id: 'relation-1',
+          fromClueId: 'means',
+          toClueId: 'opportunity',
+          hypothesisThreadId: 'route',
+        },
+        {
+          id: 'relation-2',
+          fromClueId: 'opportunity',
+          toClueId: 'link',
+          hypothesisThreadId: 'route',
+        },
       ],
       [],
     )
@@ -85,7 +95,7 @@ describe('createInvestigationHypothesis', () => {
         status: 'sustained',
         evidenceEntryIds: ['means', 'opportunity', 'link'],
         coveredAxes: ['means', 'opportunity', 'link'],
-        coherentConnectionCount: 2,
+        coherentRelationCount: 2,
       },
     ])
     expect(JSON.stringify(publicMatch)).not.toContain('private-route')

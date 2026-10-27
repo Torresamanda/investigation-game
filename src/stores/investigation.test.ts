@@ -114,7 +114,8 @@ describe('seleção da prévia solo', () => {
       hasUsedPressLeakConversationThisRound: false,
       hasFreeConnectionThisRound: false,
       hasUsedFreeConnectionThisRound: false,
-      canCreateInvestigatorConnection: false,
+      investigativeCrossingCost: 1,
+      canAffordInvestigativeCrossing: false,
       currentLocationId: 'gallery',
       unlockedLocations: ['gallery', 'security', 'laboratory', 'office'],
       hasUsedFreeMoveThisRound: false,
@@ -122,7 +123,7 @@ describe('seleção da prévia solo', () => {
       hasUsedSupportThisRound: false,
       actionPoints: { general: 5, specialty: 0, specialtyPoint: null },
       journalEntries: [],
-      journalConnections: [],
+      muralLinks: [],
       decks: { livia: { hand: [], drawPileCount: 4, discardPileCount: 0 } },
     }
     store.connectionState = 'error'
@@ -157,7 +158,8 @@ describe('seleção da prévia solo', () => {
       hasUsedPressLeakConversationThisRound: false,
       hasFreeConnectionThisRound: false,
       hasUsedFreeConnectionThisRound: false,
-      canCreateInvestigatorConnection: false,
+      investigativeCrossingCost: 1,
+      canAffordInvestigativeCrossing: false,
       currentLocationId: 'gallery',
       unlockedLocations: ['gallery', 'security', 'laboratory', 'office'],
       hasUsedFreeMoveThisRound: false,
@@ -165,7 +167,7 @@ describe('seleção da prévia solo', () => {
       hasUsedSupportThisRound: false,
       actionPoints: { general: 4, specialty: 0, specialtyPoint: null },
       journalEntries: [],
-      journalConnections: [],
+      muralLinks: [],
       decks: { isadora: { hand: [], drawPileCount: 4, discardPileCount: 0 } },
     }
     const getMatch = vi.spyOn(gameApi, 'getMatch').mockResolvedValue(restoredMatch)

@@ -36,7 +36,7 @@ O jogador continua tomando decisões e podendo chegar a uma teoria incorreta, ma
 - [x] **D-02 — Definir recuperação após operação incompleta.** Recomendação: registrar uma inconsistência narrativa e manter a missão ativa até o prazo, salvo quando a própria ficção justificar encerramento imediato.
 - [x] **D-03 — Manter seis rodadas no modo padrão.** Recomendação: manter o prazo, mas introduzir margem de recuperação e medir a primeira partida antes de considerar uma sétima rodada.
 - [x] **D-04 — Manter a Rodada 6 como janela de recuperação.** Recomendação: permitir uma última ação útil e a operação no mesmo turno solo, quando os PA permitirem.
-- [x] **D-05 — Tornar conexões formais significativas.** Recomendação: aceitar apenas pistas confirmadas e exigir que as conexões usadas pela operação sejam coerentes com a hipótese escolhida.
+- [x] **D-05 — Separar mural e validação investigativa.** Ligações do mural organizam evidências sem custo; cruzamentos investigativos consomem PA quando geram uma relação validada que pode fortalecer a hipótese.
 - [x] **D-06 — Consolidar regras de mão e apoio.** Definir uma única fonte de verdade para renovação da mão e para a escolha ou compra de carta do apoio antes de alterar balanceamento.
 
 ## Orçamento de PA e margem para iniciantes
@@ -50,7 +50,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 | Lívia | 5 gerais | Exploração física e descoberta inicial. |
 | Rafael | 4 gerais + 1 técnico | Validação de vestígios e confirmação de evidência física. |
 | Isadora | 4 gerais + 1 social | Transforma declarações em avanços concretos de hipótese. |
-| Otávio | 3 gerais + 2 de pesquisa | Cronologia, documentos e conexões formais. |
+| Otávio | 3 gerais + 2 de pesquisa | Cronologia, documentos e cruzamentos investigativos. |
 
 ### Regras de balanceamento
 
@@ -63,7 +63,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 
 ### Salvaguardas recomendadas
 
-- Uma conexão formal gratuita por missão quando a equipe obtiver três pistas confirmadas, ou uma conexão gratuita na Rodada 5; escolher uma única regra e comunicá-la claramente.
+- Um cruzamento investigativo pode ter desconto de habilidade ou carta; a interface informa o custo autoritativo antes da execução.
 - Uma operação incompleta gera uma observação ou contradição útil, não derrota automática.
 - O apoio de plantão continua opcional e não pode ser a única forma de cobrir um eixo da hipótese.
 - Se telemetria ou playtest confirmar que o solo ainda é punitivo, preferir uma ajuda contextual de uso único por missão a aumentar PA gerais para todos os investigadores.
@@ -110,9 +110,9 @@ somente para uma hipótese mecânica `sustained`, sem expor a regra que as suste
 
 Uma operação é uma decisão narrativa associada a uma hipótese mecânica; não é uma
 acusação, não recebe suspeito nem eixos de evidência como entrada. O servidor decide
-se ela existe, pode ser preparada e qual consequência produz. Relações do mural só a
-sustentam quando forem coerentes e evidências já confirmadas; uma contagem de conexões
-pagas nunca libera uma operação por si só.
+se ela existe, pode ser preparada e qual consequência produz. Somente relações
+investigativas validadas pelo servidor fortalecem a hipótese; ligações visuais do mural
+são anotações gratuitas e nunca liberam uma operação.
 
 | Tipo | Hipótese necessária | Finalidade | Resultado possível |
 | --- | --- | --- | --- |
@@ -217,15 +217,28 @@ contagens públicas, nunca a ordem das pilhas ou o baralho do apoio.
   - Não reutilizar arrays de chaves genéricas para controlar estados de dedução.
   - Critério de aceite: o domínio calcula a prontidão de uma hipótese de modo determinístico e testável.
 
-- [x] **GD-06 — Implementar conexões coerentes** `[Back] [Front]`
-  - Restringir conexões formais a evidências válidas e impedir que conexões irrelevantes satisfaçam a condição de operação.
-  - Preservar hipóteses livres como anotações sem custo, separadas das conexões que têm efeito mecânico.
-  - Critério de aceite: não é possível cumprir a prontidão conectando pistas aleatórias, duplicadas ou refutadas.
+- [x] **GD-06 — Implementar relações coerentes** `[Back] [Front]`
+  - Restringir relações investigativas a evidências válidas e impedir que pares irrelevantes satisfaçam a condição de operação.
+  - Preservar hipóteses livres como anotações sem custo, separadas das relações que têm efeito mecânico.
+  - Critério de aceite: não é possível cumprir a prontidão usando relações entre pistas aleatórias, duplicadas ou refutadas.
 
-- [ ] **GD-06A — Separar relação no mural de cruzamento investigativo** `[Back] [Front] [Definição]`
+### Contrato de mural e cruzamento investigativo (GD-06A)
+
+Uma ligação no mural é uma anotação visual gratuita entre duas pistas confirmadas e
+coerentes. Ela não altera PA, cartas, hipótese ou disponibilidade de operação. Um
+cruzamento investigativo é uma ação distinta: valida a relação no servidor, gasta 1 PA
+geral ou de pesquisa quando não houver desconto válido e registra uma observação ligada
+às evidências. Cartas de cruzamento, o benefício social de Isadora e o benefício da
+Rodada 5 podem zerar o custo, cada um com seu próprio consumo.
+
+A hipótese considera apenas relações validadas pelo servidor que ligam evidências
+confirmadas, distintas e coerentes da mesma linha. A prontidão exige cobertura dos eixos
+e relações investigativas suficientes; a quantidade de ligações visuais nunca contribui.
+
+- [x] **GD-06A — Separar relação no mural de cruzamento investigativo** `[Back] [Front] [Definição]`
   - A ligação visual entre evidências confirmadas e coerentes deve ser gratuita: ela registra a linha de raciocínio do jogador no mural e não consome PA.
   - O gasto de PA fica reservado para um cruzamento investigativo que produz efeito concreto, como validar uma relação, confrontar uma declaração, proteger uma prova ou abrir uma nova oportunidade.
-  - A prontidão de hipótese e operação deve avaliar cobertura dos eixos e relações coerentes; não pode depender de uma contagem genérica de conexões formais.
+  - A prontidão de hipótese e operação deve avaliar cobertura dos eixos e relações coerentes; ligações visuais do mural não contribuem para a contagem.
   - Separar os contratos, casos de uso e apresentação das duas intenções para que uma ligação visual nunca seja confundida com uma ação investigativa.
   - Critério de aceite: o jogador pode organizar livremente o mural sem custo; PA só é gasto quando a relação gera consequência mecânica real; não existe conexão de preenchimento para liberar operação.
 

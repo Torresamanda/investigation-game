@@ -3,7 +3,7 @@ import type {
   LocationId,
   PersonId,
 } from '../../../shared/domain/identifiers.js'
-import type { JournalConnection, JournalEntry, SoloMatch } from '../../domain/match.js'
+import type { JournalEntry, SoloMatch } from '../../domain/match.js'
 import type { OperationOption } from '../../domain/investigation-operation.js'
 
 export type NewJournalEntry = Omit<JournalEntry, 'id'>
@@ -32,7 +32,6 @@ export interface CaseActionResolution {
   readonly resolvedKeys?: readonly string[]
   readonly unlockedLocationIds?: readonly LocationId[]
   readonly journalEntryUpdates?: readonly JournalEntry[]
-  readonly journalConnection?: Omit<JournalConnection, 'round'>
   readonly errorMessage?: string
 }
 

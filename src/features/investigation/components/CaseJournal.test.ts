@@ -57,11 +57,9 @@ function mountJournal() {
       notes: '',
       hypotheses: [],
       journalEntries,
-      journalConnections: [
-        { id: 'formal-1', fromClueId: 'clue-13', toClueId: 'clue-16', round: 5 },
-      ],
-      hasFreeConnection: true,
-      hasPreparedConnectionCard: false,
+      muralLinks: [{ id: 'formal-1', fromClueId: 'clue-13', toClueId: 'clue-16', round: 5 }],
+      investigativeCrossingCost: 1,
+      canAffordInvestigativeCrossing: true,
       'onUpdate:notes': () => undefined,
     },
     global: { stubs: { PhUserFocus: true, PhX: true } },
@@ -94,9 +92,9 @@ describe('CaseJournal', () => {
         notes: '',
         hypotheses: [],
         journalEntries: [],
-        journalConnections: [],
-        hasFreeConnection: false,
-        hasPreparedConnectionCard: false,
+        muralLinks: [],
+        investigativeCrossingCost: 1,
+        canAffordInvestigativeCrossing: false,
         'onUpdate:notes': () => undefined,
       },
       global: { stubs: { PhUserFocus: true, PhX: true } },
@@ -114,7 +112,8 @@ describe('CaseJournal', () => {
 
     expect(view.text()).toContain('22h13')
     expect(view.text()).toContain('22h16')
-    expect(view.get('.journal-details').text()).toContain('Criar conexão formal')
+    expect(view.get('.journal-details').text()).toContain('Desenhar ligação no mural')
+    expect(view.get('.journal-details').text()).toContain('Cruzamento investigativo')
   })
 
   it('mostra progresso de hipótese sem indicar a evidência ou o local que falta', async () => {
@@ -126,7 +125,7 @@ describe('CaseJournal', () => {
           status: 'plausible',
           evidenceEntryIds: ['clue-13'],
           coveredAxes: ['means', 'link'],
-          coherentConnectionCount: 1,
+          coherentRelationCount: 1,
         },
       ],
     })

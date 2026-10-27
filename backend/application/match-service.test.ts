@@ -134,7 +134,7 @@ describe('MatchService', () => {
     })
   })
 
-  it('devolve ao baralho do apoio a carta preparada para criar uma conexão no Diário', () => {
+  it('registra uma ligação visual sem gastar PA nem consumir a carta preparada', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository)
     const match = service.createSoloMatch({
@@ -174,6 +174,18 @@ describe('MatchService', () => {
           hypothesisThreadIds: ['route'],
         },
       ],
+      hypotheses: [
+        {
+          id: 'route',
+          status: 'inquiry',
+          evidence: [
+            { entryId: 'connection-first', axis: 'means' },
+            { entryId: 'connection-second', axis: 'opportunity' },
+          ],
+          coherentRelationIds: [],
+          hasOperationalInconsistency: false,
+        },
+      ],
       decks: {
         ...match.decks,
         livia: { ...activeDeck, hand: [...activeDeck.hand, heldSupportCard] },
@@ -188,14 +200,18 @@ describe('MatchService', () => {
     })
     service.prepareCard(match.id, heldSupportCard.instanceId)
 
-    const connected = service.createJournalConnection({
+    const linked = service.createMuralLink({
       matchId: match.id,
       fromClueId: 'connection-first',
       toClueId: 'connection-second',
     })
 
-    expect(connected.decks.livia.hand).not.toContainEqual(heldSupportCard)
-    expect(connected.decks.rafael.discardPile).toContainEqual(heldSupportCard)
+    expect(linked.decks.livia.hand).toContainEqual(heldSupportCard)
+    expect(linked.decks.rafael.discardPile).not.toContainEqual(heldSupportCard)
+    expect(linked.preparedCardInstanceId).toBe(heldSupportCard.instanceId)
+    expect(linked.actionPoints).toEqual(match.actionPoints)
+    expect(linked.investigativeRelations).toHaveLength(0)
+    expect(linked.hypotheses).toMatchObject([{ status: 'inquiry', coherentRelationIds: [] }])
   })
 
   it('aciona o apoio uma vez por rodada e retém cartas extras sem uso', () => {
@@ -241,7 +257,7 @@ describe('MatchService', () => {
     expect(afterDiscard.decks.livia.hand).toContainEqual(receivedCard)
   })
 
-  it('consome a conexão gratuita de Isadora sem cobrar PA adicionais', () => {
+  it('permite desenhar a ligação no mural sem consumir o benefício de Isadora', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository)
     const match = service.createSoloMatch({
@@ -278,17 +294,123 @@ describe('MatchService', () => {
       ],
     })
 
-    const connected = service.createJournalConnection({
+    const connected = service.createMuralLink({
       matchId: match.id,
       fromClueId: 'means',
       toClueId: 'opportunity',
     })
 
     expect(connected.actionPoints.general).toBe(0)
-    expect(connected.hasUsedSocialConnectionThisRound).toBe(true)
+    expect(connected.hasUsedSocialConnectionThisRound).toBe(false)
+    expect(connected.muralLinks).toHaveLength(1)
+    expect(connected.investigativeRelations).toHaveLength(0)
   })
 
-  it('restaura o custo original de uma carta do apoio ao usá-la no Diário', () => {
+  it('cobra o cruzamento investigativo e registra uma relação validada no diário', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'relation-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({
+      ...match,
+      actionPoints: { general: 1, specialty: 0, specialtyPoint: null },
+      journalEntries: [
+        {
+          id: 'means',
+          type: 'clue',
+          title: 'Acesso confirmado',
+          content: 'Registro validado.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
+        },
+        {
+          id: 'opportunity',
+          type: 'clue',
+          title: 'Horário confirmado',
+          content: 'Registro validado.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
+        },
+      ],
+    })
+
+    const crossed = service.createInvestigativeCrossing({
+      matchId: match.id,
+      fromClueId: 'means',
+      toClueId: 'opportunity',
+    })
+
+    expect(crossed.actionPoints.general).toBe(0)
+    expect(crossed.investigativeRelations).toContainEqual(
+      expect.objectContaining({
+        fromClueId: 'means',
+        toClueId: 'opportunity',
+        hypothesisThreadId: 'route',
+      }),
+    )
+    expect(crossed.hypotheses).toMatchObject([{ id: 'route', status: 'plausible' }])
+    expect(crossed.journalEntries.at(-1)).toMatchObject({
+      title: 'Relação investigativa validada',
+      relatedEntryIds: ['means', 'opportunity'],
+    })
+  })
+
+  it('aplica o benefício social ao cruzamento e o marca como usado', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'livia',
+    })
+    repository.save({
+      ...match,
+      actionPoints: { general: 0, specialty: 0, specialtyPoint: 'social' },
+      hasSocialConnectionThisRound: true,
+      journalEntries: [
+        {
+          id: 'means',
+          type: 'clue',
+          title: 'Meios',
+          content: 'Confirmada.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
+        },
+        {
+          id: 'opportunity',
+          type: 'clue',
+          title: 'Oportunidade',
+          content: 'Confirmada.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
+        },
+      ],
+    })
+
+    const crossed = service.createInvestigativeCrossing({
+      matchId: match.id,
+      fromClueId: 'means',
+      toClueId: 'opportunity',
+    })
+
+    expect(crossed.actionPoints.general).toBe(0)
+    expect(crossed.hasUsedSocialConnectionThisRound).toBe(true)
+  })
+
+  it('restaura o custo original da carta do apoio ao cruzar evidências', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository)
     const match = service.createSoloMatch({
@@ -338,7 +460,7 @@ describe('MatchService', () => {
     if (!receivedCard) throw new Error('A carta solicitada precisa estar na mão ativa.')
     service.prepareCard(match.id, receivedCard.instanceId)
 
-    const connected = service.createJournalConnection({
+    const connected = service.createInvestigativeCrossing({
       matchId: match.id,
       fromClueId: 'support-clue-confirmed',
       toClueId: 'support-clue-pending',
@@ -629,7 +751,7 @@ describe('MatchService', () => {
 
     expect(updated.resolvedKeys).not.toContain('security-initial-report')
     expect(updated.journalEntries.at(-1)).toMatchObject({
-      title: 'Conexão de Otávio',
+      title: 'Cruzamento investigativo de Otávio',
       relatedEntryIds: ['confirmed-clue', 'pending-clue'],
     })
   })
@@ -1437,13 +1559,13 @@ describe('MatchService', () => {
     })
     expect(connected.actionPoints).toMatchObject({ general: 0, specialty: 0 })
     expect(connected.journalEntries.at(-1)).toMatchObject({
-      title: 'Conexão de Otávio',
+      title: 'Cruzamento investigativo de Otávio',
       relatedEntryIds: ['clue-confirmed', 'clue-opportunity'],
     })
     expect(connected.resolvedKeys).toContain(
-      'investigator-connection:clue-confirmed:clue-opportunity',
+      'otavio-investigative-relation:clue-confirmed:clue-opportunity',
     )
-    expect(connected.journalConnections).toContainEqual(
+    expect(connected.investigativeRelations).toContainEqual(
       expect.objectContaining({
         fromClueId: 'clue-confirmed',
         toClueId: 'clue-opportunity',

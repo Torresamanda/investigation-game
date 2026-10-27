@@ -49,12 +49,19 @@ export type CaseEvidenceKey =
   | 'e5-confirmed'
   | 'e6-confirmed'
 
-export interface JournalConnection {
+export interface MuralLink {
   readonly id: string
   readonly fromClueId: string
   readonly toClueId: string
   readonly round: number
-  readonly hypothesisThreadId?: string
+}
+
+export interface InvestigativeRelation {
+  readonly id: string
+  readonly fromClueId: string
+  readonly toClueId: string
+  readonly round: number
+  readonly hypothesisThreadId: string
 }
 
 export interface SoloMatch {
@@ -81,7 +88,8 @@ export interface SoloMatch {
   readonly createdAt: string
   readonly actionPoints: ActionPoints
   readonly journalEntries: readonly JournalEntry[]
-  readonly journalConnections: readonly JournalConnection[]
+  readonly muralLinks: readonly MuralLink[]
+  readonly investigativeRelations: readonly InvestigativeRelation[]
   readonly hypotheses?: readonly InvestigationHypothesis[]
   readonly preparedOperation?: PreparedOperation
   readonly hasAttemptedOperationThisRound?: boolean
@@ -127,7 +135,8 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     createdAt: input.createdAt,
     actionPoints: actionPointsFor(input.activeInvestigatorId),
     journalEntries: [],
-    journalConnections: [],
+    muralLinks: [],
+    investigativeRelations: [],
     hypotheses: [],
     preparedOperation: undefined,
     hasAttemptedOperationThisRound: false,

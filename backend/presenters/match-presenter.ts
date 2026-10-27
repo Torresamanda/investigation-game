@@ -1,7 +1,10 @@
 import type { PublicMatchDto } from '../../shared/contracts/match.js'
 import type { MatchCard } from '../domain/match-deck.js'
 import type { SoloMatch } from '../domain/match.js'
-import { findClueConnectionCandidate } from '../domain/clue-connection.js'
+import {
+  canAffordInvestigativeCrossing,
+  investigativeCrossingCost,
+} from '../domain/investigative-crossing.js'
 
 export const MatchPresenter = {
   toPublicDto(match: SoloMatch): PublicMatchDto {
@@ -27,8 +30,8 @@ export const MatchPresenter = {
       hasUsedPressLeakConversationThisRound: match.hasUsedPressLeakConversationThisRound,
       hasFreeConnectionThisRound: match.hasFreeConnectionThisRound,
       hasUsedFreeConnectionThisRound: match.hasUsedFreeConnectionThisRound,
-      canCreateInvestigatorConnection:
-        match.activeInvestigatorId === 'otavio' && Boolean(findClueConnectionCandidate(match)),
+      investigativeCrossingCost: investigativeCrossingCost(match),
+      canAffordInvestigativeCrossing: canAffordInvestigativeCrossing(match),
       currentLocationId: match.currentLocationId,
       unlockedLocations: match.unlockedLocations,
       hasUsedFreeMoveThisRound: match.hasUsedFreeMoveThisRound,
@@ -36,12 +39,17 @@ export const MatchPresenter = {
       hasUsedSupportThisRound: match.hasUsedSupportThisRound,
       actionPoints: match.actionPoints,
       journalEntries: match.journalEntries.map(toPublicJournalEntry),
-      journalConnections: match.journalConnections,
+      muralLinks: match.muralLinks.map(({ id, fromClueId, toClueId, round }) => ({
+        id,
+        fromClueId,
+        toClueId,
+        round,
+      })),
       hypotheses: (match.hypotheses ?? []).map((hypothesis) => ({
         status: hypothesis.status,
         evidenceEntryIds: [...new Set(hypothesis.evidence.map((evidence) => evidence.entryId))],
         coveredAxes: [...new Set(hypothesis.evidence.map((evidence) => evidence.axis))],
-        coherentConnectionCount: hypothesis.connectionIds.length,
+        coherentRelationCount: hypothesis.coherentRelationIds.length,
       })),
       decks: {
         [match.activeInvestigatorId]: {

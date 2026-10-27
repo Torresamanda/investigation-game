@@ -61,9 +61,12 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
       questionMatch[3],
       database,
     )
-  const connectionsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/connections$/)?.[1]
-  if (request.method === 'POST' && connectionsMatch)
-    return createJournalConnection(request, connectionsMatch, database)
+  const muralLinksMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/mural-links$/)?.[1]
+  if (request.method === 'POST' && muralLinksMatch)
+    return createMuralLink(request, muralLinksMatch, database)
+  const crossingsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/crossings$/)?.[1]
+  if (request.method === 'POST' && crossingsMatch)
+    return createInvestigativeCrossing(request, crossingsMatch, database)
   const operationsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/operations$/)?.[1]
   if (request.method === 'GET' && operationsMatch)
     return getAvailableOperations(operationsMatch, database)
@@ -326,7 +329,7 @@ async function resolveConversation(
   )
 }
 
-async function createJournalConnection(
+async function createMuralLink(
   request: Request,
   id: string,
   database: D1DatabaseConnection,
@@ -340,7 +343,25 @@ async function createJournalConnection(
   if (!isNonEmptyString(fromClueId) || !isNonEmptyString(toClueId))
     return jsonResponse({ message: 'Selecione duas pistas válidas.' }, 400)
   return mutateMatch(id, database, (service, matchId) =>
-    service.createJournalConnection({ matchId, fromClueId, toClueId }),
+    service.createMuralLink({ matchId, fromClueId, toClueId }),
+  )
+}
+
+async function createInvestigativeCrossing(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['fromClueId', 'toClueId']))
+    return jsonResponse({ message: 'Selecione duas pistas válidas para o cruzamento.' }, 400)
+  const fromClueId = body?.fromClueId
+  const toClueId = body?.toClueId
+  if (!isNonEmptyString(fromClueId) || !isNonEmptyString(toClueId))
+    return jsonResponse({ message: 'Selecione duas pistas válidas para o cruzamento.' }, 400)
+  return mutateMatch(id, database, (service, matchId) =>
+    service.createInvestigativeCrossing({ matchId, fromClueId, toClueId }),
   )
 }
 
