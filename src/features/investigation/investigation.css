@@ -6,6 +6,7 @@
 @import './styles/actions.css';
 @import './styles/hand.css';
 @import './styles/journal.css';
+@import './styles/mural.css';
 @import './styles/suspects.css';
 .connection-state {
   display: flex;

@@ -119,13 +119,13 @@ describe('CaseJournal', () => {
     expect(view.text()).not.toContain('Nenhum registro no diário ainda.')
   })
 
-  it('mantém cada registro legível sem uma navegação secundária', () => {
+  it('mantém o mural visível sem recolher a organização da investigação', () => {
     const view = mountJournal()
 
     expect(view.text()).toContain('22h13')
     expect(view.text()).toContain('22h16')
-    expect(view.get('.journal-details').text()).toContain('Desenhar ligação no mural')
-    expect(view.get('.journal-details').text()).toContain('Cruzamento investigativo')
+    expect(view.find('.journal-details').exists()).toBe(false)
+    expect(view.get('.investigation-mural').text()).toContain('Mural de investigação')
   })
 
   it('mostra progresso de hipótese sem indicar a evidência ou o local que falta', async () => {

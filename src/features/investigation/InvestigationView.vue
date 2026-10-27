@@ -336,6 +336,7 @@ async function cancelOperation() {
             :mural-links="session.muralLinks"
             :investigative-crossing-cost="investigativeCrossingCost"
             :can-afford-investigative-crossing="canAffordInvestigativeCrossing"
+            :is-request-pending="session.isRequestPending"
             @save="session.saveNote()"
             @create-mural-link="createMuralLink"
             @create-investigative-crossing="createInvestigativeCrossing"

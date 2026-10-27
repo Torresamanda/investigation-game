@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { locations, type LocationId } from '../../../content/case01'
 import type { MatchJournalEntry } from '../../../services/game-api'
-import type { MatchHypothesisProgress } from '../../../../shared/contracts/match'
+import type { MatchHypothesisProgress, MatchMuralLink } from '../../../../shared/contracts/match'
 import { journalStatusLabels } from '../action-feedback'
 import { hypothesisStatusLabel } from '../operation-readiness'
+import InvestigationMural from './InvestigationMural.vue'
 const notes = defineModel<string>('notes', { required: true })
 const props = defineProps<{
   hypotheses: readonly { id: number; text: string }[]
   hypothesisProgress?: readonly MatchHypothesisProgress[]
   journalEntries: readonly MatchJournalEntry[]
-  muralLinks: readonly { id: string; fromClueId: string; toClueId: string; round: number }[]
+  muralLinks: readonly MatchMuralLink[]
   investigativeCrossingCost: number
   canAffordInvestigativeCrossing: boolean
   isRequestPending?: boolean
@@ -23,30 +24,6 @@ const emit = defineEmits<{
   createMuralLink: [fromClueId: string, toClueId: string]
   createInvestigativeCrossing: [fromClueId: string, toClueId: string]
 }>()
-
-const fromClueId = ref('')
-const toClueId = ref('')
-const crossingFromEntryId = ref('')
-const crossingToEntryId = ref('')
-const availableClues = computed(() =>
-  props.journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
-)
-const contestableStatements = computed(() =>
-  props.journalEntries.filter(
-    (entry) => entry.type === 'statement' && entry.status === 'contestable',
-  ),
-)
-const availableCrossingEntries = computed(() => [
-  ...availableClues.value,
-  ...contestableStatements.value,
-])
-const crossingTargets = computed(() => {
-  const source = props.journalEntries.find((entry) => entry.id === crossingFromEntryId.value)
-  if (source?.status === 'contestable') {
-    return availableClues.value.filter((clue) => source.contestableWithEntryIds?.includes(clue.id))
-  }
-  return availableCrossingEntries.value.filter((entry) => entry.id !== crossingFromEntryId.value)
-})
 
 const muralLinksWithTitles = computed(() =>
   props.muralLinks.map((muralLink) => ({
@@ -74,20 +51,12 @@ function save() {
   emit('save')
 }
 
-function createMuralLink() {
-  if (!fromClueId.value || !toClueId.value || fromClueId.value === toClueId.value) return
-  emit('createMuralLink', fromClueId.value, toClueId.value)
+function createMuralLink(fromClueId: string, toClueId: string) {
+  emit('createMuralLink', fromClueId, toClueId)
 }
 
-function createInvestigativeCrossing() {
-  if (
-    !crossingFromEntryId.value ||
-    !crossingToEntryId.value ||
-    crossingFromEntryId.value === crossingToEntryId.value
-  ) {
-    return
-  }
-  emit('createInvestigativeCrossing', crossingFromEntryId.value, crossingToEntryId.value)
+function createInvestigativeCrossing(fromEntryId: string, toEntryId: string) {
+  emit('createInvestigativeCrossing', fromEntryId, toEntryId)
 }
 </script>
 
@@ -103,6 +72,15 @@ function createInvestigativeCrossing() {
     <header class="journal-heading">
       <h2>Diário do caso</h2>
     </header>
+    <InvestigationMural
+      :journal-entries="journalEntries"
+      :mural-links="muralLinks"
+      :investigative-crossing-cost="investigativeCrossingCost"
+      :can-afford-investigative-crossing="canAffordInvestigativeCrossing"
+      :is-request-pending="isRequestPending ?? false"
+      @create-mural-link="createMuralLink"
+      @create-investigative-crossing="createInvestigativeCrossing"
+    />
     <section class="journal-guide" aria-labelledby="journal-guide-title">
       <h3 id="journal-guide-title">Como avançar</h3>
       <dl>
@@ -154,6 +132,12 @@ function createInvestigativeCrossing() {
         </ul>
       </article>
     </section>
+    <section v-if="hypotheses.length" class="journal-hypotheses">
+      <h3>Hipóteses da equipe</h3>
+      <ol class="hypothesis-list">
+        <li v-for="hypothesis in hypotheses" :key="hypothesis.id">{{ hypothesis.text }}</li>
+      </ol>
+    </section>
     <div class="journal-record-list" aria-live="polite">
       <article
         v-for="entry in journalEntries"
@@ -195,88 +179,6 @@ function createInvestigativeCrossing() {
         Nenhum registro no diário ainda.
       </p>
     </div>
-    <details class="journal-details">
-      <summary>Organizar investigação</summary>
-      <section v-if="hypotheses.length" class="journal-hypotheses">
-        <h3>Hipóteses da equipe</h3>
-        <ol class="hypothesis-list">
-          <li v-for="hypothesis in hypotheses" :key="hypothesis.id">{{ hypothesis.text }}</li>
-        </ol>
-      </section>
-      <form class="mural-link-form" @submit.prevent="createMuralLink">
-        <h4>Desenhar ligação no mural</h4>
-        <p class="muted">Organize duas pistas confirmadas e coerentes sem gastar PA.</p>
-        <label class="field-label" for="connection-from">Primeira pista</label>
-        <select id="connection-from" v-model="fromClueId" required>
-          <option value="" disabled>Escolha uma pista</option>
-          <option v-for="clue in availableClues" :key="clue.id" :value="clue.id">
-            {{ clue.title }}
-          </option>
-        </select>
-        <label class="field-label" for="connection-to">Segunda pista</label>
-        <select id="connection-to" v-model="toClueId" required>
-          <option value="" disabled>Escolha outra pista</option>
-          <option
-            v-for="clue in availableClues"
-            :key="clue.id"
-            :value="clue.id"
-            :disabled="clue.id === fromClueId"
-          >
-            {{ clue.title }}
-          </option>
-        </select>
-        <button
-          type="submit"
-          class="save-note"
-          :disabled="
-            availableClues.length < 2 ||
-            !fromClueId ||
-            !toClueId ||
-            fromClueId === toClueId ||
-            isRequestPending
-          "
-        >
-          Desenhar ligação · Grátis
-        </button>
-      </form>
-      <section class="investigative-crossing-form">
-        <h4>Cruzamento investigativo</h4>
-        <p class="muted">
-          Valide uma relação entre pistas ou confronte uma declaração contestável com uma evidência.
-          Custo:
-          {{ investigativeCrossingCost }} PA de pesquisa.
-        </p>
-        <label class="field-label" for="crossing-from">Registro para cruzar</label>
-        <select id="crossing-from" v-model="crossingFromEntryId">
-          <option value="" disabled>Escolha uma pista ou declaração</option>
-          <option v-for="entry in availableCrossingEntries" :key="entry.id" :value="entry.id">
-            {{ entry.title }}{{ entry.status === 'contestable' ? ' · Contestável' : '' }}
-          </option>
-        </select>
-        <label class="field-label" for="crossing-to">Evidência relacionada</label>
-        <select id="crossing-to" v-model="crossingToEntryId">
-          <option value="" disabled>Escolha uma evidência</option>
-          <option v-for="entry in crossingTargets" :key="entry.id" :value="entry.id">
-            {{ entry.title }}
-          </option>
-        </select>
-        <button
-          type="button"
-          class="save-note"
-          :disabled="
-            availableCrossingEntries.length < 2 ||
-            !crossingFromEntryId ||
-            !crossingToEntryId ||
-            crossingFromEntryId === crossingToEntryId ||
-            !canAffordInvestigativeCrossing ||
-            isRequestPending
-          "
-          @click="createInvestigativeCrossing"
-        >
-          Cruzar evidências · {{ investigativeCrossingCost }} PA
-        </button>
-      </section>
-    </details>
     <form class="journal-notes" @submit.prevent="save">
       <label class="field-label" for="notes">Anotação livre</label
       ><textarea

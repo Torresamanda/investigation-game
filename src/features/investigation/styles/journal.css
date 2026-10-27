@@ -183,28 +183,6 @@
   margin-top: 16px;
 }
 
-.mural-link-form {
-  display: grid;
-  gap: 8px;
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-.mural-link-form h4,
-.mural-link-form p {
-  margin: 0;
-}
-
-.mural-link-form select {
-  width: 100%;
-  padding: 9px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #0c1b2a;
-  color: var(--paper);
-}
-
 .journal-group h4 {
   margin: 0;
   color: var(--gold);
@@ -362,25 +340,9 @@
   font-size: 12px;
 }
 
-.journal-details {
-  border-top: 1px solid var(--line);
-  padding-top: var(--space-2);
-}
-
-.journal-details summary {
-  color: var(--gold);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .journal-hypotheses h3 {
   margin: var(--space-2) 0 0;
   font-size: 16px;
-}
-
-.mural-link-form .field-label {
-  margin: 0;
 }
 
 @media (min-width: 1181px) and (max-height: 950px) {

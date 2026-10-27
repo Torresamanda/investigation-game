@@ -262,7 +262,7 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
 
 ### P2 — Interface, comunicação e experiência
 
-- [ ] **GD-09A — Implementar o Mural em foco** `[Front]`
+- [x] **GD-09A — Implementar o Mural em foco** `[Front]`
   - Substituir o bloco recolhido `Organizar investigação` por um mural persistente, baseado em [wireframes/mural-investigacao.html](../wireframes/mural-investigacao.html).
   - Exibir pistas confirmadas como cartões, ligações visuais no espaço do mural e o detalhe da ligação selecionada sem alterar regras ou estado no cliente.
   - A criação de ligação permanece gratuita; o cruzamento só pode ser iniciado a partir da ligação selecionada e apresenta o custo autoritativo antes da confirmação.
