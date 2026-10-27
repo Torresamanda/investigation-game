@@ -39,6 +39,7 @@ import type { RandomGenerator } from './ports/random-generator.js'
 import { WebCryptoRandomGenerator } from '../infrastructure/crypto/web-crypto-random-generator.js'
 import type { InvestigationOpportunity } from '../../shared/contracts/investigation-opportunity.js'
 import { GetActionOpportunitiesUseCase } from './use-cases/get-action-opportunities-use-case.js'
+import { GetAvailableOperationsUseCase } from './use-cases/get-available-operations-use-case.js'
 
 export type {
   CreateInvestigativeCrossingCommand,
@@ -76,6 +77,7 @@ export class MatchService {
   private readonly resolveOperationUseCase: ResolveOperationUseCase
   private readonly cancelOperationUseCase: CancelOperationUseCase
   private readonly getActionOpportunitiesUseCase: GetActionOpportunitiesUseCase
+  private readonly getAvailableOperationsUseCase: GetAvailableOperationsUseCase
 
   constructor(
     repository: MatchRepository,
@@ -126,6 +128,10 @@ export class MatchService {
     )
     this.cancelOperationUseCase = new CancelOperationUseCase(notificationRepository)
     this.getActionOpportunitiesUseCase = new GetActionOpportunitiesUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
+    this.getAvailableOperationsUseCase = new GetAvailableOperationsUseCase(
       notificationRepository,
       caseContentRepository,
     )
@@ -261,9 +267,7 @@ export class MatchService {
   }
 
   getAvailableOperations(matchId: string): readonly OperationOption[] {
-    const match = this.getMatch(matchId)
-    if (!match) throw new Error('Partida não encontrada.')
-    return this.caseContentRepository.getAvailableOperations(match)
+    return this.getAvailableOperationsUseCase.execute(matchId)
   }
 
   prepareOperation(matchId: string, operationId: string): SoloMatch {
