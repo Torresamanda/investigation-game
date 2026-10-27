@@ -123,9 +123,7 @@ export class ResolveActionUseCase {
           ...(passiveEvidenceKey ? { caseEvidenceKey: passiveEvidenceKey } : {}),
           content: `${resolvedEntryBase.content} Rafael confirmou o vestígio na análise pericial.`,
         }
-      : resolution.entry.caseEvidenceKey || !passiveEvidenceKey
-        ? resolvedEntryBase
-        : { ...resolvedEntryBase, caseEvidenceKey: passiveEvidenceKey }
+      : resolvedEntryBase
     const finalResolvedEntry =
       resolvedEntry.type === 'clue' && resolvedEntry.status === 'confirmed'
         ? {

@@ -303,7 +303,7 @@ e relações investigativas suficientes; a quantidade de ligações visuais nunc
   - Manter conteúdo secreto no backend e entregar ao cliente apenas opções e resultados já desbloqueados.
   - Critério de aceite: um novo caso pode ser criado ou corrigido sem mudar o motor, sem expor solução ou condições futuras.
 
-- [ ] **GD-14 — Criar simulador de roteiro e orçamento** `[Test] [Back]`
+- [x] **GD-14 — Criar simulador de roteiro e orçamento** `[Test] [Back]`
   - Testar rotas mínimas, rotas com curiosidade, pistas falsas, ausência de carta útil e cada investigador ativo.
   - Tornar o cenário de primeira partida uma regressão automatizada.
   - Critério de aceite: a suíte demonstra vitória até a Rodada 6 com três ações não decisivas e sem depender de aleatoriedade.
