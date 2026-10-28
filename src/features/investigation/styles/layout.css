@@ -104,10 +104,6 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.center-zone .accusation-control {
-  display: none;
-}
-
 .case-toolbar .case-title {
   flex-direction: column;
   align-items: flex-start;

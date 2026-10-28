@@ -7,11 +7,16 @@ import {
   type InvestigationAction,
 } from '../../shared/domain/identifiers.js'
 import type { ActionPointPool } from '../../shared/domain/action-points.js'
+import type { EvidenceAxis, InvestigationHypothesis } from './investigation-hypothesis.js'
+import type { PreparedOperation } from './investigation-operation.js'
+import type { MatchNotificationEvent, MatchNotificationKind } from '../../shared/contracts/match.js'
 
 export { investigatorIds, locationIds, investigationActions }
 export type { InvestigatorId, LocationId, InvestigationAction }
 
 export type ActionPoints = ActionPointPool
+
+export type { MatchNotificationEvent, MatchNotificationKind }
 
 export interface JournalEntry {
   readonly id: string
@@ -29,12 +34,23 @@ export interface JournalEntry {
     | 'recorded'
     | 'contestable'
     | 'blocked'
+  readonly notificationSignal?: 'action-failure'
+  readonly actionAttempt?: 'examine' | 'analyse' | 'research'
   readonly recordedWith?: 'pocket-recorder'
   readonly isadoraMarkedContestable?: boolean
+  readonly contestableCrossing?: ContestableStatementCrossing
   readonly relatedEntryIds?: readonly string[]
   readonly protectedUntilRound?: number
   readonly markedForFollowUp?: boolean
   readonly caseEvidenceKey?: CaseEvidenceKey
+  readonly evidenceAxes?: readonly EvidenceAxis[]
+  readonly hypothesisThreadIds?: readonly string[]
+}
+
+export interface ContestableStatementCrossing {
+  readonly evidenceKeys: readonly CaseEvidenceKey[]
+  readonly result: 'refuted' | 'inconclusive'
+  readonly observation: string
 }
 
 export type CaseEvidenceKey =
@@ -45,11 +61,19 @@ export type CaseEvidenceKey =
   | 'e5-confirmed'
   | 'e6-confirmed'
 
-export interface JournalConnection {
+export interface MuralLink {
   readonly id: string
   readonly fromClueId: string
   readonly toClueId: string
   readonly round: number
+}
+
+export interface InvestigativeRelation {
+  readonly id: string
+  readonly fromClueId: string
+  readonly toClueId: string
+  readonly round: number
+  readonly hypothesisThreadId: string
 }
 
 export interface SoloMatch {
@@ -62,8 +86,9 @@ export interface SoloMatch {
   readonly examinedLocationsThisRound: readonly LocationId[]
   readonly hasUsedPassiveThisRound: boolean
   readonly hasReceivedSocialBonusThisRound: boolean
+  readonly hasSocialConnectionThisRound?: boolean
+  readonly hasUsedSocialConnectionThisRound?: boolean
   readonly hasUsedPressLeakConversationThisRound: boolean
-  readonly canAccuse: boolean
   readonly hasFreeConnectionThisRound: boolean
   readonly hasUsedFreeConnectionThisRound: boolean
   readonly currentLocationId: LocationId
@@ -75,10 +100,23 @@ export interface SoloMatch {
   readonly createdAt: string
   readonly actionPoints: ActionPoints
   readonly journalEntries: readonly JournalEntry[]
-  readonly journalConnections: readonly JournalConnection[]
+  readonly muralLinks: readonly MuralLink[]
+  readonly investigativeRelations: readonly InvestigativeRelation[]
+  readonly contestableCrossings?: readonly ContestableStatementCrossingRecord[]
+  readonly hypotheses?: readonly InvestigationHypothesis[]
+  readonly notificationEvents?: readonly MatchNotificationEvent[]
+  readonly preparedOperation?: PreparedOperation
+  readonly hasAttemptedOperationThisRound?: boolean
   readonly resolvedKeys: readonly string[]
   readonly decks: Readonly<Record<InvestigatorId, MatchDeck>>
   readonly preparedCardInstanceId: string | null
+}
+
+export interface ContestableStatementCrossingRecord {
+  readonly statementId: string
+  readonly clueId: string
+  readonly result: ContestableStatementCrossing['result']
+  readonly round: number
 }
 
 export interface CreateSoloMatchInput {
@@ -104,8 +142,9 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     examinedLocationsThisRound: [],
     hasUsedPassiveThisRound: false,
     hasReceivedSocialBonusThisRound: false,
+    hasSocialConnectionThisRound: false,
+    hasUsedSocialConnectionThisRound: false,
     hasUsedPressLeakConversationThisRound: false,
-    canAccuse: false,
     hasFreeConnectionThisRound: false,
     hasUsedFreeConnectionThisRound: false,
     currentLocationId: 'gallery',
@@ -117,7 +156,12 @@ export function createSoloMatch(input: CreateSoloMatchInput): SoloMatch {
     createdAt: input.createdAt,
     actionPoints: actionPointsFor(input.activeInvestigatorId),
     journalEntries: [],
-    journalConnections: [],
+    muralLinks: [],
+    investigativeRelations: [],
+    contestableCrossings: [],
+    hypotheses: [],
+    preparedOperation: undefined,
+    hasAttemptedOperationThisRound: false,
     resolvedKeys: [],
     decks: {
       [input.activeInvestigatorId]: createInvestigatorDeck(

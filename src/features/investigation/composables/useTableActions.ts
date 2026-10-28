@@ -16,8 +16,7 @@ export function useTableActions(
   location: Ref<CaseLocation>,
   locationId: Ref<LocationId>,
   selectedSuspectId: Ref<SuspectId | null>,
-  hasFreeJournalConnection: Ref<boolean>,
-  hasPreparedConnectionCard: Ref<boolean>,
+  notifyActionFailure: (message: string) => void,
 ) {
   async function executeAction(action: InvestigationAction) {
     const labels: Record<InvestigationAction, string> = {
@@ -39,9 +38,10 @@ export function useTableActions(
         preparedCard?.name ?? null,
       )
     } catch (error) {
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : `${labels[action]}: PA insuficientes.`,
-      )
+      const message =
+        error instanceof Error ? error.message : `${labels[action]}: PA insuficientes.`
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 
@@ -58,25 +58,37 @@ export function useTableActions(
       )
     } catch (error) {
       locationId.value = session.currentLocationId
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : 'Não foi possível se deslocar.',
-      )
+      const message = error instanceof Error ? error.message : 'Não foi possível se deslocar.'
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 
-  async function createJournalConnection(fromClueId: string, toClueId: string) {
-    const isFree = hasFreeJournalConnection.value || hasPreparedConnectionCard.value
+  async function createMuralLink(fromClueId: string, toClueId: string) {
     try {
-      await session.createJournalConnection(fromClueId, toClueId)
+      await session.createMuralLink(fromClueId, toClueId)
+      feedback.value = statusFeedback('Ligação registrada no mural · Grátis.')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Não foi possível criar a conexão.'
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
+    }
+  }
+
+  async function createInvestigativeCrossing(fromClueId: string, toClueId: string) {
+    const cost = session.remoteMatch?.investigativeCrossingCost ?? 1
+    try {
+      await session.createInvestigativeCrossing(fromClueId, toClueId)
       feedback.value = statusFeedback(
-        `Conexão formal criada · ${isFree ? 'Grátis' : '1 PA de pesquisa gasto.'}`,
+        `Cruzamento investigativo validado · ${cost === 0 ? 'Grátis' : `${cost} PA de pesquisa gasto.`}`,
       )
     } catch (error) {
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : 'Não foi possível criar a conexão.',
-      )
+      const message =
+        error instanceof Error ? error.message : 'Não foi possível cruzar as evidências.'
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 
-  return { executeAction, moveToLocation, createJournalConnection }
+  return { executeAction, moveToLocation, createMuralLink, createInvestigativeCrossing }
 }

@@ -7,8 +7,8 @@ import { canPayAction, investigatorActionCost } from '../../shared/domain/action
 import {
   gameApi,
   ApiRequestError,
-  type AccusationSubmission,
   type MatchJournalEntry,
+  type OperationOption,
   type RemoteMatch,
 } from '../services/game-api'
 import { clearMatchSession } from '../services/match-session'
@@ -31,6 +31,7 @@ export const useMatchStore = defineStore('match', () => {
   const connectionState = ref<ConnectionState>('idle')
   const connectionError = ref<string | null>(null)
   const isRequestPending = ref(false)
+  const availableOperations = ref<readonly OperationOption[]>([])
 
   async function performApiRequest<T>(request: () => Promise<T>): Promise<T> {
     if (isRequestPending.value) throw new Error('Aguarde a solicitação atual terminar.')
@@ -104,13 +105,6 @@ export const useMatchStore = defineStore('match', () => {
   const canEndTurn = computed(() => remoteMatch.value?.status === 'active' && round.value <= 6)
   const hasUsedSupportThisRound = computed(
     () => remoteMatch.value?.hasUsedSupportThisRound ?? false,
-  )
-  const canAccuse = computed(
-    () =>
-      remoteMatch.value?.status === 'active' &&
-      remoteMatch.value.canAccuse &&
-      round.value >= 5 &&
-      round.value <= 6,
   )
   const preparedCard = computed(() =>
     hand.value.find(
@@ -237,21 +231,49 @@ export const useMatchStore = defineStore('match', () => {
     return updated.journalEntries.at(-1) ?? null
   }
 
-  async function createJournalConnection(fromClueId: string, toClueId: string): Promise<void> {
+  async function createMuralLink(fromClueId: string, toClueId: string): Promise<void> {
     if (!remoteMatch.value) throw new Error('A conexão exige uma partida conectada à API.')
     remoteMatch.value = await performApiRequest(() =>
-      gameApi.createJournalConnection(remoteMatch.value!.id, fromClueId, toClueId),
+      gameApi.createMuralLink(remoteMatch.value!.id, fromClueId, toClueId),
     )
     preparedCardId.value = remoteMatch.value.preparedCardInstanceId
   }
 
-  async function accuse(accusation: AccusationSubmission): Promise<void> {
-    if (!remoteMatch.value) throw new Error('A acusação exige uma partida conectada à API.')
+  async function createInvestigativeCrossing(fromClueId: string, toClueId: string): Promise<void> {
+    if (!remoteMatch.value) throw new Error('O cruzamento exige uma partida conectada à API.')
     remoteMatch.value = await performApiRequest(() =>
-      gameApi.accuse(remoteMatch.value!.id, accusation),
+      gameApi.createInvestigativeCrossing(remoteMatch.value!.id, fromClueId, toClueId),
     )
-    preparedCardId.value = null
+    preparedCardId.value = remoteMatch.value.preparedCardInstanceId
+  }
+
+  async function loadAvailableOperations(): Promise<void> {
+    if (!remoteMatch.value) return
+    availableOperations.value = await performApiRequest(() =>
+      gameApi.getAvailableOperations(remoteMatch.value!.id),
+    )
+  }
+
+  async function prepareOperation(operationId: string): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A operação exige uma partida conectada à API.')
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.prepareOperation(remoteMatch.value!.id, operationId),
+    )
+  }
+
+  async function resolveOperation(): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A operação exige uma partida conectada à API.')
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.resolveOperation(remoteMatch.value!.id),
+    )
     clearCompletedMatchSession()
+  }
+
+  async function cancelOperation(): Promise<void> {
+    if (!remoteMatch.value) throw new Error('A operação exige uma partida conectada à API.')
+    remoteMatch.value = await performApiRequest(() =>
+      gameApi.cancelOperation(remoteMatch.value!.id),
+    )
   }
 
   async function moveInvestigator(locationId: LocationId): Promise<void> {
@@ -339,6 +361,7 @@ export const useMatchStore = defineStore('match', () => {
     connectionState,
     connectionError,
     isRequestPending,
+    availableOperations,
     hand,
     round,
     currentLocationId,
@@ -347,7 +370,6 @@ export const useMatchStore = defineStore('match', () => {
     pointsLabel,
     canEndTurn,
     hasUsedSupportThisRound,
-    canAccuse,
     canDiscardPreparedCard,
     preparedCard,
     journalEntries,
@@ -360,8 +382,12 @@ export const useMatchStore = defineStore('match', () => {
     deleteRemoteMatch,
     retryConnection,
     resolveAction,
-    createJournalConnection,
-    accuse,
+    createMuralLink,
+    createInvestigativeCrossing,
+    loadAvailableOperations,
+    prepareOperation,
+    resolveOperation,
+    cancelOperation,
     moveInvestigator,
     endRemoteTurn,
     requestSupportCard,

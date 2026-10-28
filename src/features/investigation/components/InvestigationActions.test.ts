@@ -69,6 +69,36 @@ describe('InvestigationActions', () => {
     expect(feedback.text()).toContain('Vestígio no pedestal')
   })
 
+  it('sinaliza uma oportunidade plausível antes do jogador gastar PA', () => {
+    const view = mount(InvestigationActions, {
+      props: {
+        availableActions: ['examine'],
+        actionCosts: { examine: 1, converse: 2, analyse: 2, research: 2 },
+        actionOpportunities: {
+          examine: { status: 'promising', message: 'Os registros podem acrescentar contexto.' },
+          analyse: { status: 'exploratory', message: 'Ainda não há sinais claros.' },
+          research: { status: 'exhausted', message: 'Compare as anotações ou mude de abordagem.' },
+        },
+        feedback: {
+          target: 'Investigação',
+          cost: null,
+          cardName: null,
+          result: 'Aguardando decisão.',
+          resultType: 'status',
+          status: null,
+        },
+        canEndTurn: true,
+        hasUsableActionPoints: true,
+        round: 1,
+      },
+    })
+
+    expect(view.get('.action-grid button').text()).toContain('Oportunidade plausível')
+    expect(view.get('.action-grid button').text()).toContain(
+      'Os registros podem acrescentar contexto.',
+    )
+  })
+
   it('desabilita ações e turno enquanto espera o servidor', () => {
     const view = mount(InvestigationActions, {
       props: {
@@ -96,6 +126,5 @@ describe('InvestigationActions', () => {
         .every((button) => button.attributes('disabled') !== undefined),
     ).toBe(true)
     expect(view.get('.end-turn').attributes('disabled')).toBeDefined()
-    expect(view.find('.accusation-control').exists()).toBe(false)
   })
 })

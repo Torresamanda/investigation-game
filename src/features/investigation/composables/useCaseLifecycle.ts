@@ -1,17 +1,13 @@
 import { useInvestigationStore } from '../../../stores/investigation'
 import { statusFeedback, type InvestigationFeedback } from '../action-feedback'
-import type { Ref } from 'vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { AccusationSubmission } from '../../../services/game-api'
 
 export function useCaseLifecycle(
   session: ReturnType<typeof useInvestigationStore>,
-  feedback: Ref<InvestigationFeedback>,
-  panelMode: Ref<'people' | 'journal' | 'accusation'>,
+  feedback: import('vue').Ref<InvestigationFeedback>,
 ) {
   const router = useRouter()
-  const accusationError = ref<string | null>(null)
   const deletionError = ref<string | null>(null)
   const showDeletionConfirmation = ref(false)
   async function retryConnection() {
@@ -48,7 +44,7 @@ export function useCaseLifecycle(
       if (!(await session.endRemoteTurn())) return
       feedback.value = statusFeedback(
         session.remoteMatch?.status === 'lost'
-          ? 'Missão encerrada sem uma acusação sustentada.'
+          ? 'Missão encerrada sem uma operação resolvida.'
           : `Rodada ${String(session.round).padStart(2, '0')} iniciada: mão renovada e PA restaurados.`,
       )
     } catch (error) {
@@ -58,36 +54,12 @@ export function useCaseLifecycle(
     }
   }
 
-  async function accuseSuspect(submission: AccusationSubmission) {
-    accusationError.value = null
-    try {
-      await session.accuse(submission)
-      panelMode.value = 'people'
-      feedback.value = statusFeedback(
-        session.remoteMatch?.status === 'won'
-          ? 'O dossiê foi aceito. O caso está resolvido.'
-          : 'A acusação não foi sustentada. A investigação foi encerrada.',
-      )
-    } catch (error) {
-      accusationError.value =
-        error instanceof Error ? error.message : 'Não foi possível apresentar a acusação.'
-    }
-  }
-
-  function openAccusation() {
-    panelMode.value = 'accusation'
-    accusationError.value = null
-  }
-
   return {
     showDeletionConfirmation,
     deletionError,
-    accusationError,
     retryConnection,
     requestReturnToWorld,
     deleteCurrentMatch,
     endTurn,
-    accuseSuspect,
-    openAccusation,
   }
 }

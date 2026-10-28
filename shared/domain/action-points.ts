@@ -14,6 +14,14 @@ export interface ActionCost {
   readonly specialtyEligible?: boolean
 }
 
+export interface EffectiveActionCostInput {
+  readonly baseCost: number
+  readonly preparedCardCost?: number
+  readonly surcharge?: number
+  readonly discount?: number
+  readonly minimumCost?: number
+}
+
 export interface InvestigatorActionCostInput {
   readonly investigatorId: InvestigatorId
   readonly action: InvestigationAction
@@ -36,7 +44,21 @@ export function investigatorActionCost(input: InvestigatorActionCostInput): numb
       ? 1
       : 0
 
-  return Math.max(1, (firstExamineInLocation ? 1 : 2) + input.preparedCardCost - markerDiscount)
+  return calculateEffectiveActionCost({
+    baseCost: firstExamineInLocation ? 1 : 2,
+    preparedCardCost: input.preparedCardCost,
+    discount: markerDiscount,
+  })
+}
+
+export function calculateEffectiveActionCost(input: EffectiveActionCostInput): number {
+  const baseCost = Math.max(0, input.baseCost)
+  const preparedCardCost = Math.max(0, input.preparedCardCost ?? 0)
+  const surcharge = Math.max(0, input.surcharge ?? 0)
+  const discount = Math.max(0, input.discount ?? 0)
+  const minimumCost = input.minimumCost ?? (baseCost === 0 ? 0 : 1)
+
+  return Math.max(minimumCost, baseCost + preparedCardCost + surcharge - discount)
 }
 
 export function canPayAction(pool: ActionPointPool, cost: ActionCost): boolean {

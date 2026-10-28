@@ -5,6 +5,31 @@ import type { InvestigatorId } from '../domain/match.js'
 import type { MatchCard } from '../domain/match-deck.js'
 
 describe('MatchService', () => {
+  it('sinaliza uma abordagem plausível e orienta após uma tentativa sem descoberta', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+
+    expect(service.getActionOpportunities(match.id).examine.status).toBe('promising')
+    expect(service.getActionOpportunities(match.id).analyse.status).toBe('exploratory')
+
+    const attempted = service.resolveAction({
+      matchId: match.id,
+      action: 'analyse',
+      locationId: 'gallery',
+    })
+    const observation = attempted.journalEntries.at(-1)
+    expect(observation).toMatchObject({
+      type: 'observation',
+      actionAttempt: 'analyse',
+    })
+    expect(observation?.content).toContain('tente um método diferente')
+    expect(service.getActionOpportunities(match.id).analyse.status).toBe('exhausted')
+  })
+
   it('cria uma partida solo com dupla fixa e estado inicial', () => {
     const service = new MatchService(
       new InMemoryMatchRepository(),
@@ -134,7 +159,7 @@ describe('MatchService', () => {
     })
   })
 
-  it('devolve ao baralho do apoio a carta preparada para criar uma conexão no Diário', () => {
+  it('registra uma ligação visual sem gastar PA nem consumir a carta preparada', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository)
     const match = service.createSoloMatch({
@@ -159,15 +184,31 @@ describe('MatchService', () => {
           locationId: 'gallery',
           round: 1,
           status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
         },
         {
           id: 'connection-second',
           type: 'clue',
-          title: 'Segunda pista',
-          content: 'Registro pendente.',
+          title: 'Segunda evidência',
+          content: 'Registro confirmado.',
           locationId: 'laboratory',
           round: 1,
-          status: 'unconfirmed',
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
+        },
+      ],
+      hypotheses: [
+        {
+          id: 'route',
+          status: 'inquiry',
+          evidence: [
+            { entryId: 'connection-first', axis: 'means' },
+            { entryId: 'connection-second', axis: 'opportunity' },
+          ],
+          coherentRelationIds: [],
+          hasOperationalInconsistency: false,
         },
       ],
       decks: {
@@ -184,14 +225,18 @@ describe('MatchService', () => {
     })
     service.prepareCard(match.id, heldSupportCard.instanceId)
 
-    const connected = service.createJournalConnection({
+    const linked = service.createMuralLink({
       matchId: match.id,
       fromClueId: 'connection-first',
       toClueId: 'connection-second',
     })
 
-    expect(connected.decks.livia.hand).not.toContainEqual(heldSupportCard)
-    expect(connected.decks.rafael.discardPile).toContainEqual(heldSupportCard)
+    expect(linked.decks.livia.hand).toContainEqual(heldSupportCard)
+    expect(linked.decks.rafael.discardPile).not.toContainEqual(heldSupportCard)
+    expect(linked.preparedCardInstanceId).toBe(heldSupportCard.instanceId)
+    expect(linked.actionPoints).toEqual(match.actionPoints)
+    expect(linked.investigativeRelations).toHaveLength(0)
+    expect(linked.hypotheses).toMatchObject([{ status: 'inquiry', coherentRelationIds: [] }])
   })
 
   it('aciona o apoio uma vez por rodada e retém cartas extras sem uso', () => {
@@ -237,7 +282,222 @@ describe('MatchService', () => {
     expect(afterDiscard.decks.livia.hand).toContainEqual(receivedCard)
   })
 
-  it('restaura o custo original de uma carta do apoio ao usá-la no Diário', () => {
+  it('permite desenhar a ligação no mural sem consumir o benefício de Isadora', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'livia',
+    })
+    repository.save({
+      ...match,
+      actionPoints: { general: 0, specialty: 0, specialtyPoint: 'social' },
+      hasSocialConnectionThisRound: true,
+      journalEntries: [
+        {
+          id: 'means',
+          type: 'clue',
+          title: 'Meios',
+          content: 'Confirmada.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
+        },
+        {
+          id: 'opportunity',
+          type: 'clue',
+          title: 'Oportunidade',
+          content: 'Confirmada.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
+        },
+      ],
+    })
+
+    const connected = service.createMuralLink({
+      matchId: match.id,
+      fromClueId: 'means',
+      toClueId: 'opportunity',
+    })
+
+    expect(connected.actionPoints.general).toBe(0)
+    expect(connected.hasUsedSocialConnectionThisRound).toBe(false)
+    expect(connected.muralLinks).toHaveLength(1)
+    expect(connected.investigativeRelations).toHaveLength(0)
+  })
+
+  it('cobra o cruzamento investigativo e registra uma relação validada no diário', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'relation-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({
+      ...match,
+      actionPoints: { general: 1, specialty: 0, specialtyPoint: null },
+      journalEntries: [
+        {
+          id: 'means',
+          type: 'clue',
+          title: 'Acesso confirmado',
+          content: 'Registro validado.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
+        },
+        {
+          id: 'opportunity',
+          type: 'clue',
+          title: 'Horário confirmado',
+          content: 'Registro validado.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
+        },
+      ],
+    })
+
+    const crossed = service.createInvestigativeCrossing({
+      matchId: match.id,
+      fromClueId: 'means',
+      toClueId: 'opportunity',
+    })
+
+    expect(crossed.actionPoints.general).toBe(0)
+    expect(crossed.investigativeRelations).toContainEqual(
+      expect.objectContaining({
+        fromClueId: 'means',
+        toClueId: 'opportunity',
+        hypothesisThreadId: 'route',
+      }),
+    )
+    expect(crossed.hypotheses).toMatchObject([{ id: 'route', status: 'plausible' }])
+    expect(crossed.journalEntries.at(-1)).toMatchObject({
+      title: 'Relação investigativa validada',
+      relatedEntryIds: ['means', 'opportunity'],
+    })
+  })
+
+  it('confronta uma declaração contestável sem reabrir a conversa', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository, undefined, () => 'statement-crossing-1')
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'livia',
+      supportInvestigatorId: 'rafael',
+    })
+    repository.save({
+      ...match,
+      actionPoints: { general: 1, specialty: 0, specialtyPoint: null },
+      journalEntries: [
+        {
+          id: 'raul-statement',
+          type: 'statement',
+          title: 'Declaração de Raul Viana',
+          content: 'Raul sustenta que a falha foi inesperada.',
+          locationId: 'security',
+          round: 5,
+          status: 'contestable',
+          contestableCrossing: {
+            evidenceKeys: ['e2-confirmed'],
+            result: 'refuted',
+            observation: 'A cronologia técnica contradiz a versão de Raul.',
+          },
+        },
+        {
+          id: 'technical-chronology',
+          type: 'clue',
+          title: 'Cronologia técnica confirmada',
+          content: 'O acionamento ocorreu dentro do prédio.',
+          locationId: 'security',
+          round: 5,
+          status: 'confirmed',
+          caseEvidenceKey: 'e2-confirmed',
+        },
+      ],
+    })
+
+    const crossed = service.createInvestigativeCrossing({
+      matchId: match.id,
+      fromClueId: 'raul-statement',
+      toClueId: 'technical-chronology',
+    })
+
+    expect(crossed.actionPoints.general).toBe(0)
+    expect(crossed.investigativeRelations).toHaveLength(0)
+    expect(crossed.contestableCrossings).toEqual([
+      expect.objectContaining({
+        statementId: 'raul-statement',
+        clueId: 'technical-chronology',
+        result: 'refuted',
+      }),
+    ])
+    expect(crossed.journalEntries.find((entry) => entry.id === 'raul-statement')).toMatchObject({
+      status: 'refuted',
+    })
+    expect(crossed.journalEntries.at(-1)).toMatchObject({
+      title: 'Declaração confrontada',
+      relatedEntryIds: ['raul-statement', 'technical-chronology'],
+    })
+  })
+
+  it('aplica o benefício social ao cruzamento e o marca como usado', () => {
+    const repository = new InMemoryMatchRepository()
+    const service = new MatchService(repository)
+    const match = service.createSoloMatch({
+      activeInvestigatorId: 'isadora',
+      supportInvestigatorId: 'livia',
+    })
+    repository.save({
+      ...match,
+      actionPoints: { general: 0, specialty: 0, specialtyPoint: 'social' },
+      hasSocialConnectionThisRound: true,
+      journalEntries: [
+        {
+          id: 'means',
+          type: 'clue',
+          title: 'Meios',
+          content: 'Confirmada.',
+          locationId: 'gallery',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
+        },
+        {
+          id: 'opportunity',
+          type: 'clue',
+          title: 'Oportunidade',
+          content: 'Confirmada.',
+          locationId: 'security',
+          round: 1,
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
+        },
+      ],
+    })
+
+    const crossed = service.createInvestigativeCrossing({
+      matchId: match.id,
+      fromClueId: 'means',
+      toClueId: 'opportunity',
+    })
+
+    expect(crossed.actionPoints.general).toBe(0)
+    expect(crossed.hasUsedSocialConnectionThisRound).toBe(true)
+  })
+
+  it('restaura o custo original da carta do apoio ao cruzar evidências', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository)
     const match = service.createSoloMatch({
@@ -259,15 +519,19 @@ describe('MatchService', () => {
           locationId: 'gallery',
           round: 1,
           status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
         },
         {
           id: 'support-clue-pending',
           type: 'clue',
-          title: 'Pista pendente',
-          content: 'Registro pendente.',
+          title: 'Segunda evidência',
+          content: 'Registro confirmado.',
           locationId: 'laboratory',
           round: 1,
-          status: 'unconfirmed',
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
         },
       ],
       decks: {
@@ -283,7 +547,7 @@ describe('MatchService', () => {
     if (!receivedCard) throw new Error('A carta solicitada precisa estar na mão ativa.')
     service.prepareCard(match.id, receivedCard.instanceId)
 
-    const connected = service.createJournalConnection({
+    const connected = service.createInvestigativeCrossing({
       matchId: match.id,
       fromClueId: 'support-clue-confirmed',
       toClueId: 'support-clue-pending',
@@ -376,6 +640,7 @@ describe('MatchService', () => {
       type: 'observation',
       title: 'Sem nova descoberta: Galeria Principal',
     })
+    expect(third.notificationEvents?.map((event) => event.kind)).toContain('action-failure')
     expect(third.actionPoints.general).toBe(4)
   })
 
@@ -470,7 +735,7 @@ describe('MatchService', () => {
     })
   })
 
-  it('registra o evento da Rodada 3 e desbloqueia acusação e conexão gratuita nas rodadas previstas', () => {
+  it('registra o evento da Rodada 3 e mantém a conexão gratuita nas rodadas previstas', () => {
     const repository = new InMemoryMatchRepository()
     const service = new MatchService(repository, undefined, () => 'round-events')
     const match = service.createSoloMatch({
@@ -485,13 +750,12 @@ describe('MatchService', () => {
       title: 'Comunicado da manutenção municipal',
       round: 3,
     })
-    expect(roundThree.canAccuse).toBe(false)
+    expect(roundThree.notificationEvents?.map((event) => event.kind)).toContain('round-event')
 
     repository.save({ ...roundThree, round: 4 })
     const roundFive = service.endTurn(match.id)
     expect(roundFive).toMatchObject({
       round: 5,
-      canAccuse: true,
       hasFreeConnectionThisRound: true,
       hasUsedFreeConnectionThisRound: false,
     })
@@ -499,7 +763,6 @@ describe('MatchService', () => {
     const roundSix = service.endTurn(match.id)
     expect(roundSix).toMatchObject({
       round: 6,
-      canAccuse: true,
       hasFreeConnectionThisRound: false,
       hasUsedFreeConnectionThisRound: false,
     })
@@ -552,15 +815,19 @@ describe('MatchService', () => {
           locationId: 'security',
           round: 2,
           status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
         },
         {
           id: 'pending-clue',
           type: 'clue',
-          title: 'Pista pendente',
-          content: 'Indício a verificar.',
+          title: 'Oportunidade confirmada',
+          content: 'Evidência validada.',
           locationId: 'gallery',
           round: 2,
-          status: 'unconfirmed',
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
         },
       ],
     })
@@ -573,7 +840,7 @@ describe('MatchService', () => {
 
     expect(updated.resolvedKeys).not.toContain('security-initial-report')
     expect(updated.journalEntries.at(-1)).toMatchObject({
-      title: 'Conexão de Otávio',
+      title: 'Cruzamento investigativo de Otávio',
       relatedEntryIds: ['confirmed-clue', 'pending-clue'],
     })
   })
@@ -1048,7 +1315,27 @@ describe('MatchService', () => {
 
     const options = service.getConversationOptions(match.id, 'marta', 'laboratory')
 
-    expect(options.questions[0]).toMatchObject({ canResolve: false, cost: 2 })
+    expect(options.questions[0]).toMatchObject({ canResolve: false, cost: 3 })
+
+    const [question] = options.questions
+    if (!question) throw new Error('A pergunta precisa estar disponível para inspeção.')
+    const matchWithEnoughPoints = repository.findById(match.id)
+    if (!matchWithEnoughPoints) throw new Error('A partida precisa permanecer persistida.')
+    repository.save({
+      ...matchWithEnoughPoints,
+      actionPoints: { general: 3, specialty: 0, specialtyPoint: 'social' },
+    })
+
+    const payableOptions = service.getConversationOptions(match.id, 'marta', 'laboratory')
+    expect(payableOptions.questions[0]).toMatchObject({ canResolve: true, cost: 3 })
+
+    const updated = service.resolveConversation({
+      matchId: match.id,
+      personId: 'marta',
+      locationId: 'laboratory',
+      questionId: question.id,
+    })
+    expect(updated.actionPoints.general).toBe(0)
   })
 
   it('usa Pausa Calculada para liberar uma pergunta adicional gratuita', () => {
@@ -1292,6 +1579,16 @@ describe('MatchService', () => {
           round: 1,
           status: 'recorded',
         },
+        {
+          id: 'confirmed-evidence',
+          type: 'clue',
+          title: 'Evidência confirmada',
+          content: 'Registro técnico confirmado.',
+          locationId: 'laboratory',
+          round: 1,
+          status: 'confirmed',
+          caseEvidenceKey: 'e1-confirmed',
+        },
       ],
     })
 
@@ -1306,6 +1603,18 @@ describe('MatchService', () => {
       isadoraMarkedContestable: true,
     })
     expect(statement.hasUsedPassiveThisRound).toBe(true)
+    expect(statement.hasSocialConnectionThisRound).toBe(true)
+    expect(statement.journalEntries.at(-1)?.contestableCrossing?.evidenceKeys).toContain(
+      'e1-confirmed',
+    )
+
+    const crossedStatement = service.createInvestigativeCrossing({
+      matchId: match.id,
+      fromClueId: statement.journalEntries.at(-1)!.id,
+      toClueId: 'confirmed-evidence',
+    })
+    expect(crossedStatement.hasUsedSocialConnectionThisRound).toBe(true)
+    expect(crossedStatement.actionPoints).toEqual(statement.actionPoints)
 
     const contradiction = service.resolveAction({
       matchId: match.id,
@@ -1336,15 +1645,19 @@ describe('MatchService', () => {
           locationId: 'security',
           round: 1,
           status: 'confirmed',
+          evidenceAxes: ['means'],
+          hypothesisThreadIds: ['route'],
         },
         {
-          id: 'clue-pending',
+          id: 'clue-opportunity',
           type: 'clue',
-          title: 'Pista pendente',
-          content: 'Indício a verificar.',
+          title: 'Oportunidade confirmada',
+          content: 'Registro confirmado.',
           locationId: 'gallery',
           round: 1,
-          status: 'unconfirmed',
+          status: 'confirmed',
+          evidenceAxes: ['opportunity'],
+          hypothesisThreadIds: ['route'],
         },
       ],
     })
@@ -1356,14 +1669,16 @@ describe('MatchService', () => {
     })
     expect(connected.actionPoints).toMatchObject({ general: 0, specialty: 0 })
     expect(connected.journalEntries.at(-1)).toMatchObject({
-      title: 'Conexão de Otávio',
-      relatedEntryIds: ['clue-confirmed', 'clue-pending'],
+      title: 'Cruzamento investigativo de Otávio',
+      relatedEntryIds: ['clue-confirmed', 'clue-opportunity'],
     })
-    expect(connected.resolvedKeys).toContain('investigator-connection:clue-confirmed:clue-pending')
-    expect(connected.journalConnections).toContainEqual(
+    expect(connected.resolvedKeys).toContain(
+      'otavio-investigative-relation:clue-confirmed:clue-opportunity',
+    )
+    expect(connected.investigativeRelations).toContainEqual(
       expect.objectContaining({
         fromClueId: 'clue-confirmed',
-        toClueId: 'clue-pending',
+        toClueId: 'clue-opportunity',
       }),
     )
   })

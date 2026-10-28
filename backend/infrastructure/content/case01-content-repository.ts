@@ -16,25 +16,111 @@ import type {
 } from '../../../shared/domain/identifiers.js'
 import type { CaseEvidenceKey, SoloMatch } from '../../domain/match.js'
 import { resolveCase01CardEffect } from './case01-card-effects.js'
+import type { OperationOption } from '../../domain/investigation-operation.js'
+import type {
+  BasicInvestigationAction,
+  InvestigationOpportunity,
+} from '../../../shared/contracts/investigation-opportunity.js'
+import { case01Content } from '../../content/cases/case01/v1.js'
+import { resolveConfiguredAction } from './case-action-rule-engine.js'
 
 export class Case01ContentRepository implements CaseContentRepository {
-  isAccusationCorrect(
-    suspectId: PersonId,
-    evidence: {
-      readonly means?: CaseEvidenceKey
-      readonly opportunity?: CaseEvidenceKey
-      readonly link?: CaseEvidenceKey
-    },
-  ): boolean {
-    return (
-      suspectId === 'raul' &&
-      (evidence.means === 'e1-confirmed' || evidence.means === 'e5-confirmed') &&
-      (evidence.opportunity === 'e2-confirmed' || evidence.opportunity === 'e6-confirmed') &&
-      (evidence.link === 'e3-confirmed' ||
-        evidence.link === 'e4-confirmed' ||
-        evidence.link === 'e5-confirmed' ||
-        evidence.link === 'e6-confirmed')
+  private readonly definition = case01Content
+
+  getEvidenceMetadata(caseEvidenceKey: CaseEvidenceKey | undefined) {
+    if (!caseEvidenceKey) return undefined
+    const hypothesis = this.definition.hypotheses.find((item) =>
+      item.evidence.some((evidence) => evidence.evidenceKey === caseEvidenceKey),
     )
+    const evidence = hypothesis?.evidence.find((item) => item.evidenceKey === caseEvidenceKey)
+    return hypothesis && evidence
+      ? { evidenceAxes: evidence.axes, hypothesisThreadIds: [hypothesis.id] }
+      : undefined
+  }
+
+  getConfirmedEvidenceKey(resolvedKey: string | undefined) {
+    return this.definition.evidence.find((evidence) => evidence.key === resolvedKey)
+      ?.confirmedEvidenceKey
+  }
+
+  getActionOpportunity(
+    match: SoloMatch,
+    action: BasicInvestigationAction,
+    locationId: LocationId,
+  ): InvestigationOpportunity {
+    if (match.round === 6 && action !== 'analyse') {
+      return {
+        status: 'exhausted',
+        message: 'O prazo final limita novas explorações. Organize as informações já registradas.',
+      }
+    }
+
+    const resolution = this.resolveAction(match, action, locationId)
+    if (resolution.errorMessage) {
+      return {
+        status: 'exploratory',
+        message:
+          'Ainda não há sinais claros sobre esta abordagem. Compare as anotações antes de agir.',
+      }
+    }
+
+    if (
+      resolution.entry.type === 'clue' ||
+      resolution.additionalEntries?.length ||
+      resolution.journalEntryUpdates?.length ||
+      resolution.unlockedLocationIds?.length ||
+      resolution.resolvedKeys?.length
+    ) {
+      return {
+        status: 'promising',
+        message:
+          'Os registros sugerem que esta abordagem pode acrescentar contexto, sem garantir uma descoberta.',
+      }
+    }
+
+    const hasRepeatedAttempt = match.journalEntries.some(
+      (entry) =>
+        entry.type === 'observation' &&
+        entry.actionAttempt === action &&
+        entry.locationId === locationId,
+    )
+    return hasRepeatedAttempt
+      ? {
+          status: 'exhausted',
+          message:
+            'As tentativas recentes não trouxeram novos elementos. Compare as anotações ou mude de abordagem.',
+        }
+      : {
+          status: 'exploratory',
+          message:
+            'Ainda não há sinais claros sobre esta abordagem. A tentativa pode orientar a busca, sem garantir avanço.',
+        }
+  }
+
+  getAvailableOperations(match: SoloMatch): readonly OperationOption[] {
+    return this.definition.operations
+      .filter((operation) =>
+        match.hypotheses?.some((hypothesis) =>
+          operation.availableWhenStatuses.includes(hypothesis.status),
+        ),
+      )
+      .map(({ id, kind, title, riskDescription }) => ({ id, kind, title, riskDescription }))
+  }
+
+  resolveOperation(match: SoloMatch, operationId: string, hypothesisId: string) {
+    const operation = this.definition.operations.find((item) => item.id === operationId)
+    const hypothesis = match.hypotheses?.find((item) => item.id === hypothesisId)
+    const outcome = operation?.outcomes.find(
+      (item) =>
+        item.hypothesisId === hypothesisId && item.whenHypothesisStatus === hypothesis?.status,
+    )
+    return outcome
+      ? { isResolved: outcome.isResolved, observation: outcome.observation }
+      : {
+          isResolved: false,
+          observation:
+            'A formalização encontrou uma inconsistência entre os registros. Reavalie as relações já anotadas antes de tentar outra abordagem.',
+        }
   }
 
   getConversation(personId: PersonId) {
@@ -71,228 +157,16 @@ export class Case01ContentRepository implements CaseContentRepository {
     action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
     locationId: LocationId,
   ): CaseActionResolution {
-    const resolution = this.resolveCaseAction(match, action, locationId)
     const preparedCardId = match.decks[match.activeInvestigatorId].hand.find(
       (card) => card.instanceId === match.preparedCardInstanceId,
     )?.definitionId
+    const resolution = resolveConfiguredAction(
+      this.definition,
+      match,
+      action,
+      locationId,
+      preparedCardId,
+    )
     return resolveCase01CardEffect(match, action, locationId, preparedCardId, resolution)
   }
-
-  private resolveCaseAction(
-    match: SoloMatch,
-    action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
-    locationId: LocationId,
-  ): CaseActionResolution {
-    const entryId = `journal-${match.journalEntries.length + 1}`
-    const has = (key: string) => match.resolvedKeys.includes(key)
-    const cardId = match.decks[match.activeInvestigatorId].hand.find(
-      (card) => card.instanceId === match.preparedCardInstanceId,
-    )?.definitionId
-    const makeEntry = (
-      key: string,
-      title: string,
-      content: string,
-      status: 'indicio' | 'unconfirmed' | 'confirmed' | 'refuted',
-    ): CaseActionResolution => ({
-      resolvedKey: key,
-      entry: {
-        id: entryId,
-        type: 'clue',
-        title,
-        content,
-        locationId,
-        round: match.round,
-        status,
-        ...(isCaseEvidenceKey(key) && status === 'confirmed' ? { caseEvidenceKey: key } : {}),
-      },
-    })
-    const observation: CaseActionResolution = {
-      entry: {
-        id: entryId,
-        type: 'observation',
-        title: `Sem nova descoberta: ${locationName(locationId)}`,
-        content: `A ação ${actionLabel(action)} não revelou informação nova neste local.`,
-        locationId,
-        round: match.round,
-        status: 'note',
-      },
-    }
-
-    if (locationId === 'gallery' && action === 'examine') {
-      if (!has('gallery-lock'))
-        return makeEntry(
-          'gallery-lock',
-          'Fechadura de emergência da vitrine',
-          'A fechadura interna não apresenta dano; o mecanismo foi operado por dentro.',
-          'unconfirmed',
-        )
-      if (!has('gallery-pedestal'))
-        return makeEntry(
-          'gallery-pedestal',
-          'Vestígio no pedestal',
-          'Óleo escuro e pó fino seguem em direção à porta de serviço.',
-          'indicio',
-        )
-      if (match.round >= 3 && !has('gallery-service-door'))
-        return makeEntry(
-          'gallery-service-door',
-          'Porta de serviço',
-          'Uma chapa solta revela poeira deslocada e uma marca de carrinho junto à passagem.',
-          'unconfirmed',
-        )
-    }
-    if (
-      locationId === 'gallery' &&
-      action === 'analyse' &&
-      has('gallery-lock') &&
-      !has('e1-confirmed')
-    ) {
-      return makeEntry(
-        'e1-confirmed',
-        'Chave de emergência confirmada',
-        'A inspeção confirma que a vitrine foi aberta pelo mecanismo interno, sem arrombamento.',
-        'confirmed',
-      )
-    }
-    if (locationId === 'security' && action === 'research') {
-      if (!has('security-initial-report'))
-        return makeEntry(
-          'security-initial-report',
-          'Relatório inicial do apagão',
-          'Os registros situam a interrupção entre 22h14 e 22h21.',
-          'unconfirmed',
-        )
-      if (match.round >= 2 && !has('security-log-gap'))
-        return makeEntry(
-          'security-log-gap',
-          'Lacuna no terminal',
-          'Um bloco de registros desapareceu do terminal pouco antes do apagão.',
-          'unconfirmed',
-        )
-      if (match.round >= 4 && !has('e6-confirmed'))
-        return makeEntry(
-          'e6-confirmed',
-          'Retorno do cartão de acesso',
-          'O cartão de Raul registrou retorno à sala às 22h16, sem passagem correspondente pelo acesso público.',
-          'confirmed',
-        )
-    }
-    if (locationId === 'security' && action === 'analyse') {
-      if (match.round >= 3 && !has('e2-confirmed'))
-        return makeEntry(
-          'e2-confirmed',
-          'Acionamento manual confirmado',
-          'A cronologia técnica confirma que o comando de interrupção foi acionado dentro do prédio às 22h14.',
-          'confirmed',
-        )
-      if (match.round >= 3 && has('security-log-gap') && !has('e3-confirmed'))
-        return makeEntry(
-          'e3-confirmed',
-          'Exclusão de registros confirmada',
-          'A lacuna foi criada no terminal da sala de segurança às 22h13.',
-          'confirmed',
-        )
-    }
-    if (locationId === 'laboratory' && (action === 'examine' || action === 'analyse')) {
-      if (!has('marta-tools'))
-        return makeEntry(
-          'marta-tools',
-          'Marcas nas ferramentas',
-          'As ferramentas de restauração podem explicar marcas encontradas perto da vitrine.',
-          'unconfirmed',
-        )
-      if (
-        !has('marta-tools-refuted') &&
-        (cardId === 'treatment-sheet' || (action === 'analyse' && has('gallery-lock')))
-      )
-        return makeEntry(
-          'marta-tools-refuted',
-          'Marcas de restauração refutadas',
-          'O registro técnico data as marcas da semana anterior à ocorrência.',
-          'refuted',
-        )
-    }
-    if (locationId === 'office' && action === 'research') {
-      if (!has('helena-insurance'))
-        return makeEntry(
-          'helena-insurance',
-          'Avaliação do seguro',
-          'A avaliação recente poderia parecer ligada ao desaparecimento e exige verificação documental.',
-          'unconfirmed',
-        )
-      if (!has('helena-insurance-refuted') && (cardId === 'curator-agenda' || match.round >= 2))
-        return makeEntry(
-          'helena-insurance-refuted',
-          'Avaliação do seguro refutada',
-          'O documento confirma que a avaliação foi solicitada antes da exposição.',
-          'refuted',
-        )
-    }
-    if (locationId === 'service-corridor' && has('gallery-service-door')) {
-      if (action === 'examine' && match.round >= 3 && !has('e4-confirmed'))
-        return makeEntry(
-          'e4-confirmed',
-          'Rota pelo corredor confirmada',
-          'Óleo recente acompanha as marcas do carrinho até a área técnica, sem sinal de passagem pelo acesso público.',
-          'confirmed',
-        )
-      if (action === 'research' && match.round >= 4 && !has('corridor-camera-report'))
-        return makeEntry(
-          'corridor-camera-report',
-          'Relatório da câmera',
-          'Um relatório antigo registra a câmera do corredor inoperante e a correção adiada.',
-          'unconfirmed',
-        )
-      if (
-        action === 'analyse' &&
-        match.round >= 5 &&
-        has('e4-confirmed') &&
-        !has('corridor-oil-confirmed')
-      )
-        return makeEntry(
-          'corridor-oil-confirmed',
-          'Resíduo do corredor analisado',
-          'O óleo corresponde ao lubrificante dos carrinhos da equipe técnica.',
-          'confirmed',
-        )
-      if (action === 'analyse' && has('corridor-camera-report') && !has('e5-confirmed'))
-        return makeEntry(
-          'e5-confirmed',
-          'Falha de câmera confirmada',
-          'O relatório técnico confirma que a falha foi conhecida e não formalizada.',
-          'confirmed',
-        )
-    }
-
-    return observation
-  }
-}
-
-function isCaseEvidenceKey(
-  key: string,
-): key is NonNullable<SoloMatch['journalEntries'][number]['caseEvidenceKey']> {
-  return (
-    key === 'e1-confirmed' ||
-    key === 'e2-confirmed' ||
-    key === 'e3-confirmed' ||
-    key === 'e4-confirmed' ||
-    key === 'e5-confirmed' ||
-    key === 'e6-confirmed'
-  )
-}
-
-function locationName(locationId: LocationId): string {
-  const names: Record<LocationId, string> = {
-    gallery: 'Galeria Principal',
-    security: 'Sala de Segurança',
-    laboratory: 'Laboratório de Restauração',
-    office: 'Escritório da Curadoria',
-    'service-corridor': 'Corredor de Serviço',
-  }
-  return names[locationId]
-}
-
-function actionLabel(action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>): string {
-  const labels = { examine: 'Examinar', analyse: 'Analisar', research: 'Pesquisar' }
-  return labels[action]
 }

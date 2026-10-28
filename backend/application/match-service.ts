@@ -1,4 +1,4 @@
-import { canPayAction } from '../../shared/domain/action-points.js'
+import { calculateEffectiveActionCost, canPayAction } from '../../shared/domain/action-points.js'
 import { locationIds, type InvestigatorId, type PersonId } from '../../shared/domain/identifiers.js'
 import type { InvestigationAction as SharedInvestigationAction } from '../../shared/domain/identifiers.js'
 import { investigatorIds, type LocationId, type SoloMatch } from '../domain/match.js'
@@ -7,13 +7,16 @@ import type {
   ConversationQuestionContent,
 } from './ports/case-content-repository.js'
 import type { MatchRepository } from './ports/match-repository.js'
+import { NotificationRecordingMatchRepository } from './notification-recording-match-repository.js'
 import { Case01ContentRepository } from '../infrastructure/content/case01-content-repository.js'
 import {
-  type AccuseSuspectCommand,
   type CreateMatchCommand,
   type ResolveActionCommand,
   type ResolveConversationCommand,
-  type CreateJournalConnectionCommand,
+  type CreateMuralLinkCommand,
+  type CreateInvestigativeCrossingCommand,
+  type PrepareOperationCommand,
+  type ResolveOperationCommand,
 } from './commands.js'
 import { CreateSoloMatchUseCase } from './use-cases/create-solo-match-use-case.js'
 import { DiscardCardUseCase } from './use-cases/discard-card-use-case.js'
@@ -23,20 +26,34 @@ import { PrepareCardUseCase } from './use-cases/prepare-card-use-case.js'
 import { ResolveActionUseCase } from './use-cases/resolve-action-use-case.js'
 import { ResolveConversationUseCase } from './use-cases/resolve-conversation-use-case.js'
 import { MoveInvestigatorUseCase } from './use-cases/move-investigator-use-case.js'
-import { CreateJournalConnectionUseCase } from './use-cases/create-journal-connection-use-case.js'
-import { AccuseSuspectUseCase } from './use-cases/accuse-suspect-use-case.js'
+import { CreateMuralLinkUseCase } from './use-cases/create-mural-link-use-case.js'
+import { CreateInvestigativeCrossingUseCase } from './use-cases/create-investigative-crossing-use-case.js'
 import { RequestSupportCardUseCase } from './use-cases/request-support-card-use-case.js'
+import { PrepareOperationUseCase } from './use-cases/prepare-operation-use-case.js'
+import { ResolveOperationUseCase } from './use-cases/resolve-operation-use-case.js'
+import { CancelOperationUseCase } from './use-cases/cancel-operation-use-case.js'
 import { pressLeakConversationSurcharge } from '../domain/round-event.js'
 import { DomainError } from '../domain/errors.js'
+import type { OperationOption } from '../domain/investigation-operation.js'
 import type { RandomGenerator } from './ports/random-generator.js'
 import { WebCryptoRandomGenerator } from '../infrastructure/crypto/web-crypto-random-generator.js'
+import type { InvestigationOpportunity } from '../../shared/contracts/investigation-opportunity.js'
+import { GetActionOpportunitiesUseCase } from './use-cases/get-action-opportunities-use-case.js'
+import { GetAvailableOperationsUseCase } from './use-cases/get-available-operations-use-case.js'
 
-export type { CreateMatchCommand, ResolveActionCommand, ResolveConversationCommand }
+export type {
+  CreateInvestigativeCrossingCommand,
+  CreateMatchCommand,
+  CreateMuralLinkCommand,
+  ResolveActionCommand,
+  ResolveConversationCommand,
+}
 
 export interface ConversationOptions {
   readonly personId: PersonId
   readonly personName: string
   readonly locationId: LocationId
+  readonly opportunity: InvestigationOpportunity
   readonly questions: readonly (Omit<ConversationQuestionContent, 'cost'> & {
     readonly cost: number
     readonly canResolve: boolean
@@ -53,36 +70,71 @@ export class MatchService {
   private readonly resolveActionUseCase: ResolveActionUseCase
   private readonly resolveConversationUseCase: ResolveConversationUseCase
   private readonly moveInvestigatorUseCase: MoveInvestigatorUseCase
-  private readonly createJournalConnectionUseCase: CreateJournalConnectionUseCase
-  private readonly accuseSuspectUseCase: AccuseSuspectUseCase
+  private readonly createMuralLinkUseCase: CreateMuralLinkUseCase
+  private readonly createInvestigativeCrossingUseCase: CreateInvestigativeCrossingUseCase
   private readonly requestSupportCardUseCase: RequestSupportCardUseCase
+  private readonly prepareOperationUseCase: PrepareOperationUseCase
+  private readonly resolveOperationUseCase: ResolveOperationUseCase
+  private readonly cancelOperationUseCase: CancelOperationUseCase
+  private readonly getActionOpportunitiesUseCase: GetActionOpportunitiesUseCase
+  private readonly getAvailableOperationsUseCase: GetAvailableOperationsUseCase
 
   constructor(
-    private readonly repository: MatchRepository,
+    repository: MatchRepository,
     now: () => Date = () => new Date(),
     createId: () => string = () => globalThis.crypto.randomUUID(),
     private readonly caseContentRepository: CaseContentRepository = new Case01ContentRepository(),
     private readonly randomGenerator: RandomGenerator = new WebCryptoRandomGenerator(),
   ) {
-    this.createSoloMatchUseCase = new CreateSoloMatchUseCase(
+    const notificationRepository = new NotificationRecordingMatchRepository(
       repository,
+      caseContentRepository,
+    )
+    this.createSoloMatchUseCase = new CreateSoloMatchUseCase(
+      notificationRepository,
       now,
       createId,
       randomGenerator,
     )
-    this.discardCardUseCase = new DiscardCardUseCase(repository, randomGenerator)
-    this.endTurnUseCase = new EndTurnUseCase(repository, randomGenerator)
-    this.getMatchUseCase = new GetMatchUseCase(repository)
-    this.prepareCardUseCase = new PrepareCardUseCase(repository)
-    this.resolveActionUseCase = new ResolveActionUseCase(repository, caseContentRepository)
-    this.resolveConversationUseCase = new ResolveConversationUseCase(
-      repository,
+    this.discardCardUseCase = new DiscardCardUseCase(notificationRepository, randomGenerator)
+    this.endTurnUseCase = new EndTurnUseCase(notificationRepository, randomGenerator)
+    this.getMatchUseCase = new GetMatchUseCase(notificationRepository)
+    this.prepareCardUseCase = new PrepareCardUseCase(notificationRepository)
+    this.resolveActionUseCase = new ResolveActionUseCase(
+      notificationRepository,
       caseContentRepository,
     )
-    this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(repository)
-    this.createJournalConnectionUseCase = new CreateJournalConnectionUseCase(repository, createId)
-    this.accuseSuspectUseCase = new AccuseSuspectUseCase(repository, caseContentRepository)
-    this.requestSupportCardUseCase = new RequestSupportCardUseCase(repository, randomGenerator)
+    this.resolveConversationUseCase = new ResolveConversationUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
+    this.moveInvestigatorUseCase = new MoveInvestigatorUseCase(notificationRepository)
+    this.createMuralLinkUseCase = new CreateMuralLinkUseCase(notificationRepository, createId)
+    this.createInvestigativeCrossingUseCase = new CreateInvestigativeCrossingUseCase(
+      notificationRepository,
+      createId,
+    )
+    this.requestSupportCardUseCase = new RequestSupportCardUseCase(
+      notificationRepository,
+      randomGenerator,
+    )
+    this.prepareOperationUseCase = new PrepareOperationUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
+    this.resolveOperationUseCase = new ResolveOperationUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
+    this.cancelOperationUseCase = new CancelOperationUseCase(notificationRepository)
+    this.getActionOpportunitiesUseCase = new GetActionOpportunitiesUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
+    this.getAvailableOperationsUseCase = new GetAvailableOperationsUseCase(
+      notificationRepository,
+      caseContentRepository,
+    )
   }
 
   createSoloMatch(command: CreateMatchCommand): SoloMatch {
@@ -114,40 +166,68 @@ export class MatchService {
     const bonusQuestion =
       hasConversationBonus(match, personId) ||
       (hasAskedQuestionThisTurn && preparedCard?.definitionId === 'calculated-pause')
+    const questions = conversation.questions
+      .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
+      .map(({ id, text, cost, approach }) => {
+        const blockedReason = this.caseContentRepository.getConversationBlockReason(
+          personId,
+          id,
+          match,
+        )
+        const pressLeakSurcharge = pressLeakConversationSurcharge(
+          match,
+          personId,
+          Boolean(preparedCard?.compatibleActions.includes('converse')),
+        )
+        const totalCost = calculateEffectiveActionCost({
+          baseCost: bonusQuestion ? 0 : cost,
+          preparedCardCost: preparedCard?.cost,
+          surcharge: pressLeakSurcharge,
+          minimumCost: bonusQuestion ? 0 : 1,
+        })
+        return {
+          id,
+          text,
+          cost: totalCost,
+          approach,
+          isEvidenceBlocked: Boolean(blockedReason),
+          canResolve:
+            !blockedReason &&
+            canPayAction(match.actionPoints, {
+              action: 'converse',
+              amount: totalCost,
+            }),
+        }
+      })
+    const availableQuestions = questions.filter((question) => !question.isEvidenceBlocked)
+    const opportunity: InvestigationOpportunity = !questions.length
+      ? {
+          status: 'exhausted',
+          message:
+            'Os assuntos já tratados não trouxeram novos elementos. Reavalie as anotações antes de retomar a conversa.',
+        }
+      : availableQuestions.length
+        ? {
+            status: 'promising',
+            message:
+              'Esta conversa pode acrescentar contexto, mas nenhuma resposta garante um avanço.',
+          }
+        : {
+            status: 'exploratory',
+            message:
+              'Os assuntos disponíveis ainda pedem mais contexto. O diálogo pode orientar a busca, sem garantir avanço.',
+          }
     return {
       personId,
       personName: conversation.personName,
       locationId,
-      questions: conversation.questions
-        .filter((question) => !match.resolvedKeys.includes(conversationKey(personId, question.id)))
-        .map(({ id, text, cost, approach }) => {
-          const blockedReason = this.caseContentRepository.getConversationBlockReason(
-            personId,
-            id,
-            match,
-          )
-          const pressLeakSurcharge = pressLeakConversationSurcharge(
-            match,
-            personId,
-            Boolean(preparedCard?.compatibleActions.includes('converse')),
-          )
-          const totalCost =
-            (bonusQuestion ? 0 : cost) + pressLeakSurcharge + (preparedCard?.cost ?? 0)
-          return {
-            id,
-            text,
-            cost: (bonusQuestion ? 0 : cost) + pressLeakSurcharge,
-            approach,
-            isEvidenceBlocked: Boolean(blockedReason),
-            canResolve:
-              !blockedReason &&
-              canPayAction(match.actionPoints, {
-                action: 'converse',
-                amount: totalCost,
-              }),
-          }
-        }),
+      opportunity,
+      questions,
     }
+  }
+
+  getActionOpportunities(matchId: string) {
+    return this.getActionOpportunitiesUseCase.execute(matchId)
   }
 
   resolveConversation(command: ResolveConversationCommand): SoloMatch {
@@ -178,12 +258,41 @@ export class MatchService {
     return this.moveInvestigatorUseCase.execute(matchId, locationId)
   }
 
-  createJournalConnection(command: CreateJournalConnectionCommand): SoloMatch {
-    return this.createJournalConnectionUseCase.execute(command)
+  createMuralLink(command: CreateMuralLinkCommand): SoloMatch {
+    return this.createMuralLinkUseCase.execute(command)
   }
 
-  accuseSuspect(command: AccuseSuspectCommand): SoloMatch {
-    return this.accuseSuspectUseCase.execute(command)
+  createInvestigativeCrossing(command: CreateInvestigativeCrossingCommand): SoloMatch {
+    return this.createInvestigativeCrossingUseCase.execute(command)
+  }
+
+  getAvailableOperations(matchId: string): readonly OperationOption[] {
+    return this.getAvailableOperationsUseCase.execute(matchId)
+  }
+
+  prepareOperation(matchId: string, operationId: string): SoloMatch {
+    const match = this.getMatch(matchId)
+    if (!match) throw new Error('Partida não encontrada.')
+    const operation = this.caseContentRepository
+      .getAvailableOperations(match)
+      .find((item) => item.id === operationId)
+    const hypothesis = match.hypotheses?.find((item) =>
+      operation?.kind === 'verify'
+        ? item.status === 'plausible' || item.status === 'sustained'
+        : item.status === 'sustained',
+    )
+    if (!hypothesis) throw new DomainError('A linha de raciocínio ainda não permite esta operação.')
+    const command: PrepareOperationCommand = { matchId, operationId, hypothesisId: hypothesis.id }
+    return this.prepareOperationUseCase.execute(command)
+  }
+
+  resolveOperation(matchId: string): SoloMatch {
+    const command: ResolveOperationCommand = { matchId }
+    return this.resolveOperationUseCase.execute(command)
+  }
+
+  cancelOperation(matchId: string): SoloMatch {
+    return this.cancelOperationUseCase.execute(matchId)
   }
 
   private assertPersonAvailability(personId: PersonId, locationId: LocationId) {

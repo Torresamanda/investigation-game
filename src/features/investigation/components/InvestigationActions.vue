@@ -3,6 +3,8 @@ import { ref, watch } from 'vue'
 import type { InvestigationAction } from '../../../domain/game/action-points'
 import { journalStatusLabels, type InvestigationFeedback } from '../action-feedback'
 import { PhArrowRight } from '../../../components/icons'
+import type { ActionOpportunities } from '../../../../shared/contracts/investigation-opportunity'
+import { opportunityStatusLabels } from '../opportunity-labels'
 type VisibleInvestigationAction = Exclude<InvestigationAction, 'move' | 'card'>
 
 const props = defineProps<{
@@ -13,6 +15,7 @@ const props = defineProps<{
   hasUsableActionPoints: boolean
   isRequestPending?: boolean
   round: number
+  actionOpportunities?: ActionOpportunities
 }>()
 const emit = defineEmits<{
   execute: [action: InvestigationAction]
@@ -26,6 +29,15 @@ const actions: readonly { label: string; action: VisibleInvestigationAction }[] 
 ]
 
 const isEndTurnConfirmationOpen = ref(false)
+
+function opportunityForAction(action: VisibleInvestigationAction) {
+  return action === 'converse' ? undefined : props.actionOpportunities?.[action]
+}
+
+function opportunityLabel(action: VisibleInvestigationAction) {
+  const opportunity = opportunityForAction(action)
+  return opportunity ? opportunityStatusLabels[opportunity.status] : ''
+}
 
 watch(
   () => [props.round, props.canEndTurn, props.hasUsableActionPoints],
@@ -62,6 +74,14 @@ function confirmEndTurn() {
         @click="emit('execute', item.action)"
       >
         {{ item.label }}<small>{{ actionCosts[item.action] }} PA</small>
+        <span
+          v-if="opportunityForAction(item.action)"
+          class="action-opportunity"
+          :class="`action-opportunity--${opportunityForAction(item.action)?.status}`"
+        >
+          <strong>{{ opportunityLabel(item.action) }}</strong>
+          {{ opportunityForAction(item.action)?.message }}
+        </span>
       </button>
     </div>
     <div class="feedback" role="status" aria-live="polite" aria-atomic="true">

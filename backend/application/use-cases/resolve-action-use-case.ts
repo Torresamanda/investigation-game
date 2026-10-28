@@ -10,7 +10,8 @@ import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import { recycleCardFromHand } from '../../domain/match-deck.js'
 import type { SoloMatch } from '../../domain/match.js'
 import type { InvestigatorId } from '../../domain/match.js'
-import { findClueConnectionCandidate } from '../../domain/clue-connection.js'
+import { findOtavioInvestigativeCrossingCandidate } from '../../domain/otavio-investigative-crossing.js'
+import { synchronizeInvestigationHypotheses } from '../../domain/investigation-hypothesis.js'
 import {
   assertMatchIsActive,
   DomainError,
@@ -44,9 +45,9 @@ export class ResolveActionUseCase {
     ) {
       throw new InvalidActionError('A carta não pode ser usada nesta ação.')
     }
-    const connectionCandidate =
+    const crossingCandidate =
       match.activeInvestigatorId === 'otavio' && command.action === 'research'
-        ? findClueConnectionCandidate(match)
+        ? findOtavioInvestigativeCrossingCandidate(match)
         : undefined
     const cost = investigatorActionCost({
       investigatorId: match.activeInvestigatorId,
@@ -79,7 +80,7 @@ export class ResolveActionUseCase {
     )
     if (caseResolution.errorMessage) throw new InvalidActionError(caseResolution.errorMessage)
     const resolution =
-      match.round === 6 && connectionCandidate && caseResolution.entry.type === 'clue'
+      match.round === 6 && crossingCandidate && caseResolution.entry.type === 'clue'
         ? {
             entry: {
               id: `journal-${match.journalEntries.length + 1}`,
@@ -90,12 +91,17 @@ export class ResolveActionUseCase {
               locationId: command.locationId,
               round: match.round,
               status: 'note' as const,
+              actionAttempt: command.action,
             },
           }
         : caseResolution
     if (match.round === 6 && command.action !== 'analyse' && resolution.entry.type === 'clue') {
       throw new DomainError('O prazo final impede novas descobertas por exploração.')
     }
+    const resolvedEntryBase =
+      resolution.entry.type === 'observation' && !resolution.additionalEntries?.length
+        ? { ...resolution.entry, notificationSignal: 'action-failure' as const }
+        : resolution.entry
     const actionPoints = spendActionPoints(match.actionPoints, {
       action: command.action,
       amount: cost,
@@ -104,24 +110,27 @@ export class ResolveActionUseCase {
       match.activeInvestigatorId === 'rafael' &&
       command.action === 'analyse' &&
       !match.hasUsedPassiveThisRound &&
-      resolution.entry.type === 'clue' &&
-      (resolution.entry.status === 'unconfirmed' || resolution.entry.status === 'indicio') &&
+      resolvedEntryBase.type === 'clue' &&
+      (resolvedEntryBase.status === 'unconfirmed' || resolvedEntryBase.status === 'indicio') &&
       isPhysicalEvidenceLocation(command.locationId)
+    const passiveEvidenceKey = this.caseContentRepository.getConfirmedEvidenceKey(
+      resolution.resolvedKey,
+    )
     const resolvedEntry = usesRafaelPassive
       ? {
-          ...resolution.entry,
+          ...resolvedEntryBase,
           status: 'confirmed' as const,
-          ...(resolution.resolvedKey === 'gallery-lock'
-            ? { caseEvidenceKey: 'e1-confirmed' as const }
-            : {}),
-          content: `${resolution.entry.content} Rafael confirmou o vestígio na análise pericial.`,
+          ...(passiveEvidenceKey ? { caseEvidenceKey: passiveEvidenceKey } : {}),
+          content: `${resolvedEntryBase.content} Rafael confirmou o vestígio na análise pericial.`,
         }
-      : resolution.entry.caseEvidenceKey || !isConfirmedCaseEvidence(resolution.resolvedKey)
-        ? resolution.entry
-        : { ...resolution.entry, caseEvidenceKey: resolution.resolvedKey }
+      : resolvedEntryBase
     const finalResolvedEntry =
       resolvedEntry.type === 'clue' && resolvedEntry.status === 'confirmed'
-        ? { ...resolvedEntry, markedForFollowUp: false }
+        ? {
+            ...resolvedEntry,
+            markedForFollowUp: false,
+            ...this.caseContentRepository.getEvidenceMetadata(resolvedEntry.caseEvidenceKey),
+          }
         : resolvedEntry
     const journalEntries = match.journalEntries.map((entry) =>
       clearConsumedFollowUpMark(
@@ -172,39 +181,30 @@ export class ResolveActionUseCase {
       receivedSocialBonus = true
     }
 
-    if (connectionCandidate) {
+    if (crossingCandidate) {
       journalEntries.push({
         id: `journal-${journalEntries.length + 1}`,
         type: 'observation',
-        title: 'Conexão de Otávio',
-        content: `“${connectionCandidate.confirmedEntry.title}” se relaciona a “${connectionCandidate.pendingEntry.title}”. Reavalie ${locationName(connectionCandidate.pendingEntry.locationId)} para verificar essa ligação.`,
+        title: 'Cruzamento investigativo de Otávio',
+        content: `O cruzamento confirmou uma relação coerente entre “${crossingCandidate.fromEntry.title}” e “${crossingCandidate.toEntry.title}”.`,
         locationId: command.locationId,
         round: match.round,
         status: 'note',
-        relatedEntryIds: [
-          connectionCandidate.confirmedEntry.id,
-          connectionCandidate.pendingEntry.id,
-        ],
+        relatedEntryIds: [crossingCandidate.fromEntry.id, crossingCandidate.toEntry.id],
       })
-      resolvedKeys.push(connectionCandidate.key)
+      resolvedKeys.push(crossingCandidate.key)
     }
 
-    const journalConnections = [...match.journalConnections]
-    if (connectionCandidate) {
-      addFormalConnection(journalConnections, {
-        id: `journal-connection:${[connectionCandidate.confirmedEntry.id, connectionCandidate.pendingEntry.id].sort().join(':')}`,
-        fromClueId: connectionCandidate.confirmedEntry.id,
-        toClueId: connectionCandidate.pendingEntry.id,
+    const investigativeRelations = [...(match.investigativeRelations ?? [])]
+    if (crossingCandidate) {
+      investigativeRelations.push({
+        id: `investigative-relation:${[crossingCandidate.fromEntry.id, crossingCandidate.toEntry.id].sort().join(':')}`,
+        fromClueId: crossingCandidate.fromEntry.id,
+        toClueId: crossingCandidate.toEntry.id,
         round: match.round,
+        hypothesisThreadId: crossingCandidate.hypothesisThreadId,
       })
     }
-    if (resolution.journalConnection) {
-      addFormalConnection(journalConnections, {
-        ...resolution.journalConnection,
-        round: match.round,
-      })
-    }
-
     const updated: SoloMatch = {
       ...match,
       actionPoints: updatedActionPoints,
@@ -213,7 +213,12 @@ export class ResolveActionUseCase {
         : match.decks,
       preparedCardInstanceId: null,
       journalEntries,
-      journalConnections,
+      investigativeRelations,
+      hypotheses: synchronizeInvestigationHypotheses(
+        journalEntries.filter((entry) => entry.type === 'clue' && entry.status === 'confirmed'),
+        investigativeRelations,
+        match.hypotheses ?? [],
+      ),
       resolvedKeys,
       examinedLocationsThisRound:
         command.action === 'examine' &&
@@ -235,34 +240,10 @@ export class ResolveActionUseCase {
   }
 }
 
-function isConfirmedCaseEvidence(
-  key: string | undefined,
-): key is NonNullable<SoloMatch['journalEntries'][number]['caseEvidenceKey']> {
-  return (
-    key === 'e1-confirmed' ||
-    key === 'e2-confirmed' ||
-    key === 'e3-confirmed' ||
-    key === 'e4-confirmed' ||
-    key === 'e5-confirmed' ||
-    key === 'e6-confirmed'
-  )
-}
-
 function isPhysicalEvidenceLocation(locationId: ResolveActionCommand['locationId']): boolean {
   return (
     locationId === 'gallery' || locationId === 'laboratory' || locationId === 'service-corridor'
   )
-}
-
-function locationName(locationId: ResolveActionCommand['locationId']): string {
-  const names: Record<ResolveActionCommand['locationId'], string> = {
-    gallery: 'Galeria Principal',
-    security: 'Sala de Segurança',
-    laboratory: 'Laboratório de Restauração',
-    office: 'Escritório da Curadoria',
-    'service-corridor': 'Corredor de Serviço',
-  }
-  return names[locationId]
 }
 
 function clearConsumedFollowUpMark(
@@ -279,20 +260,6 @@ function clearConsumedFollowUpMark(
   return entry.markedForFollowUp && (isConfirmedInLocation || actionConfirmedInLocation)
     ? { ...entry, markedForFollowUp: false }
     : entry
-}
-
-function addFormalConnection(
-  connections: SoloMatch['journalConnections'][number][],
-  candidate: SoloMatch['journalConnections'][number],
-): void {
-  const exists = connections.some(
-    (connection) =>
-      (connection.fromClueId === candidate.fromClueId &&
-        connection.toClueId === candidate.toClueId) ||
-      (connection.fromClueId === candidate.toClueId &&
-        connection.toClueId === candidate.fromClueId),
-  )
-  if (!exists) connections.push(candidate)
 }
 
 function recyclePreparedCard(

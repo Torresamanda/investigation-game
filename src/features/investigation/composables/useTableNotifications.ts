@@ -1,14 +1,15 @@
 import { onUnmounted, ref, watch } from 'vue'
 import type { PublicMatchDto } from '../../../../shared/contracts/match'
-import { findNewDiscoveries, type DiscoveryNotification } from '../discovery-notifications'
+import { findNewMatchNotifications, type MatchNotification } from '../discovery-notifications'
 
 export function useTableNotifications(
   match: () => PublicMatchDto | null,
   isJournalOpen: () => boolean,
 ) {
-  const notifications = ref<readonly DiscoveryNotification[]>([])
+  const notifications = ref<readonly MatchNotification[]>([])
   const unreadCount = ref(0)
   const timers = new Map<string, ReturnType<typeof setTimeout>>()
+  let localNotificationSequence = 0
 
   function dismissNotification(id: string) {
     clearTimeout(timers.get(id))
@@ -16,18 +17,32 @@ export function useTableNotifications(
     notifications.value = notifications.value.filter((notification) => notification.id !== id)
   }
 
-  watch(match, (current, previous) => {
-    const discoveries = findNewDiscoveries(previous, current)
-    notifications.value = [...notifications.value, ...discoveries]
+  function publishNotifications(newNotifications: readonly MatchNotification[]) {
+    notifications.value = [...notifications.value, ...newNotifications]
     if (!isJournalOpen())
-      unreadCount.value += discoveries.filter(
-        (discovery) => discovery.kind !== 'observation',
+      unreadCount.value += newNotifications.filter(
+        (notification) => notification.kind !== 'observation',
       ).length
-    for (const discovery of discoveries)
+    for (const notification of newNotifications)
       timers.set(
-        discovery.id,
-        setTimeout(() => dismissNotification(discovery.id), 6000),
+        notification.id,
+        setTimeout(() => dismissNotification(notification.id), 6000),
       )
+  }
+
+  function notifyActionFailure(message: string) {
+    localNotificationSequence += 1
+    publishNotifications([
+      {
+        id: `local-action-failure:${localNotificationSequence}`,
+        kind: 'action-failure',
+        message,
+      },
+    ])
+  }
+
+  watch(match, (current, previous) => {
+    publishNotifications(findNewMatchNotifications(previous, current))
   })
 
   watch(isJournalOpen, (open) => {
@@ -36,5 +51,5 @@ export function useTableNotifications(
 
   onUnmounted(() => timers.forEach((timer) => clearTimeout(timer)))
 
-  return { notifications, unreadCount, dismissNotification }
+  return { notifications, unreadCount, dismissNotification, notifyActionFailure }
 }

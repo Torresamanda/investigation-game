@@ -53,6 +53,7 @@ it('conversa no painel, atualiza opções ao preparar na mão e mantém a respos
     personId: 'davi',
     personName: 'Davi Orsini',
     locationId: 'gallery',
+    opportunity: { status: 'promising', message: 'A conversa pode acrescentar contexto.' },
     questions: [
       {
         id: 'question',
@@ -67,7 +68,18 @@ it('conversa no painel, atualiza opções ao preparar na mão e mantém a respos
   const load = vi.spyOn(session, 'loadConversationOptions').mockResolvedValue(options)
   vi.spyOn(session, 'prepareCard').mockResolvedValue(true)
   vi.spyOn(session, 'resolveConversation').mockImplementation(async () => {
-    session.remoteMatch = { ...session.remoteMatch!, journalEntries: [statement] }
+    session.remoteMatch = {
+      ...session.remoteMatch!,
+      journalEntries: [statement],
+      notificationEvents: [
+        {
+          id: `${session.remoteMatch!.id}:notification:1`,
+          kind: 'discovery',
+          round: 1,
+          entryId: statement.id,
+        },
+      ],
+    }
     return statement
   })
   await view.get('.suspect-conversation-trigger').trigger('click')
@@ -100,10 +112,24 @@ it('empilha notificações, distingue observações e zera o badge ao abrir o di
         title: 'Nenhuma descoberta nova',
       },
     ],
+    notificationEvents: [
+      {
+        id: `${session.remoteMatch!.id}:notification:1`,
+        kind: 'discovery',
+        round: 1,
+        entryId: statement.id,
+      },
+      {
+        id: `${session.remoteMatch!.id}:notification:2`,
+        kind: 'observation',
+        round: 1,
+        entryId: 'observation',
+      },
+    ],
   }
   await view.vm.$nextTick()
   expect(view.findAll('.discovery-toast')).toHaveLength(2)
-  expect(view.get('.discovery-toast--observation').text()).toContain('Nenhuma descoberta nova:')
+  expect(view.get('.discovery-toast--observation').text()).toContain('Nenhuma descoberta nova')
   expect(view.get('.journal-unread-count').text()).toBe('1')
   await view.get('.discovery-toast-actions button').trigger('click')
   expect(view.get('#case-journal').isVisible()).toBe(true)
@@ -131,18 +157,24 @@ it('confirma o abandono da partida em um modal centralizado', async () => {
 
 it('mantém o dossiê dentro do painel e permite percorrer o tour sem alterar a partida', async () => {
   const { session, view } = setupTable()
-  expect(view.findAll('.mode-tabs button')[2]!.attributes('disabled')).toBeDefined()
-  session.remoteMatch = { ...session.remoteMatch!, round: 5, canAccuse: true }
-  await view.vm.$nextTick()
+  const loadAvailableOperations = vi.spyOn(session, 'loadAvailableOperations').mockResolvedValue()
+  expect(view.findAll('.mode-tabs button')[2]!.attributes('disabled')).toBeUndefined()
   await view.findAll('.mode-tabs button')[2]!.trigger('click')
-  expect(view.get('.contextual-panel .accusation-dialog').isVisible()).toBe(true)
+  await flushPromises()
+  expect(view.get('.contextual-panel .operation-dialog').isVisible()).toBe(true)
+  expect(loadAvailableOperations).toHaveBeenCalledTimes(1)
   expect(view.find('[aria-modal]').exists()).toBe(false)
   const beforeTour = JSON.stringify(session.remoteMatch)
   await view.get('.case-tools .tour-trigger').trigger('click')
   await view.vm.$nextTick()
-  for (let step = 1; step <= 5; step++) {
-    expect(view.get('.tour-popover').text()).toContain(`Passo ${step} de 5`)
+  for (let step = 1; step <= 7; step++) {
+    expect(view.get('.tour-popover').text()).toContain(`Passo ${step} de 7`)
     expect(view.findAll('.tour-highlight')).toHaveLength(1)
+    if (step === 7) {
+      expect(view.get('.tour-popover').text()).toContain(
+        'O cruzamento investigativo testa uma relação',
+      )
+    }
     await view.findAll('.tour-popover button')[2]!.trigger('click')
   }
   expect(view.find('.tour-popover').exists()).toBe(false)

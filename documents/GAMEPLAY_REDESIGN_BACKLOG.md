@@ -32,12 +32,12 @@ O jogador continua tomando decisões e podendo chegar a uma teoria incorreta, ma
 
 ## Decisões de produto a aprovar
 
-- [ ] **D-01 — Substituir “Apresentar acusação” por “Preparar operação”.** A operação só fica disponível quando uma hipótese tiver sustentação mínima; ela não revela antecipadamente qual solução é correta.
-- [ ] **D-02 — Definir recuperação após operação incompleta.** Recomendação: registrar uma inconsistência narrativa e manter a missão ativa até o prazo, salvo quando a própria ficção justificar encerramento imediato.
-- [ ] **D-03 — Manter seis rodadas no modo padrão.** Recomendação: manter o prazo, mas introduzir margem de recuperação e medir a primeira partida antes de considerar uma sétima rodada.
-- [ ] **D-04 — Manter a Rodada 6 como janela de recuperação.** Recomendação: permitir uma última ação útil e a operação no mesmo turno solo, quando os PA permitirem.
-- [ ] **D-05 — Tornar conexões formais significativas.** Recomendação: aceitar apenas pistas confirmadas e exigir que as conexões usadas pela operação sejam coerentes com a hipótese escolhida.
-- [ ] **D-06 — Consolidar regras de mão e apoio.** Definir uma única fonte de verdade para renovação da mão e para a escolha ou compra de carta do apoio antes de alterar balanceamento.
+- [x] **D-01 — Substituir “Apresentar acusação” por “Preparar operação”.** A operação só fica disponível quando uma hipótese tiver sustentação mínima; ela não revela antecipadamente qual solução é correta.
+- [x] **D-02 — Definir recuperação após operação incompleta.** Recomendação: registrar uma inconsistência narrativa e manter a missão ativa até o prazo, salvo quando a própria ficção justificar encerramento imediato.
+- [x] **D-03 — Manter seis rodadas no modo padrão.** Recomendação: manter o prazo, mas introduzir margem de recuperação e medir a primeira partida antes de considerar uma sétima rodada.
+- [x] **D-04 — Manter a Rodada 6 como janela de recuperação.** Recomendação: permitir uma última ação útil e a operação no mesmo turno solo, quando os PA permitirem.
+- [x] **D-05 — Separar mural e validação investigativa.** Ligações do mural organizam evidências sem custo; cruzamentos investigativos consomem PA quando geram uma relação validada que pode fortalecer a hipótese.
+- [x] **D-06 — Consolidar regras de mão e apoio.** Definir uma única fonte de verdade para renovação da mão e para a escolha ou compra de carta do apoio antes de alterar balanceamento.
 
 ## Orçamento de PA e margem para iniciantes
 
@@ -50,7 +50,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 | Lívia | 5 gerais | Exploração física e descoberta inicial. |
 | Rafael | 4 gerais + 1 técnico | Validação de vestígios e confirmação de evidência física. |
 | Isadora | 4 gerais + 1 social | Transforma declarações em avanços concretos de hipótese. |
-| Otávio | 3 gerais + 2 de pesquisa | Cronologia, documentos e conexões formais. |
+| Otávio | 3 gerais + 2 de pesquisa | Cronologia, documentos e cruzamentos investigativos. |
 
 ### Regras de balanceamento
 
@@ -63,7 +63,7 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 
 ### Salvaguardas recomendadas
 
-- Uma conexão formal gratuita por missão quando a equipe obtiver três pistas confirmadas, ou uma conexão gratuita na Rodada 5; escolher uma única regra e comunicá-la claramente.
+- Um cruzamento investigativo pode ter desconto de habilidade ou carta; a interface informa o custo autoritativo antes da execução.
 - Uma operação incompleta gera uma observação ou contradição útil, não derrota automática.
 - O apoio de plantão continua opcional e não pode ser a única forma de cobrir um eixo da hipótese.
 - Se telemetria ou playtest confirmar que o solo ainda é punitivo, preferir uma ajuda contextual de uso único por missão a aumentar PA gerais para todos os investigadores.
@@ -72,89 +72,258 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
 
 ### P0 — Definição e contrato do novo ciclo
 
-- [ ] **GD-01 — Definir estados de hipótese** `[Definição] [Back] [Front]`
+### Contrato de estados de hipótese (GD-01)
+
+Uma hipótese livre é uma anotação do jogador: não tem custo, não é validada pelo
+servidor e não libera operações. Uma hipótese mecânica é uma linha de raciocínio
+privada do caso, acompanhada pelo servidor a partir de evidências já descobertas e
+relações coerentes. O cliente recebe somente seu estado, os títulos de evidências já
+conhecidas, os eixos já cobertos e a quantidade de relações coerentes.
+
+| Estado | Significado público | Transições permitidas |
+| --- | --- | --- |
+| `inquiry` | Há fatos relacionados, mas ainda não formam uma explicação consistente. | Pode tornar-se `plausible`, `contested` ou `discarded`. |
+| `plausible` | Fatos confirmados cobrem ao menos dois eixos públicos e há uma relação coerente. | Pode tornar-se `sustained`, `contested` ou `discarded`. |
+| `sustained` | Fatos confirmados cobrem meios, oportunidade e vínculo, com as relações coerentes exigidas pelo caso. É o único estado que pode habilitar consulta de operação em GD-02. | Pode tornar-se `contested` ou `discarded`; nunca vence a missão por si só. |
+| `contested` | Uma refutação, contradição confirmada ou inconsistência de operação enfraqueceu a explicação. A missão continua e a interface mostra apenas a inconsistência já observada. | Pode retornar a `inquiry`, `plausible` ou `sustained` após novos fatos válidos; pode tornar-se `discarded`. |
+| `discarded` | Os fatos confirmados excluem definitivamente esta explicação no caso atual. | Não pode voltar a outro estado; o jogador pode criar uma nova hipótese livre. |
+
+Fatos públicos que podem fortalecer uma hipótese mecânica são pistas confirmadas,
+declarações corroboradas, refutações registradas e relações coerentes entre fatos já
+confirmados. Uma pista refutada nunca fortalece uma hipótese; ela pode contestá-la ou
+descartá-la. Uma observação sem descoberta nunca altera estado sozinha, mas pode
+registrar a consequência narrativa de uma tentativa.
+
+As transições são calculadas apenas no backend. Identificadores de linhas privadas,
+requisitos ainda não descobertos, regras de descarte do caso, condições de operação e
+resultado futuro permanecem privados. O DTO público não pode informar o próximo local,
+carta, pessoa, eixo ausente ou operação bloqueada. GD-02 poderá consultar uma operação
+de verificação para uma hipótese mecânica `plausible` e uma operação de encerramento
+somente para uma hipótese mecânica `sustained`, sem expor a regra que as sustenta.
+
+- [x] **GD-01 — Definir estados de hipótese** `[Definição] [Back] [Front]`
   - Modelar hipótese como estado explícito: em apuração, plausível, sustentada, contestada e descartada.
   - Definir quais categorias públicas de evidência podem fortalecê-la: meios, oportunidade e vínculo.
   - Critério de aceite: o estado da hipótese pode ser apresentado sem expor condições futuras ou a solução do caso.
 
-- [ ] **GD-02 — Definir operações investigativas** `[Definição] [Back] [Front]`
-  - Substituir o comando de acusação por uma ou mais operações narrativas de fim de caso.
-  - Estabelecer pré-requisitos, custo, consequência de sucesso, consequência de tentativa incompleta e disponibilidade na Rodada 6.
-  - Critério de aceite: a decisão final é compreensível em ficção e não pede que o jogador preencha eixos manualmente.
+### Contrato de operações investigativas (GD-02)
 
-- [ ] **GD-03 — Consolidar economia de PA e cartas** `[Definição] [Back]`
+Uma operação é uma decisão narrativa associada a uma hipótese mecânica; não é uma
+acusação, não recebe suspeito nem eixos de evidência como entrada. O servidor decide
+se ela existe, pode ser preparada e qual consequência produz. Somente relações
+investigativas validadas pelo servidor fortalecem a hipótese; ligações visuais do mural
+são anotações gratuitas e nunca liberam uma operação.
+
+| Tipo | Hipótese necessária | Finalidade | Resultado possível |
+| --- | --- | --- | --- |
+| `verify` | `plausible` ou `sustained` | Verificar uma linha de raciocínio sem encerrar a missão. | Corrobora fatos já acessíveis, registra observação útil ou revela inconsistência recuperável. Nunca vence nem perde a missão. |
+| `closure` | `sustained` | Executar o desfecho ficcional do caso. | Resolve a missão somente se o servidor confirmar o resultado; uma tentativa incompleta segue a regra de recuperação abaixo. |
+
+Uma hipótese livre nunca consulta, prepara ou resolve operação. Hipóteses em `inquiry`,
+`contested` ou `discarded` não recebem operação disponível. Se uma hipótese preparada
+deixar de atender ao estado mínimo, o servidor invalida a preparação antes de qualquer
+resolução e informa apenas que a linha precisa ser reavaliada.
+
+Preparar uma operação disponível é gratuito, registra no máximo uma preparação por vez
+e pode ser trocado ou cancelado sem custo. Resolver exige a operação ainda preparada,
+gasta exatamente 2 PA gerais — nunca PA de especialidade, carta ou apoio — e só pode
+ocorrer uma vez por rodada. Na Rodada 6, a resolução continua permitida depois de uma
+última confirmação no mesmo turno quando os PA gerais restantes cobrem ambos os custos.
+
+Uma resolução incompleta consome os 2 PA, registra uma observação ou inconsistência já
+vivida na ficção e contesta a hipótese associada. Ela não encerra automaticamente a
+partida: enquanto houver prazo, o jogador pode reorganizar a investigação. Na Rodada 6,
+a partida permanece ativa até o encerramento normal do turno; somente esse prazo, e não
+a tentativa isolada, pode encerrar a missão sem vitória.
+
+O DTO público de uma operação disponível contém somente um identificador opaco, tipo,
+título narrativo, descrição de risco já liberada e estado `available` ou `prepared`.
+O presenter pode expor uma mensagem de consequência já ocorrida no diário, mas nunca
+requisitos privados, eixos ausentes, pistas ou pessoas faltantes, operação bloqueada,
+probabilidade, resultado futuro ou se a operação é a solução correta. Operações não
+disponíveis simplesmente não integram a resposta pública.
+
+GD-07 implementará três casos de uso separados: consultar opções públicas, preparar uma
+operação e resolver a preparação. Eles recebem somente o identificador público e a
+partida; o conteúdo privado do caso avalia a hipótese, os requisitos e o resultado. A
+interface apresenta opções por `props` e emite apenas preparar, trocar, cancelar ou
+resolver, sem calcular prontidão ou consequência localmente.
+
+- [x] **GD-02 — Definir operações investigativas** `[Definição] [Back] [Front]`
+  - Substituir o comando de acusação por operações narrativas específicas de cada caso, como seguir uma rota, preservar uma prova ou confrontar uma inconsistência. A interface não pede suspeito ou eixos de prova.
+  - Definir dois níveis de operação:
+    1. **Verificar linha de raciocínio:** fica disponível para hipótese plausível; não vence a missão e pode confirmar parcialmente a teoria, registrar uma observação útil ou revelar uma inconsistência recuperável.
+    2. **Operação de encerramento:** fica disponível somente para hipótese sustentada; pode resolver a missão.
+  - Preparar uma operação é gratuito. Resolver uma operação custa 2 PA gerais; o jogador pode trocar a operação preparada antes de resolvê-la.
+  - Permitir no máximo uma resolução de operação por rodada. Na Rodada 6, permitir uma última confirmação e a resolução de operação no mesmo turno, quando os PA permitirem.
+  - Uma operação incompleta consome o custo, registra consequência narrativa útil, contesta a hipótese relacionada e mantém a missão ativa enquanto houver prazo. Ela nunca encerra a partida automaticamente.
+  - O servidor determina disponibilidade, custo e resultado. O cliente recebe apenas título, descrição de risco e estado disponível ou preparado, sem requisito oculto, pista faltante ou solução.
+  - Critério de aceite: a decisão final é compreensível em ficção, não pede preenchimento manual de eixos, mantém recuperação após tentativa incompleta e não revela a solução antes da sustentação da hipótese.
+
+### Contrato de economia de PA e cartas (GD-03)
+
+O servidor é a fonte única para mão, preparação, compra, descarte, custos e uso de
+cartas. O cliente recebe somente a mão ativa, custos já públicos e disponibilidade;
+nunca calcula compra, desconto ou efeito de carta localmente.
+
+Cada turno forma quatro cartas regulares do investigador ativo. Ao encerrar, as
+regulares não usadas retornam ao ciclo de compra, que é embaralhado pelo gerador
+injetado; o descarte só é embaralhado para completar a mão. A ordem das pilhas e o
+baralho do apoio permanecem privados.
+
+Cartas temporárias e do apoio são extras: não ocupam as quatro vagas regulares,
+persistem até uso ou descarte e não impedem a renovação regular. Temporárias são
+removidas ao consumo; cartas do apoio retornam ao descarte do dono com custo original.
+
+Preparar ou cancelar carta custa 0 PA. Para uma ação compatível, calcule primeiro o custo
+base contextual, some o custo efetivo da carta e sobretaxas da ação, aplique descontos de
+contexto ou habilidade e cobre o resultado, com mínimo de 1 PA. Uma pergunta adicional
+explicitamente gratuita por habilidade ou carta mantém custo 0; carta de custo 0, sozinha,
+nunca torna gratuita uma ação básica. A incompatibilidade é rejeitada antes de gasto ou
+consumo. Em ações compatíveis, PA de especialidade válidos são gastos antes dos gerais.
+Operação é exceção: custa exatamente 2 PA gerais, sem carta, apoio ou especialidade.
+
+O descarte voluntário aceita somente uma carta preparada por rodada. Cartas temporárias
+são removidas ao usar ou descartar; cartas do apoio voltam ao descarte do dono, com custo
+original restaurado. Após descarte, somente a mão regular é recomposta até quatro cartas.
+No encerramento do turno, cartas regulares não usadas retornam ao ciclo de compra, o monte
+é embaralhado com o gerador injetado e o descarte só é embaralhado se necessário para
+completar quatro. Temporárias e cartas do apoio ficam como extras e não contam nessas
+quatro vagas.
+
+O apoio é opcional, pode ser acionado uma vez por rodada e acrescenta uma carta extra do
+baralho do investigador de apoio. Seu desconto de 1 PA reduz apenas o custo da carta
+recebida (sem custo negativo); a carta usada ou descartada retorna ao descarte do dono
+com o custo original. Mão, compra, custo efetivo e disponibilidade são decididos pelo
+servidor. O cliente apresenta a mão ativa e custos públicos calculados pela mesma regra
+pura compartilhada; o presenter expõe apenas o resultado resolvido, carta preparada e
+contagens públicas, nunca a ordem das pilhas ou o baralho do apoio.
+
+- [x] **GD-03 — Consolidar economia de PA e cartas** `[Definição] [Back]`
   - Tornar uma única regra oficial para renovação de mão, descarte voluntário, cartas temporárias e apoio de plantão.
   - Confirmar a prioridade de descontos, custos de cartas e gastos especializados.
   - Critério de aceite: documentação, UI e motor calculam o mesmo custo e a mesma disponibilidade de carta.
 
-- [ ] **GD-04 — Criar matriz de margem de erro** `[Definição] [Test]`
+- [x] **GD-04 — Criar matriz de margem de erro** `[Definição] [Test]`
   - Mapear, por investigador, o menor custo para obter uma hipótese sustentada e quantas ações de curiosidade ainda cabem antes da Rodada 5 e da Rodada 6.
   - Cobrir cartas ausentes, deslocamentos, conversas, pistas falsas e uso opcional do apoio.
   - Critério de aceite: cada investigador solo possui uma rota sem carta obrigatória e suporta ao menos três ações não decisivas até a conclusão na Rodada 6.
 
 ### P1 — Motor autoritativo de hipóteses e operações
 
-- [ ] **GD-05 — Implementar entidade de hipótese investigativa** `[Back]`
+- [x] **GD-05 — Implementar entidade de hipótese investigativa** `[Back]`
   - Criar entidades e Value Objects tipados para hipótese, eixo de evidência, sustentação e contestação.
   - Não reutilizar arrays de chaves genéricas para controlar estados de dedução.
   - Critério de aceite: o domínio calcula a prontidão de uma hipótese de modo determinístico e testável.
 
-- [ ] **GD-06 — Implementar conexões coerentes** `[Back] [Front]`
-  - Restringir conexões formais a evidências válidas e impedir que conexões irrelevantes satisfaçam a condição de operação.
-  - Preservar hipóteses livres como anotações sem custo, separadas das conexões que têm efeito mecânico.
-  - Critério de aceite: não é possível cumprir a prontidão conectando pistas aleatórias, duplicadas ou refutadas.
+- [x] **GD-06 — Implementar relações coerentes** `[Back] [Front]`
+  - Restringir relações investigativas a evidências válidas e impedir que pares irrelevantes satisfaçam a condição de operação.
+  - Preservar hipóteses livres como anotações sem custo, separadas das relações que têm efeito mecânico.
+  - Critério de aceite: não é possível cumprir a prontidão usando relações entre pistas aleatórias, duplicadas ou refutadas.
 
-- [ ] **GD-07 — Implementar preparação e resolução de operação** `[Back] [API]`
+### Contrato de mural e cruzamento investigativo (GD-06A)
+
+Uma ligação no mural é uma anotação visual gratuita entre duas pistas confirmadas e
+coerentes. Ela não altera PA, cartas, hipótese ou disponibilidade de operação. Um
+cruzamento investigativo é uma ação distinta: valida a relação no servidor, gasta 1 PA
+geral ou de pesquisa quando não houver desconto válido e registra uma observação ligada
+às evidências. Cartas de cruzamento, o benefício social de Isadora e o benefício da
+Rodada 5 podem zerar o custo, cada um com seu próprio consumo.
+
+A hipótese considera apenas relações validadas pelo servidor que ligam evidências
+confirmadas, distintas e coerentes da mesma linha. A prontidão exige cobertura dos eixos
+e relações investigativas suficientes; a quantidade de ligações visuais nunca contribui.
+
+- [x] **GD-06A — Separar relação no mural de cruzamento investigativo** `[Back] [Front] [Definição]`
+  - A ligação visual entre evidências confirmadas e coerentes deve ser gratuita: ela registra a linha de raciocínio do jogador no mural e não consome PA.
+  - O gasto de PA fica reservado para um cruzamento investigativo que produz efeito concreto, como validar uma relação, confrontar uma declaração, proteger uma prova ou abrir uma nova oportunidade.
+  - A prontidão de hipótese e operação deve avaliar cobertura dos eixos e relações coerentes; ligações visuais do mural não contribuem para a contagem.
+  - Separar os contratos, casos de uso e apresentação das duas intenções para que uma ligação visual nunca seja confundida com uma ação investigativa.
+  - Critério de aceite: o jogador pode organizar livremente o mural sem custo; PA só é gasto quando a relação gera consequência mecânica real; não existe conexão de preenchimento para liberar operação.
+
+- [x] **GD-06B — Cruzar declarações contestáveis com evidências** `[Back] [Front] [Definição] [Conteúdo] [Test]`
+  - Tratar uma declaração `contestable` como evidência selecionável no mural. O jogador deve poder ligá-la a uma pista confirmada e iniciar um cruzamento investigativo, mesmo que todas as perguntas da pessoa já tenham sido registradas.
+  - O cruzamento testa a **versão declarada**, e não reabre automaticamente a conversa com a pessoa. Ele usa custo, disponibilidade e resultado decididos pelo servidor, respeitando descontos já previstos para cruzamentos.
+  - Definir resultados públicos possíveis: contradição sustentada (a declaração é refutada ou enfraquecida), relação inconclusiva (a declaração permanece contestável com observação útil) e nova conversa possível somente quando a ficção do caso exigir uma reação da pessoa.
+  - Atualizar o mural, o diário e o progresso da hipótese com o resultado persistido, sem expor requisito futuro, solução, probabilidade ou conteúdo ainda bloqueado.
+  - Aplicar o contrato na definição e validação de conteúdo de todos os casos: todo estado `contestable` deve ter ao menos uma rota de cruzamento com evidência ou uma consequência narrativa recuperável; nenhum caso pode exigir perguntas já esgotadas para resolver a contestação.
+  - Critério de aceite: após obter uma declaração contestável, uma pessoa consegue testar sua coerência no mural sem uma nova pergunta disponível; a mesma garantia é validada automaticamente para cada caso versionado.
+
+- [x] **GD-07 — Implementar preparação e resolução de operação** `[Back] [API]`
   - Criar casos de uso separados para consultar operações disponíveis, preparar uma operação e resolver seu resultado.
   - Operação incompleta deve manter a partida ativa quando ainda houver prazo e registrar consequência útil.
+  - Depende da revisão de conexões em `GD-06A` antes de ser considerado consolidado.
   - Critério de aceite: o backend nunca entrega operações, resultados ou requisitos ainda bloqueados além do necessário para a decisão atual.
 
-- [ ] **GD-08 — Reequilibrar especialidades para a rota principal** `[Back] [Definição]`
+- [x] **GD-08 — Reequilibrar especialidades para a rota principal** `[Back] [Definição]`
   - Garantir que os PA técnico, social e de pesquisa possam reduzir pressão da rota investigativa de formas equivalentes.
   - Dar à especialidade social um ganho investigativo concreto, sem transformar conversas em revelação automática da solução.
   - Critério de aceite: em testes de orçamento, os quatro investigadores têm margem semelhante para erro e exploração.
 
 ### P2 — Interface, comunicação e experiência
 
-- [ ] **GD-09 — Criar painel de hipóteses no mural** `[Front]`
+- [ ] **GD-09A — Implementar o Mural em foco** `[Front]`
+  - Substituir o bloco recolhido `Organizar investigação` por um mural persistente, baseado em [wireframes/mural-investigacao.html](../wireframes/mural-investigacao.html).
+  - Exibir pistas confirmadas como cartões, ligações visuais no espaço do mural e o detalhe da ligação selecionada sem alterar regras ou estado no cliente.
+  - A criação de ligação permanece gratuita; o cruzamento só pode ser iniciado a partir da ligação selecionada e apresenta o custo autoritativo antes da confirmação.
+  - Manter leitura e operação viáveis em desktop e celular, sem depender exclusivamente de arrastar e soltar.
+  - Critério de aceite: uma pessoa entende onde organizar pistas, qual ligação está selecionada e que desenhar uma ligação é diferente de cruzá-la antes de gastar PA.
+
+- [ ] **GD-09B — Exibir o estado investigativo de cada ligação** `[Front] [Back]`
+  - Expor no DTO público apenas o estado já ocorrido de cada relação: anotação visual, cruzamento validado, resultado inconclusivo ou relação contestada, quando aplicável.
+  - Atualizar o mural, o detalhe da ligação e o diário após o cruzamento, sem expor requisito futuro, eixo faltante, probabilidade ou solução do caso.
+  - Vincular observações persistidas ao par de pistas correspondente para que o jogador identifique o resultado da ligação que selecionou.
+  - Critério de aceite: o jogador distingue no mural uma ligação ainda hipotética de uma relação com consequência investigativa registrada, sem precisar inferir pelo histórico do diário.
+
+- [x] **GD-09 — Criar painel de hipóteses no mural** `[Front]`
   - Mostrar progresso por linhas de raciocínio e evidências já conhecidas, sem barras de “culpado correto” ou indicação do próximo local.
   - Diferenciar claramente hipótese livre, hipótese plausível e hipótese sustentada.
   - Critério de aceite: um jogador entende por que sua teoria ganhou ou perdeu força sem receber solução pronta.
 
-- [ ] **GD-10 — Substituir a interface de acusação por preparação de operação** `[Front] [Back]`
+- [x] **GD-10 — Substituir a interface de acusação por preparação de operação** `[Front] [Back]`
   - Remover seleção manual de suspeito e dos três eixos como condição de interface.
   - Apresentar operações disponíveis, seus riscos narrativos e o estado geral de preparação.
   - Critério de aceite: um jogador pode concluir a missão sem uma tela de “acusação”.
 
-- [ ] **GD-11 — Criar feedback de recuperação sem spoiler** `[Front] [Back]`
+- [x] **GD-11 — Criar feedback de recuperação sem spoiler** `[Front] [Back]`
   - Comunicar tentativa incompleta como inconsistência, nova observação ou tempo perdido, sem indicar a prova/local exato ausente.
   - Na Rodada 6, comunicar que só confirmações e decisões de encerramento permanecem possíveis.
   - Critério de aceite: o jogador sabe que ainda pode agir e por que sua teoria não se sustentou, sem receber um guia de solução.
 
-- [ ] **GD-11A — Unificar notificações de investigação** `[Front] [Back]`
+- [x] **GD-11A — Unificar notificações de investigação** `[Front] [Back]`
   - Substitui `05C · NOTIF-01` do backlog principal.
   - Notificar descoberta, pista refutada, hipótese fortalecida ou contestada, operação disponível, falha de ação e evento de rodada.
-  - Critério de aceite: as mensagens derivam de eventos autoritativos e continuam consistentes entre participantes em uma futura sala cooperativa.
+  - Critério de aceite: as mensagens derivam de eventos persistidos no estado autoritativo e têm a mesma sequência para os participantes.
 
-- [ ] **GD-12 — Revisar onboarding e linguagem de regras** `[Front] [Docs]`
+- [x] **GD-11B — Orientar prontidão da operação sem spoiler** `[Front] [Back] [Definição]`
+  - Quando não houver operação disponível, o painel deve explicar o próximo tipo de avanço em linguagem ficcional e neutra, sem revelar local, pessoa, carta, eixo específico ou solução.
+  - Diferenciar visualmente linha em apuração, plausível, sustentada e contestada, deixando claro quando uma operação de verificação ou de encerramento passou a estar disponível.
+  - Critério de aceite: uma pessoa nova entende o que significa “organizar evidências e conexões” e qual é o objetivo investigativo imediato, sem receber uma rota pronta até a solução.
+
+- [x] **GD-11C — Sinalizar oportunidades de investigação antes do gasto** `[Front] [Back] [Definição]`
+  - Comunicar, com pistas diegéticas e sem garantia de resultado, quando um local, pessoa ou método parece uma abordagem promissora, esgotada ou apenas exploratória para o estado atual do caso.
+  - Toda ação sem descoberta deve registrar uma observação que reduza incerteza ou indique uma mudança de abordagem; evitar consumir PA em retornos puramente genéricos.
+  - Critério de aceite: um iniciante consegue distinguir tentativa de exploração de uma oportunidade investigativa plausível e não perde PA relevante sem receber orientação aproveitável.
+
+- [x] **GD-12 — Revisar onboarding e linguagem de regras** `[Front] [Docs]`
   - Explicar diferença entre pista, conexão, hipótese e operação no tour opcional e no Diário.
   - Priorizar exemplos de mecânica neutros, sem conteúdo secreto de caso.
   - Critério de aceite: uma pessoa nova entende como progredir sem instrução externa.
 
 ### P3 — Conteúdo, regressão e validação
 
-- [ ] **GD-13 — Adaptar o Caso 01 ao sistema de operações** `[Back] [Definição]`
+- [x] **GD-13 — Adaptar o Caso 01 ao sistema de operações** `[Back] [Definição]`
   - Reescrever apenas o conteúdo privado do caso para mapear evidências, hipóteses, pistas falsas e operações.
   - Manter solução, condições futuras e árvore completa exclusivamente no backend/conteúdo privado.
   - Critério de aceite: existem múltiplas rotas sem carta obrigatória até a operação correta.
 
-- [ ] **GD-13A — Externalizar e versionar conteúdo de casos** `[Back] [Definição]`
+- [x] **GD-13A — Externalizar e versionar conteúdo de casos** `[Back] [Definição]`
   - Substitui `31 · CONTEUDO-01` do backlog principal.
   - Modelar conteúdo privado versionado para evidências, diálogos, hipóteses, operações e resultados; validar por schema antes de publicar.
   - Manter conteúdo secreto no backend e entregar ao cliente apenas opções e resultados já desbloqueados.
   - Critério de aceite: um novo caso pode ser criado ou corrigido sem mudar o motor, sem expor solução ou condições futuras.
 
-- [ ] **GD-14 — Criar simulador de roteiro e orçamento** `[Test] [Back]`
+- [x] **GD-14 — Criar simulador de roteiro e orçamento** `[Test] [Back]`
   - Testar rotas mínimas, rotas com curiosidade, pistas falsas, ausência de carta útil e cada investigador ativo.
   - Tornar o cenário de primeira partida uma regressão automatizada.
   - Critério de aceite: a suíte demonstra vitória até a Rodada 6 com três ações não decisivas e sem depender de aleatoriedade.
@@ -173,15 +342,17 @@ Manter, inicialmente, cinco PA efetivos por turno, com especialidades distintas:
   - Decidir se a pressão adiciona escolhas interessantes sem reduzir a margem mínima para iniciantes; só então definir eventos, ações e cartas que a alteram.
   - Critério de aceite: a pressão é comunicada claramente, tem efeitos concretos e não torna cartas, apoio ou uma rota específica obrigatórios.
 
-## Ordem recomendada
+## Ordem de execução atual
 
-1. D-01 a D-06 e GD-01 a GD-04.
-2. GD-05 a GD-08, com testes de domínio desde o início.
-3. GD-09 a GD-12, incluindo GD-11A.
-4. GD-13, GD-13A e GD-14.
-5. GD-15; ajustar o balanceamento conforme dados.
-6. GD-17 depois de validar a economia de PA.
-7. GD-16 somente depois de validar o fluxo.
+1. **GD-06B** — Cruzar declarações contestáveis com evidências.
+2. Revalidar **GD-07** e **GD-08** diante do contrato de cruzamentos e da economia de PA atualizada.
+3. **GD-09A** — Implementar o Mural em foco.
+4. **GD-09B** — Exibir o estado investigativo de cada ligação.
+5. **GD-15** — Conduzir playtest de iniciantes.
+6. **GD-17** — Avaliar medidor de pressão do caso depois do playtest.
+7. **GD-16** — Atualizar documentos de regra e backlog principal por último, após validar o fluxo.
+
+**GD-14** permanece pendente, mas fica fora desta sequência até nova priorização de produto.
 
 ## Métricas de validação
 

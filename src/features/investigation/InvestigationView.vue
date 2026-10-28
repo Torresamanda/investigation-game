@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { suspectProfiles } from '../../content/case01'
 import { useInvestigationStore } from '../../stores/investigation'
 import type { InvestigationAction } from '../../domain/game/action-points'
 import { useTableNotifications } from './composables/useTableNotifications'
-import { useTableTour } from './composables/useTableTour'
+import { tableTourStepCount, useTableTour } from './composables/useTableTour'
 import TableTour from './components/TableTour.vue'
 import CaseToolbar from './components/CaseToolbar.vue'
 import LocationsPanel from './components/LocationsPanel.vue'
@@ -15,7 +14,7 @@ import SuspectSection from './components/SuspectSection.vue'
 import CaseJournal from './components/CaseJournal.vue'
 import CaseIntroduction from './components/CaseIntroduction.vue'
 import ConversationDialog from './components/ConversationDialog.vue'
-import AccusationDialog from './components/AccusationDialog.vue'
+import OperationPanel from './components/OperationPanel.vue'
 import AppToast from '../../components/ui/AppToast.vue'
 import AppModal from '../../components/ui/AppModal.vue'
 import { statusFeedback } from './action-feedback'
@@ -29,7 +28,7 @@ import './investigation.css'
 const session = useInvestigationStore()
 const feedback = ref(statusFeedback('Escolha como deseja conduzir a investigação.'))
 const cards = computed(() => session.hand)
-const panelMode = ref<'people' | 'journal' | 'accusation'>('people')
+const panelMode = ref<'people' | 'journal' | 'operation'>('people')
 const { tourStep, tourIndex, startTour, startTourOnFirstVisit, closeTour, stepTour } =
   useTableTour()
 
@@ -50,10 +49,15 @@ const {
   availableActions,
   actionCosts,
   hasUsableActionPoints,
-  confirmedClues,
-  hasFreeJournalConnection,
-  hasPreparedConnectionCard,
+  investigativeCrossingCost,
+  canAffordInvestigativeCrossing,
 } = useTableContext(session)
+
+const { notifications, unreadCount, dismissNotification, notifyActionFailure } =
+  useTableNotifications(
+    () => session.remoteMatch,
+    () => panelMode.value === 'journal',
+  )
 
 const {
   conversation,
@@ -61,7 +65,15 @@ const {
   refreshConversation,
   openConversation,
   resolveConversation,
-} = useTableConversation(session, location, locationId, selectedSuspectId, panelMode, feedback)
+} = useTableConversation(
+  session,
+  location,
+  locationId,
+  selectedSuspectId,
+  panelMode,
+  feedback,
+  notifyActionFailure,
+)
 
 const {
   isSupportRequestPending,
@@ -69,38 +81,28 @@ const {
   clearPreparedCard,
   discardPreparedCard,
   requestSupportCard,
-} = useTableHand(session, feedback, refreshConversation)
+} = useTableHand(session, feedback, refreshConversation, notifyActionFailure)
 
 const {
   showDeletionConfirmation,
   deletionError,
-  accusationError,
   retryConnection,
   requestReturnToWorld,
   deleteCurrentMatch,
   endTurn,
-  accuseSuspect,
-  openAccusation,
-} = useCaseLifecycle(session, feedback, panelMode)
+} = useCaseLifecycle(session, feedback)
 
-const { executeAction, moveToLocation, createJournalConnection } = useTableActions(
-  session,
-  feedback,
-  location,
-  locationId,
-  selectedSuspectId,
-  hasFreeJournalConnection,
-  hasPreparedConnectionCard,
-)
-
-const { notifications, unreadCount, dismissNotification } = useTableNotifications(
-  () => session.remoteMatch,
-  () => panelMode.value === 'journal',
-)
+const { executeAction, moveToLocation, createMuralLink, createInvestigativeCrossing } =
+  useTableActions(session, feedback, location, locationId, selectedSuspectId, notifyActionFailure)
 
 function openDiscoveryInJournal(id: string) {
   panelMode.value = 'journal'
   dismissNotification(id)
+}
+
+function openOperationPanel() {
+  panelMode.value = 'operation'
+  void session.loadAvailableOperations()
 }
 
 function executeSelectedAction(action: InvestigationAction) {
@@ -111,6 +113,49 @@ function executeSelectedAction(action: InvestigationAction) {
     return
   }
   void executeAction(action)
+}
+
+async function prepareOperation(operationId: string) {
+  try {
+    await session.prepareOperation(operationId)
+    feedback.value = statusFeedback(
+      'Operação preparada. Quando estiver pronto, resolva o desfecho.',
+    )
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Não foi possível preparar a operação.'
+    notifyActionFailure(message)
+    feedback.value = statusFeedback(message)
+  }
+}
+
+async function resolveOperation() {
+  try {
+    await session.resolveOperation()
+    const latestEntry = session.journalEntries.at(-1)
+    feedback.value = statusFeedback(
+      latestEntry?.title === 'Inconsistência na operação'
+        ? 'A operação revelou uma inconsistência. Ainda há tempo para reavaliar as evidências.'
+        : 'A operação foi resolvida.',
+    )
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Não foi possível resolver a operação.'
+    notifyActionFailure(message)
+    feedback.value = statusFeedback(message)
+  }
+}
+
+async function cancelOperation() {
+  try {
+    await session.cancelOperation()
+    feedback.value = statusFeedback(
+      'A preparação foi cancelada. Você pode escolher outra operação.',
+    )
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Não foi possível cancelar a preparação.'
+    notifyActionFailure(message)
+    feedback.value = statusFeedback(message)
+  }
 }
 </script>
 
@@ -218,6 +263,7 @@ function executeSelectedAction(action: InvestigationAction) {
             :class="{ 'tour-highlight': tourStep?.target === 'actions' }"
             :available-actions="availableActions"
             :action-costs="actionCosts"
+            :action-opportunities="session.remoteMatch?.actionOpportunities"
             :feedback="feedback"
             :can-end-turn="session.canEndTurn"
             :has-usable-action-points="hasUsableActionPoints"
@@ -260,12 +306,8 @@ function executeSelectedAction(action: InvestigationAction) {
               >{{ unreadCount }}</span
             >
           </button>
-          <button
-            :aria-pressed="panelMode === 'accusation'"
-            :disabled="!session.canAccuse"
-            @click="openAccusation"
-          >
-            Acusação
+          <button :aria-pressed="panelMode === 'operation'" @click="openOperationPanel">
+            Operação
           </button>
         </nav>
         <div class="contextual-content">
@@ -289,22 +331,26 @@ function executeSelectedAction(action: InvestigationAction) {
             v-show="panelMode === 'journal'"
             v-model:notes="session.notes"
             :hypotheses="session.hypotheses"
+            :hypothesis-progress="session.remoteMatch?.hypotheses ?? []"
             :journal-entries="session.journalEntries"
-            :journal-connections="session.journalConnections"
-            :has-free-connection="hasFreeJournalConnection"
-            :has-prepared-connection-card="hasPreparedConnectionCard"
+            :mural-links="session.muralLinks"
+            :investigative-crossing-cost="investigativeCrossingCost"
+            :can-afford-investigative-crossing="canAffordInvestigativeCrossing"
             @save="session.saveNote()"
-            @create-connection="createJournalConnection"
+            @create-mural-link="createMuralLink"
+            @create-investigative-crossing="createInvestigativeCrossing"
           />
-          <AccusationDialog
-            v-if="session.remoteMatch && session.canAccuse"
-            v-show="panelMode === 'accusation'"
-            :suspects="suspectProfiles"
-            :confirmed-clues="confirmedClues"
-            :connection-count="session.journalConnections.length"
-            :action-points="session.remoteMatch.actionPoints"
-            :error-message="accusationError"
-            @accuse="accuseSuspect"
+          <OperationPanel
+            v-if="session.remoteMatch"
+            v-show="panelMode === 'operation'"
+            :operations="session.availableOperations"
+            :hypotheses="session.remoteMatch.hypotheses ?? []"
+            :is-prepared="Boolean(session.remoteMatch.preparedOperation)"
+            :is-final-round="session.remoteMatch.round === 6"
+            :is-request-pending="session.isRequestPending"
+            @prepare="prepareOperation"
+            @resolve="resolveOperation"
+            @cancel="cancelOperation"
           />
         </div>
       </aside>
@@ -324,6 +370,7 @@ function executeSelectedAction(action: InvestigationAction) {
       v-if="tourStep"
       :step="tourStep"
       :index="tourIndex"
+      :total-steps="tableTourStepCount"
       @step="stepTour"
       @close="closeTour"
     />

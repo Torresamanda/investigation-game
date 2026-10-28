@@ -23,19 +23,24 @@ export interface ResolveConversationCommand {
   readonly questionId: string
 }
 
-export interface CreateJournalConnectionCommand {
+export interface CreateMuralLinkCommand {
   readonly matchId: string
   readonly fromClueId: string
   readonly toClueId: string
 }
 
-export interface AccusationEvidenceSelection {
-  readonly meansClueId: string
-  readonly opportunityClueId: string
-  readonly linkClueId: string
+export interface CreateInvestigativeCrossingCommand {
+  readonly matchId: string
+  readonly fromClueId: string
+  readonly toClueId: string
 }
 
-export interface AccuseSuspectCommand extends AccusationEvidenceSelection {
+export interface PrepareOperationCommand {
   readonly matchId: string
-  readonly suspectId: PersonId
+  readonly operationId: string
+  readonly hypothesisId: string
+}
+
+export interface ResolveOperationCommand {
+  readonly matchId: string
 }

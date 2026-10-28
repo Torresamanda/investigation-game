@@ -23,6 +23,43 @@
   font-size: 24px;
 }
 
+.journal-guide {
+  border: 1px solid #c79a5340;
+  border-radius: 8px;
+  padding: 9px;
+  background: #0c1b2a;
+}
+
+.journal-guide h3 {
+  margin: 0 0 7px;
+  color: var(--gold);
+  font-size: 12px;
+}
+
+.journal-guide dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.journal-guide dl > div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 7px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.journal-guide dt {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.journal-guide dd {
+  margin: 0;
+  color: #c3d2d9;
+}
+
 .journal-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -146,7 +183,7 @@
   margin-top: 16px;
 }
 
-.journal-connection-form {
+.mural-link-form {
   display: grid;
   gap: 8px;
   margin-top: 18px;
@@ -154,12 +191,12 @@
   border-top: 1px solid var(--line);
 }
 
-.journal-connection-form h4,
-.journal-connection-form p {
+.mural-link-form h4,
+.mural-link-form p {
   margin: 0;
 }
 
-.journal-connection-form select {
+.mural-link-form select {
   width: 100%;
   padding: 9px;
   border: 1px solid var(--line);
@@ -202,6 +239,33 @@
 .journal-status--confirmed {
   border-color: #70b99a;
   color: #a9e6c8;
+}
+
+.journal-status--inquiry {
+  border-color: #8097a8;
+  color: #c4d5de;
+}
+
+.journal-status--plausible {
+  border-color: var(--gold);
+  color: #f3d7a6;
+}
+
+.journal-status--sustained {
+  border-color: #70b99a;
+  color: #a9e6c8;
+  background: #183c35;
+}
+
+.journal-status--contested {
+  border-color: #d38e82;
+  color: #f0b7ac;
+  background: #482b2c;
+}
+
+.journal-status--discarded {
+  border-color: #667784;
+  color: #a9b7bf;
 }
 
 .journal-status--refuted {
@@ -315,7 +379,7 @@
   font-size: 16px;
 }
 
-.journal-connection-form .field-label {
+.mural-link-form .field-label {
   margin: 0;
 }
 

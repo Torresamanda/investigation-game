@@ -61,13 +61,73 @@ export async function handleMatchRequest(request: Request, database: D1DatabaseC
       questionMatch[3],
       database,
     )
-  const connectionsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/connections$/)?.[1]
-  if (request.method === 'POST' && connectionsMatch)
-    return createJournalConnection(request, connectionsMatch, database)
-  const accusationMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/accuse$/)?.[1]
-  if (request.method === 'POST' && accusationMatch)
-    return accuseSuspect(request, accusationMatch, database)
+  const muralLinksMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/mural-links$/)?.[1]
+  if (request.method === 'POST' && muralLinksMatch)
+    return createMuralLink(request, muralLinksMatch, database)
+  const crossingsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/crossings$/)?.[1]
+  if (request.method === 'POST' && crossingsMatch)
+    return createInvestigativeCrossing(request, crossingsMatch, database)
+  const operationsMatch = url.pathname.match(/^\/api\/matches\/([^/]+)\/operations$/)?.[1]
+  if (request.method === 'GET' && operationsMatch)
+    return getAvailableOperations(operationsMatch, database)
+  if (request.method === 'POST' && operationsMatch)
+    return prepareOperation(request, operationsMatch, database)
+  if (request.method === 'DELETE' && operationsMatch)
+    return cancelOperation(request, operationsMatch, database)
+  const resolveOperationMatch = url.pathname.match(
+    /^\/api\/matches\/([^/]+)\/operations\/resolve$/,
+  )?.[1]
+  if (request.method === 'POST' && resolveOperationMatch)
+    return resolveOperation(request, resolveOperationMatch, database)
   return jsonResponse({ message: 'Rota não encontrada.' }, 404)
+}
+
+async function getAvailableOperations(
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  return readMatch(id, database, (service, matchId) => service.getAvailableOperations(matchId))
+}
+
+async function prepareOperation(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  const operationId =
+    typeof body === 'object' && body !== null && 'operationId' in body
+      ? body.operationId
+      : undefined
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (!hasOnlyFields(body, ['operationId']) || !isNonEmptyString(operationId)) {
+    return jsonResponse({ message: 'Operação inválida.' }, 400)
+  }
+  return mutateMatch(id, database, (service, matchId) =>
+    service.prepareOperation(matchId, operationId),
+  )
+}
+
+async function resolveOperation(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (body) return jsonResponse({ message: 'Operação inválida.' }, 400)
+  return mutateMatch(id, database, (service, matchId) => service.resolveOperation(matchId))
+}
+
+async function cancelOperation(
+  request: Request,
+  id: string,
+  database: D1DatabaseConnection,
+): Promise<Response> {
+  const body = await readJsonBody(request)
+  if (isOversizedBody(body)) return payloadTooLargeResponse()
+  if (body) return jsonResponse({ message: 'Operação inválida.' }, 400)
+  return mutateMatch(id, database, (service, matchId) => service.cancelOperation(matchId))
 }
 
 async function createMatch(request: Request, database: D1DatabaseConnection): Promise<Response> {
@@ -81,13 +141,18 @@ async function createMatch(request: Request, database: D1DatabaseConnection): Pr
     return jsonResponse({ message: 'Investigadores inválidos.' }, 400)
   }
   try {
-    const match = createWorkerMatchService(new InMemoryMatchRepository()).createSoloMatch({
+    const service = createWorkerMatchService(new InMemoryMatchRepository())
+    const match = service.createSoloMatch({
       activeInvestigatorId,
       supportInvestigatorId,
     })
     await new D1MatchStore(database).save(match)
     const token = await new D1MatchSessionStore(database).issue(match.id)
-    return jsonResponse(MatchPresenter.toPublicDto(match), 201, { [matchTokenHeader]: token })
+    return jsonResponse(
+      MatchPresenter.toPublicDto(match, service.getActionOpportunities(match.id)),
+      201,
+      { [matchTokenHeader]: token },
+    )
   } catch {
     return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
   }
@@ -98,9 +163,11 @@ async function getMatch(id: string, database: D1DatabaseConnection): Promise<Res
   if (!matchId) return jsonResponse({ message: 'Partida inválida.' }, 400)
   try {
     const match = await new D1MatchStore(database).findById(matchId)
-    return match
-      ? jsonResponse(MatchPresenter.toPublicDto(match))
-      : jsonResponse({ message: 'Partida não encontrada.' }, 404)
+    if (!match) return jsonResponse({ message: 'Partida não encontrada.' }, 404)
+    const repository = new InMemoryMatchRepository()
+    repository.save(match)
+    const service = createWorkerMatchService(repository)
+    return jsonResponse(MatchPresenter.toPublicDto(match, service.getActionOpportunities(match.id)))
   } catch {
     return jsonResponse({ message: 'A investigação está indisponível.' }, 503)
   }
@@ -269,7 +336,7 @@ async function resolveConversation(
   )
 }
 
-async function createJournalConnection(
+async function createMuralLink(
   request: Request,
   id: string,
   database: D1DatabaseConnection,
@@ -283,39 +350,25 @@ async function createJournalConnection(
   if (!isNonEmptyString(fromClueId) || !isNonEmptyString(toClueId))
     return jsonResponse({ message: 'Selecione duas pistas válidas.' }, 400)
   return mutateMatch(id, database, (service, matchId) =>
-    service.createJournalConnection({ matchId, fromClueId, toClueId }),
+    service.createMuralLink({ matchId, fromClueId, toClueId }),
   )
 }
 
-async function accuseSuspect(
+async function createInvestigativeCrossing(
   request: Request,
   id: string,
   database: D1DatabaseConnection,
 ): Promise<Response> {
   const body = await readJsonBody(request)
   if (isOversizedBody(body)) return payloadTooLargeResponse()
-  if (!hasOnlyFields(body, ['suspectId', 'meansClueId', 'opportunityClueId', 'linkClueId']))
-    return jsonResponse({ message: 'Preencha um dossiê de acusação válido.' }, 400)
-  const suspectId = body?.suspectId
-  const meansClueId = body?.meansClueId
-  const opportunityClueId = body?.opportunityClueId
-  const linkClueId = body?.linkClueId
-  if (
-    !isPersonId(suspectId) ||
-    !isNonEmptyString(meansClueId) ||
-    !isNonEmptyString(opportunityClueId) ||
-    !isNonEmptyString(linkClueId)
-  ) {
-    return jsonResponse({ message: 'Preencha um dossiê de acusação válido.' }, 400)
-  }
+  if (!hasOnlyFields(body, ['fromClueId', 'toClueId']))
+    return jsonResponse({ message: 'Selecione duas pistas válidas para o cruzamento.' }, 400)
+  const fromClueId = body?.fromClueId
+  const toClueId = body?.toClueId
+  if (!isNonEmptyString(fromClueId) || !isNonEmptyString(toClueId))
+    return jsonResponse({ message: 'Selecione duas pistas válidas para o cruzamento.' }, 400)
   return mutateMatch(id, database, (service, matchId) =>
-    service.accuseSuspect({
-      matchId,
-      suspectId,
-      meansClueId,
-      opportunityClueId,
-      linkClueId,
-    }),
+    service.createInvestigativeCrossing({ matchId, fromClueId, toClueId }),
   )
 }
 
@@ -350,10 +403,11 @@ async function mutateMatch(
     if (!match) throw new MatchNotFoundError()
     const repository = new InMemoryMatchRepository()
     repository.save(match)
-    const updated = mutate(createWorkerMatchService(repository), matchId)
+    const service = createWorkerMatchService(repository)
+    const updated = mutate(service, matchId)
     const saved = await store.save(updated)
     if (saved.status !== 'active') await store.delete(saved.id)
-    return jsonResponse(MatchPresenter.toPublicDto(saved))
+    return jsonResponse(MatchPresenter.toPublicDto(saved, service.getActionOpportunities(saved.id)))
   } catch (error) {
     return matchErrorResponse(error, 'Não foi possível processar a requisição.')
   }

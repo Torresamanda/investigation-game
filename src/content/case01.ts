@@ -118,7 +118,7 @@ export const roundOpenings = [
     speaker: 'Sofia Moura · Abertura da Rodada 5',
     message: '“O que parecia uma falha isolada agora parece uma sequência.”',
     event:
-      'Linha do tempo consolidada: uma conexão formal entre pistas confirmadas pode ser registrada sem custo nesta rodada.',
+      'Linha do tempo consolidada: o primeiro cruzamento investigativo desta rodada não consome PA.',
   },
   {
     speaker: 'Sofia Moura · Abertura da Rodada 6',

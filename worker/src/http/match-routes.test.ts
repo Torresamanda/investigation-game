@@ -178,16 +178,53 @@ describe('D1 match routes', () => {
       database,
     )
     const connection = await handleMatchRequest(
-      new Request(`https://game.test/api/matches/${match.id}/connections`, {
+      new Request(`https://game.test/api/matches/${match.id}/mural-links`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...authorizedHeaders(match.token) },
         body: JSON.stringify({ fromClueId: '', toClueId: 'clue-2' }),
       }),
       database,
     )
+    const crossing = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/crossings`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authorizedHeaders(match.token) },
+        body: JSON.stringify({ fromClueId: 'clue-1', toClueId: '' }),
+      }),
+      database,
+    )
 
     expect(conversation.status).toBe(400)
     expect(connection.status).toBe(400)
+    expect(crossing.status).toBe(400)
+  })
+
+  it('keeps operations protected and does not disclose unavailable options', async () => {
+    const database = new InMemoryD1Database()
+    const match = await createMatch(database)
+
+    const unauthorized = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/operations`),
+      database,
+    )
+    const available = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/operations`, {
+        headers: authorizedHeaders(match.token),
+      }),
+      database,
+    )
+    const invalidPreparation = await handleMatchRequest(
+      new Request(`https://game.test/api/matches/${match.id}/operations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authorizedHeaders(match.token) },
+        body: JSON.stringify({ operationId: '' }),
+      }),
+      database,
+    )
+
+    expect(unauthorized.status).toBe(401)
+    expect(await available.json()).toEqual([])
+    expect(invalidPreparation.status).toBe(400)
   })
 
   it('rejects extra fields and oversized JSON payloads', async () => {

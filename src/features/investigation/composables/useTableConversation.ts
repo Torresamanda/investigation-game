@@ -11,8 +11,9 @@ export function useTableConversation(
   location: Ref<CaseLocation>,
   locationId: Ref<LocationId>,
   selectedSuspectId: Ref<SuspectId | null>,
-  panelMode: Ref<'people' | 'journal' | 'accusation'>,
+  panelMode: Ref<'people' | 'journal' | 'operation'>,
   feedback: Ref<InvestigationFeedback>,
+  notifyActionFailure: (message: string) => void,
 ) {
   const conversation = ref<ConversationOptions | null>(null)
   const conversationAnswer = ref('')
@@ -58,7 +59,7 @@ export function useTableConversation(
       feedback.value = feedbackFromEntry(
         entry,
         `Conversar · ${activeConversation.personName}`,
-        questionCost + (preparedCard?.cost ?? 0),
+        questionCost,
         preparedCard?.name ?? null,
       )
       conversation.value = await session.loadConversationOptions(
@@ -66,9 +67,10 @@ export function useTableConversation(
         location.value.id,
       )
     } catch (error) {
-      feedback.value = statusFeedback(
-        error instanceof Error ? error.message : 'Não foi possível resolver a pergunta.',
-      )
+      const message =
+        error instanceof Error ? error.message : 'Não foi possível resolver a pergunta.'
+      notifyActionFailure(message)
+      feedback.value = statusFeedback(message)
     }
   }
 

@@ -106,10 +106,11 @@ describe('fluxos da investigação', () => {
     view.unmount()
   })
 
-  it('mantém conexões formais acessíveis no diário unificado', async () => {
+  it('mantém ações de mural e cruzamento acessíveis no diário unificado', async () => {
     const view = createView()
     await view.get('.journal-mode-tab').trigger('click')
-    expect(view.get('.journal-connection-form').text()).toContain('Criar conexão formal')
+    expect(view.get('.mural-link-form').text()).toContain('Desenhar ligação no mural')
+    expect(view.get('.investigative-crossing-form').text()).toContain('Cruzamento investigativo')
     view.unmount()
   })
 
@@ -177,7 +178,7 @@ describe('fluxos da investigação', () => {
     await view.get('.case-introduction .button-primary').trigger('click')
     expect(view.find('.case-introduction').exists()).toBe(false)
     expect(useInvestigationStore().introductionSeen).toBe(true)
-    expect(view.get('.tour-popover').text()).toContain('Passo 1 de 5')
+    expect(view.get('.tour-popover').text()).toContain('Passo 1 de 7')
     view.unmount()
   })
 
@@ -192,7 +193,7 @@ describe('fluxos da investigação', () => {
     expect(document.querySelector('.header-context .tour-trigger')).toBeNull()
     expect(secondView.find('.case-tools .tour-trigger').exists()).toBe(true)
     await secondView.get('.case-tools .tour-trigger').trigger('click')
-    expect(secondView.get('.tour-popover').text()).toContain('Passo 1 de 5')
+    expect(secondView.get('.tour-popover').text()).toContain('Passo 1 de 7')
     secondView.unmount()
   })
 

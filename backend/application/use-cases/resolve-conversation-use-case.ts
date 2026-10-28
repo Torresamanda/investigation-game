@@ -1,4 +1,8 @@
-import { canPayAction, spendActionPoints } from '../../../shared/domain/action-points.js'
+import {
+  calculateEffectiveActionCost,
+  canPayAction,
+  spendActionPoints,
+} from '../../../shared/domain/action-points.js'
 import type { ResolveConversationCommand } from '../commands.js'
 import type { CaseContentRepository } from '../ports/case-content-repository.js'
 import type { MatchRepository } from '../ports/match-repository.js'
@@ -63,7 +67,12 @@ export class ResolveConversationUseCase {
       command.personId,
       Boolean(card?.compatibleActions.includes('converse')),
     )
-    const totalCost = questionCost + pressLeakSurcharge + (card?.cost ?? 0)
+    const totalCost = calculateEffectiveActionCost({
+      baseCost: questionCost,
+      preparedCardCost: card?.cost,
+      surcharge: pressLeakSurcharge,
+      minimumCost: questionCost === 0 ? 0 : 1,
+    })
     if (
       !canPayAction(match.actionPoints, {
         action: 'converse',
@@ -89,6 +98,9 @@ export class ResolveConversationUseCase {
       !match.hasUsedPassiveThisRound &&
       outcome.status === 'recorded'
     const statementStatus = usesIsadoraPassive ? 'contestable' : outcome.status
+    const contestableCrossing =
+      outcome.contestableCrossing ??
+      (usesIsadoraPassive ? createIsadoraContestableCrossing(match) : undefined)
     const updated: SoloMatch = {
       ...match,
       actionPoints: spendActionPoints(match.actionPoints, {
@@ -111,9 +123,11 @@ export class ResolveConversationUseCase {
           status: statementStatus,
           recordedWith: card?.definitionId === 'pocket-recorder' ? 'pocket-recorder' : undefined,
           isadoraMarkedContestable: usesIsadoraPassive || undefined,
+          ...(contestableCrossing ? { contestableCrossing } : {}),
         },
       ],
       hasUsedPassiveThisRound: match.hasUsedPassiveThisRound || usesIsadoraPassive,
+      hasSocialConnectionThisRound: match.hasSocialConnectionThisRound || usesIsadoraPassive,
       hasUsedPressLeakConversationThisRound:
         match.hasUsedPressLeakConversationThisRound ||
         isPressLeakConversation(match, command.personId),
@@ -139,6 +153,22 @@ export class ResolveConversationUseCase {
     if (!this.caseContentRepository.isPersonAvailableAtLocation(personId, locationId)) {
       throw new DomainError('Esta pessoa não está disponível neste local.')
     }
+  }
+}
+
+function createIsadoraContestableCrossing(match: SoloMatch) {
+  const evidenceKeys = match.journalEntries.flatMap((entry) =>
+    entry.type === 'clue' && entry.status === 'confirmed' && entry.caseEvidenceKey
+      ? [entry.caseEvidenceKey]
+      : [],
+  )
+  if (!evidenceKeys.length) return undefined
+
+  return {
+    evidenceKeys,
+    result: 'inconclusive' as const,
+    observation:
+      'A comparação registra uma inconsistência possível, mas a declaração precisa de mais contexto antes de ser refutada.',
   }
 }
 

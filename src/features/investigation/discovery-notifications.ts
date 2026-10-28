@@ -1,59 +1,48 @@
-import type { PublicMatchDto } from '../../../shared/contracts/match'
+import type { MatchNotificationEvent, PublicMatchDto } from '../../../shared/contracts/match'
+import { roundOpenings } from '../../content/case01'
 
 type DiscoveryMatchState = Pick<
   PublicMatchDto,
-  'id' | 'journalEntries' | 'activeInvestigatorId' | 'decks'
+  'id' | 'journalEntries' | 'activeInvestigatorId' | 'decks' | 'notificationEvents'
 >
 
-export interface DiscoveryNotification {
+export interface MatchNotification {
   readonly id: string
-  readonly kind: 'clue' | 'statement' | 'temporary-card' | 'observation' | 'support-card'
+  readonly kind: MatchNotificationEvent['kind']
   readonly message: string
 }
 
-export function findNewDiscoveries(
+export function findNewMatchNotifications(
   previous: DiscoveryMatchState | null,
   current: DiscoveryMatchState | null,
-): readonly DiscoveryNotification[] {
+): readonly MatchNotification[] {
   if (!previous || !current || previous.id !== current.id) return []
 
-  const previousEntryIds = new Set(previous.journalEntries.map((entry) => entry.id))
-  const entries = current.journalEntries.flatMap((entry): DiscoveryNotification[] => {
-    if (previousEntryIds.has(entry.id)) return []
-
-    return [
-      {
-        id: `entry:${entry.id}`,
-        kind: entry.type,
-        message:
-          entry.type === 'clue'
-            ? 'Uma nova pista foi registrada no Diário.'
-            : entry.type === 'statement'
-              ? 'Uma nova declaração foi registrada no Diário.'
-              : 'Nenhuma descoberta nova: observação registrada no Diário.',
-      },
-    ]
-  })
-
-  const activeInvestigatorId = current.activeInvestigatorId
-  const previousCardIds = new Set(
-    previous.decks[activeInvestigatorId]?.hand.map((card) => card.instanceId) ?? [],
-  )
-  const cards = (current.decks[activeInvestigatorId]?.hand ?? []).flatMap(
-    (card): DiscoveryNotification[] =>
-      (card.temporary || card.ownerId !== activeInvestigatorId) &&
-      !previousCardIds.has(card.instanceId)
-        ? [
-            {
-              id: `card:${card.instanceId}`,
-              kind: card.temporary ? 'temporary-card' : 'support-card',
-              message: card.temporary
-                ? 'Uma carta temporária foi adicionada à sua mão.'
-                : 'Uma carta de apoio foi adicionada à sua mão.',
-            },
-          ]
-        : [],
-  )
-
-  return [...entries, ...cards]
+  const previousEventIds = new Set((previous.notificationEvents ?? []).map((event) => event.id))
+  return (current.notificationEvents ?? [])
+    .filter((event) => !previousEventIds.has(event.id))
+    .map((event) => {
+      const entry = event.entryId
+        ? current.journalEntries.find((journalEntry) => journalEntry.id === event.entryId)
+        : undefined
+      const roundEvent = roundOpenings[event.round - 1]?.event
+      const messages = {
+        discovery:
+          entry?.type === 'statement' ? 'Nova declaração registrada' : 'Nova pista registrada',
+        'clue-refuted': 'Uma pista foi refutada. Reavalie a linha de raciocínio.',
+        'hypothesis-strengthened': 'Uma linha de raciocínio ganhou força.',
+        'hypothesis-contested': 'Uma linha de raciocínio foi contestada.',
+        'operation-available': 'Uma operação investigativa está disponível.',
+        'action-failure': 'A ação não revelou novas evidências; uma observação foi registrada.',
+        'round-event': roundEvent ?? `A Rodada ${event.round} começou.`,
+        observation: entry
+          ? `Nova observação: ${entry.title}.`
+          : 'Uma nova observação foi registrada.',
+        'temporary-card': 'Uma carta temporária foi adicionada à mão.',
+        'support-card': 'Uma carta de apoio foi adicionada à mão.',
+      } satisfies Record<MatchNotification['kind'], string>
+      const entryTitle =
+        event.kind === 'discovery' ? `: ${entry?.title ?? 'consulte o Diário'}` : ''
+      return { id: event.id, kind: event.kind, message: `${messages[event.kind]}${entryTitle}` }
+    })
 }

@@ -1,0 +1,101 @@
+import { describe, expect, it } from 'vitest'
+import { InMemoryMatchRepository } from '../../infrastructure/persistence/in-memory-match-repository.js'
+import { createSoloMatch } from '../../domain/match.js'
+import { ResolveOperationUseCase } from './resolve-operation-use-case.js'
+import { Case01ContentRepository } from '../../infrastructure/content/case01-content-repository.js'
+
+function createMatch() {
+  return createSoloMatch({
+    id: 'match',
+    activeInvestigatorId: 'livia',
+    supportInvestigatorId: 'rafael',
+    createdAt: '2026-10-26T00:00:00.000Z',
+    nextRandomInt: () => 0,
+  })
+}
+
+describe('ResolveOperationUseCase', () => {
+  it('uses the case-specific verification observation for a plausible line', () => {
+    const repository = new InMemoryMatchRepository()
+    const match = createMatch()
+    repository.save({
+      ...match,
+      hypotheses: [
+        {
+          id: 'case01-primary-operation',
+          status: 'plausible',
+          evidence: [],
+          coherentRelationIds: ['one'],
+          hasOperationalInconsistency: false,
+        },
+      ],
+      preparedOperation: {
+        operationId: 'verify-the-theory',
+        hypothesisId: 'case01-primary-operation',
+        preparedAtRound: 4,
+      },
+    })
+
+    const result = new ResolveOperationUseCase(repository, new Case01ContentRepository()).execute({
+      matchId: match.id,
+    })
+
+    expect(result.status).toBe('active')
+    expect(result.journalEntries.at(-1)?.content).toContain(
+      'A relação permanece plausível e pode ser fortalecida',
+    )
+  })
+
+  it('spends two general PA and wins after resolving a sustained prepared operation', () => {
+    const repository = new InMemoryMatchRepository()
+    const match = createMatch()
+    repository.save({
+      ...match,
+      hypotheses: [
+        {
+          id: 'case01-primary-operation',
+          status: 'sustained',
+          evidence: [],
+          coherentRelationIds: ['one', 'two'],
+          hasOperationalInconsistency: false,
+        },
+      ],
+      preparedOperation: {
+        operationId: 'preserve-the-evidence',
+        hypothesisId: 'case01-primary-operation',
+        preparedAtRound: 5,
+      },
+    })
+
+    const result = new ResolveOperationUseCase(repository, new Case01ContentRepository()).execute({
+      matchId: match.id,
+    })
+
+    expect(result).toMatchObject({ status: 'won', actionPoints: { general: 3 } })
+  })
+
+  it('keeps the match active and records a useful observation after an incomplete operation', () => {
+    const repository = new InMemoryMatchRepository()
+    const match = createMatch()
+    repository.save({
+      ...match,
+      hypotheses: [
+        {
+          id: 'route',
+          status: 'contested',
+          evidence: [],
+          coherentRelationIds: [],
+          hasOperationalInconsistency: true,
+        },
+      ],
+      preparedOperation: { operationId: 'operation', hypothesisId: 'route', preparedAtRound: 5 },
+    })
+
+    const result = new ResolveOperationUseCase(repository, new Case01ContentRepository()).execute({
+      matchId: match.id,
+    })
+
+    expect(result.status).toBe('active')
+    expect(result.journalEntries.at(-1)?.title).toBe('Inconsistência na operação')
+  })
+})

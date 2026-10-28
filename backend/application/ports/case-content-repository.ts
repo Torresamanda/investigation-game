@@ -3,12 +3,12 @@ import type {
   LocationId,
   PersonId,
 } from '../../../shared/domain/identifiers.js'
+import type { ContestableStatementCrossing, JournalEntry, SoloMatch } from '../../domain/match.js'
+import type { OperationOption } from '../../domain/investigation-operation.js'
 import type {
-  CaseEvidenceKey,
-  JournalConnection,
-  JournalEntry,
-  SoloMatch,
-} from '../../domain/match.js'
+  BasicInvestigationAction,
+  InvestigationOpportunity,
+} from '../../../shared/contracts/investigation-opportunity.js'
 
 export type NewJournalEntry = Omit<JournalEntry, 'id'>
 
@@ -27,6 +27,7 @@ export interface ConversationContent {
 export interface ConversationOutcomeContent {
   readonly content: string
   readonly status: 'recorded' | 'contestable' | 'blocked'
+  readonly contestableCrossing?: ContestableStatementCrossing
 }
 
 export interface CaseActionResolution {
@@ -36,19 +37,25 @@ export interface CaseActionResolution {
   readonly resolvedKeys?: readonly string[]
   readonly unlockedLocationIds?: readonly LocationId[]
   readonly journalEntryUpdates?: readonly JournalEntry[]
-  readonly journalConnection?: Omit<JournalConnection, 'round'>
   readonly errorMessage?: string
 }
 
+export interface CaseOperationResolution {
+  readonly isResolved: boolean
+  readonly observation: string
+}
+
 export interface CaseContentRepository {
-  isAccusationCorrect(
-    suspectId: PersonId,
-    evidence: {
-      readonly means?: CaseEvidenceKey
-      readonly opportunity?: CaseEvidenceKey
-      readonly link?: CaseEvidenceKey
-    },
-  ): boolean
+  getEvidenceMetadata(
+    caseEvidenceKey: NonNullable<JournalEntry['caseEvidenceKey']> | undefined,
+  ): Pick<JournalEntry, 'evidenceAxes' | 'hypothesisThreadIds'> | undefined
+  getConfirmedEvidenceKey(resolvedKey: string | undefined): JournalEntry['caseEvidenceKey']
+  getAvailableOperations(match: SoloMatch): readonly OperationOption[]
+  resolveOperation(
+    match: SoloMatch,
+    operationId: string,
+    hypothesisId: string,
+  ): CaseOperationResolution
   getConversation(personId: PersonId): ConversationContent
   isPersonAvailableAtLocation(personId: PersonId, locationId: LocationId): boolean
   getConversationBlockReason(
@@ -70,4 +77,9 @@ export interface CaseContentRepository {
     action: Exclude<InvestigationAction, 'move' | 'card' | 'converse'>,
     locationId: LocationId,
   ): CaseActionResolution
+  getActionOpportunity(
+    match: SoloMatch,
+    action: BasicInvestigationAction,
+    locationId: LocationId,
+  ): InvestigationOpportunity
 }

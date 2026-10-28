@@ -10,6 +10,7 @@ describe('ConversationDialog', () => {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
+          opportunity: { status: 'promising', message: 'A conversa pode acrescentar contexto.' },
           questions: [],
         },
       },
@@ -28,6 +29,7 @@ describe('ConversationDialog', () => {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
+          opportunity: { status: 'promising', message: 'A conversa pode acrescentar contexto.' },
           questions: [
             {
               id: 'technical-assessment',
@@ -70,6 +72,7 @@ describe('ConversationDialog', () => {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
+          opportunity: { status: 'exploratory', message: 'A conversa pode orientar a busca.' },
           questions: [
             {
               id: 'davi-interest',
@@ -97,6 +100,7 @@ describe('ConversationDialog', () => {
           personId: 'marta',
           personName: 'Marta Lobo',
           locationId: 'laboratory',
+          opportunity: { status: 'exhausted', message: 'Reavalie as anotações.' },
           questions: [],
         },
       },
